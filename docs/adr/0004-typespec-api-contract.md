@@ -1,5 +1,13 @@
 # TypeSpec is the single source of truth for the API contract
 
+> **Flagged for revisit:** switch the generated client from the current fetch-based
+> `swagger-typescript-api` to a generator that emits an Angular `HttpClient`-based
+> client. Not yet designed or decided — the choice of generator, the impact on the
+> `data/` port return type (`Promise` vs `Observable`), and whether it pulls the HTTP
+> adapter into scope all still need working through. See
+> [feature-scope.md](../feature-scope.md) → Later. The decision recorded below (TypeSpec
+> as the contract source, committed generated output) is unaffected either way.
+
 ## Context
 
 The app needs a stable contract between the data-access ports and any future backend,

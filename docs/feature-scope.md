@@ -111,6 +111,9 @@ shared data-access layer; a backend can replace that later without touching feat
   Tracker's data into another (e.g. consolidating "Water" into "Liquid"); unifying a
   Field's rename lineage across Versions so Correlation treats it as one continuous
   Signal
+- **Switch the generated API client to Angular's `HttpClient`** instead of the current
+  fetch-based `swagger-typescript-api` output. Flagged, not yet designed — see the note
+  in [ADR 0004](adr/0004-typespec-api-contract.md).
 
 ---
 
