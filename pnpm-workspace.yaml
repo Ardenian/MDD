@@ -1,11 +1,11 @@
 packages:
-  - "."
-  - "api-spec"
+  - '.'
+  - 'api-spec'
 allowBuilds:
-  '@parcel/watcher': set this to true or false
-  esbuild: set this to true or false
-  lmdb: set this to true or false
-  msgpackr-extract: set this to true or false
+  '@parcel/watcher': false
+  esbuild: false
+  lmdb: false
+  msgpackr-extract: false
 minimumReleaseAgeExclude:
   - '@angular/cdk@22.1.6'
 overrides:
