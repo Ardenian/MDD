@@ -29,15 +29,18 @@ src/app/data/
 
 ## Ports (v1 surface)
 
-- **TrackerRepository**: `list`, `get(id)`, `create(input)`, `update(id, patch)`,
-  `delete(id, migrationPlan)` — delete rejected without a complete plan.
+- **TrackerRepository**: `list()`, `get(id)`, `create(input)`, `saveDraft(id, fields)`,
+  `commitDraft(id)` (mints the next `TrackerVersion`; no-op if unchanged from current),
+  `updateMeta(id, { name?, defaultTimeMode? })`, `archive(id)`, `unarchive(id)`,
+  `getVersion(trackerId, version)`. No `delete` — see ADR 0005.
 - **EntryRepository**: `get`, `listByRange(start, end, opts)`, `listByTracker`,
-  `listChildren(parentId)`, `create`, `update`, `softDelete`, `migrateTracker(plan)`.
+  `listChildren(parentId)`, `create`, `update`, `softDelete`. `create` resolves
+  `trackerVersion` from the target Tracker's `currentVersion` itself.
 - **PresetRepository**: `listByTracker`, `get`, `create`, `update`, `delete`.
 - **TagRepository**: `listAll`, `suggest(prefix)`.
 - **SettingsRepository**: `get()`, `save(patch)`.
 - **CorrelationDataSource**: `loadEntriesForScope(range, signalScope)` — one batched read
-  of Entries + children + schemas + Tags.
+  of Entries + children + the specific Tracker Versions they reference + Tags.
 - **MaintenancePort**: `clearAll()`.
 
 All returns are the hand-written `model/` types. Ports are transport-agnostic: no
@@ -51,13 +54,22 @@ All returns are the hand-written `model/` types. Ports are transport-agnostic: n
 - `revision`: integer, incremented on every write.
 - `ownerId`, `userId`: from `IdentityContext` (`dev`/`dev` in v1).
 
+`TrackerVersion` carries the same fields for consistency but is write-once: created by
+`commitDraft` and never updated or soft-deleted (`revision` is always `1`,
+`deletedAt` always `null`).
+
 ## IndexedDB adapter (v1)
 
-- One object store per aggregate; indices for range queries on Entries
-  (`start`, `parentId`, `trackerId`) and Tag prefix search.
-- Enforces the record invariants on write; honours `deletedAt` on read.
+- One object store per aggregate, plus a `trackerVersions` store keyed by
+  `(trackerId, version)`, append-only; indices for range queries on Entries
+  (`start`, `parentId`, `trackerId`, `trackerVersion`) and Tag prefix search.
+- Enforces the record invariants on write; honours `deletedAt` on read; `archived`
+  Trackers are excluded from "creatable"/"reference-target" queries but not from direct
+  `get`/`getVersion` lookups.
 - No schema-version migration story needed yet (single app version); the store version
-  is bumped only when indices change.
+  is bumped only when indices change. (Not to be confused with **Tracker Version** —
+  that's an application-level concept stored as ordinary rows, unrelated to the
+  IndexedDB database's own internal version number.)
 
 ## API contract (`api-spec/`)
 
@@ -73,8 +85,9 @@ All returns are the hand-written `model/` types. Ports are transport-agnostic: n
   excludes the row from default reads but not from `get(id)`.
 - `EntryRepository.listByRange`: boundary-touching Entries included; children only with
   `opts.includeChildren`; soft-deleted excluded.
-- `migrateTracker(plan)`: mapped Fields move; unmapped source values persist as Orphaned
-  Fields; parent/child links preserved.
+- `TrackerRepository.commitDraft`: mints `currentVersion + 1` only when the Draft's
+  fields differ from the current `TrackerVersion`; a no-op Draft mints nothing.
+  `archive`/`unarchive` never touch `TrackerVersion` rows or existing Entries.
 - `TagRepository.suggest`: prefix match, case-insensitive, ranked by frequency.
 - In-memory fakes in `testing/` satisfy the same contract tests as the IndexedDB adapter
   (shared test suite runs against both).
@@ -85,3 +98,4 @@ All returns are the hand-written `model/` types. Ports are transport-agnostic: n
 - The HTTP adapter implementation (later milestone; port surface is fixed now).
 - Sync, connectivity, retry, conflict resolution beyond the LWW contract fields.
 - Query language / arbitrary filtering beyond the listed port methods.
+- Cross-Tracker-Version Snapshot migration and Tracker-merge tooling (ADR 0005, Later).

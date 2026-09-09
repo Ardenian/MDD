@@ -22,8 +22,9 @@ significance guardrails, and drill into any pair in a **Directed view**.
 
 ## Domain terms used
 
-Correlation, Signal, Bucket, Lag, Discovery scan, Directed view, Tracker, Entry, Field,
-Child Entry, Tag, Fadeout. See [`CONTEXT.md`](../../../../CONTEXT.md).
+Correlation, Signal, Bucket, Lag, Discovery scan, Directed view, Tracker, Tracker
+Version, Entry, Field, Child Entry, Tag, Fadeout. See
+[`CONTEXT.md`](../../../../CONTEXT.md).
 
 ## Signal extraction (v1)
 
@@ -74,7 +75,9 @@ Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
 ## Data & API contract touched
 
 - `CorrelationDataSource` port: `loadEntriesForScope(range, signalScope)` returning
-  Entries + needed children + Tracker schemas + Tags in one batch (adapter decides how).
+  Entries + needed children + the specific Tracker Versions each Entry references (not
+  a Tracker's current schema — an old Entry's Signal reads against its own pinned
+  Version, per ADR 0005) + Tags, in one batch (adapter decides how).
 - No writes except pinned-pair preferences (local `localStorage`).
 - Pure modules (all framework-free, heavily tested):
   - `signal-extraction` — Entries + schemas → named Signal series per Bucket, with

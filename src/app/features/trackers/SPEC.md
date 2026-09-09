@@ -2,78 +2,110 @@
 
 ## Purpose
 
-Let a user design and maintain their own record types (**Trackers**) and reusable
-pre-filled value bundles (**Presets**). This is the schema-authoring surface; the
-Calendar and Entries features consume what it produces.
+Let a user design and maintain their own record types (**Trackers**), evolve their
+schemas safely over time via **Tracker Versions**, and author reusable pre-filled value
+bundles (**Presets**). This is the schema-authoring surface; the Calendar and Entries
+features consume what it produces. See [ADR 0005](../../../../docs/adr/0005-tracker-versioning.md).
 
 ## User stories / flows
 
 - As a user I create a Tracker "Sleep", add an integer Field "Satisfaction" (optional)
-  and a single-select Field "Energy" with options low/medium/high, and set its default
-  Time mode to Period.
+  and a single-select Field "Energy" with options low/medium/high, set its default Time
+  mode to Period, and **commit** — this mints "Sleep" Version 1.
 - I create a Tracker "Meal" with a reference Field "Ingredients" targeting Tracker
-  "Ingredient", cardinality many.
+  "Ingredient", cardinality many, and commit — "Meal" Version 1.
 - I make "Meal" reference itself via an optional reference Field "Component" so a meal
   can contain a sub-meal; the designer warns that this can build an infinite form but
-  lets me save.
-- I rename Field "Energy" to "EnergyLevel"; existing Entries' Snapshot Fields named
-  "Energy" become Orphaned (handled in the entries feature).
-- I change "Satisfaction" from integer to decimal; the designer warns that every
-  existing Entry's "Satisfaction" value will become Orphaned.
-- I author a Preset "Full English" on "Meal" with its Ingredients pre-filled.
-- I later add a required Field to "Meal"; the "Full English" Preset shows a drift badge
-  listing what no longer matches the schema.
-- I delete Tracker "Snack"; I am sent into the guided migration flow (entries feature)
-  before the delete completes.
+  lets me commit.
+- I open "Sleep" again, rename Field "Energy" to "EnergyLevel" — this is a **Draft**;
+  nothing changes for existing Entries until I commit. I commit → "Sleep" Version 2.
+  Entries created under Version 1 still show "Energy"; new Entries show "EnergyLevel".
+- I change "Satisfaction" from integer to decimal in a Draft and commit → "Sleep"
+  Version 3. Version 1 and 2 Entries are unaffected; they keep rendering against their
+  own Version.
+- I rename the Tracker "Sleep" to "Sleep & Rest" and switch its default Time mode to
+  Point — this does **not** create a new Version; it applies immediately and
+  retroactively as metadata (every Entry, at every Version, shows the new name).
+- I author a Preset "Full English" on "Meal" Version 1, with its Ingredients pre-filled.
+  "Meal" later reaches Version 3; "Full English" is flagged **stale** (still pinned to
+  Version 1). I can still use it to create a new Entry (which snapshots Version 3); the
+  Preset itself stays stale until I open it and explicitly re-save it.
+- I **archive** Tracker "Snack": it disappears from the "new Entry" Tracker picker and
+  from every reference Field's target picker, but its 2 existing Entries, and its
+  history, are untouched. I later unarchive it.
 
 ## Domain terms used
 
-Tracker, Field, Reference Field, Child Entry, Preset, Snapshot, Orphaned Field, Time
-mode, expansion depth. See [`CONTEXT.md`](../../../../CONTEXT.md).
+Tracker, Tracker Version, Draft, Archived Tracker, Field, Reference Field, Child Entry,
+Preset, Snapshot, Time mode, expansion depth. See [`CONTEXT.md`](../../../../CONTEXT.md).
 
 ## UI
 
-- **Tracker list**: name, Field count, Entry count, Preset count; create button.
+- **Tracker list**: name, current Version number, Field count, Entry count, Preset
+  count, archived badge; create button; archived Trackers shown in a separate,
+  collapsed section, excluded from every picker elsewhere in the app.
 - **Tracker editor**:
-  - name; default Time mode (point / period / day-bucketed)
-  - Field rows, reorderable: name, data type, required toggle; type-specific editors —
-    select options list (add/rename/remove); reference target Tracker + cardinality
-  - destructive-change warnings inline (type change, Field remove, option remove) naming
-    the count of Entries whose Snapshot Fields will orphan
-  - delete Tracker → confirm → guided migration
-- **Preset panel** within the Tracker editor: list of Presets; Preset editor reuses the
-  Entry form (entries feature) in "no placement" mode; drift badge with a per-Field diff.
-- All controls keyboard reachable; select-option and Field reordering operable without a
-  pointer; warnings are `role="alert"`.
+  - name; default Time mode (point / period / day-bucketed) — both apply immediately,
+    no commit needed
+  - **Draft** Field rows, reorderable: name, data type, required toggle; type-specific
+    editors — select options list (add/rename/remove); reference target Tracker +
+    cardinality
+  - a visible **Draft ≠ current Version** indicator whenever the Draft differs from the
+    committed schema; **Commit** action mints the next Version; **Discard draft**
+    reverts to the current Version
+  - **Archive** / **Unarchive** action (no confirmation flow needed — reversible, no
+    data at risk)
+- **Preset panel** within the Tracker editor: list of Presets, each showing its pinned
+  Version and a **stale** badge when behind current; Preset editor reuses the Entry form
+  (entries feature) in "no placement" mode; saving a stale Preset re-pins it to the
+  Tracker's current Version and clears the badge.
+- All controls keyboard reachable; Field reordering and Draft/Commit operable without a
+  pointer; the stale badge and Draft indicator are announced via `aria-live`.
 
 ## Data & API contract touched
 
-- `TrackerRepository`: `list`, `get`, `create`, `update`, `delete` (delete is rejected
-  by the port unless caller passes a resolved migration plan).
+- `TrackerRepository`: `list`, `get(id)`, `create(input)`, `saveDraft(id, fields)`,
+  `commitDraft(id)` (mints the next `TrackerVersion`, no-ops if the Draft is unchanged
+  from the current Version), `updateMeta(id, { name?, defaultTimeMode? })`, `archive(id)`,
+  `unarchive(id)`, `getVersion(trackerId, version)`.
 - `PresetRepository`: `listByTracker`, `get`, `create`, `update`, `delete`.
-- TypeSpec models: `Tracker`, `Field` (discriminated by `dataType`), `ReferenceFieldConfig`,
-  `Preset`, `PresetValue`. All carry the ADR 0003 fields.
+- TypeSpec models: `Tracker` (header: name, defaultTimeMode, currentVersion, archived),
+  `TrackerVersion` (immutable: trackerId, version, fields), `FieldDef` (discriminated by
+  `dataType`), `Preset`, `PresetFieldValue`. All carry the ADR 0003 fields.
 - Pure module `tracker-schema`: Field validity, option-set validity, self/rec reference
-  detection, expansion-depth computation, Preset-vs-schema diff.
+  detection, expansion-depth computation, Draft-vs-current-Version diff (to decide
+  whether a commit is a no-op), Preset staleness check.
 
 ## Test cases (Vitest — logic only)
 
-- Field name uniqueness within a Tracker; empty name rejected.
-- Select Field: duplicate options rejected; removing an option is reported as a
-  breaking change.
+- Field name uniqueness within a Draft; empty name rejected.
+- Select Field: duplicate options rejected.
 - Reference Field requires a target Tracker; self-reference allowed; cardinality
   defaults to one.
 - Expansion depth: linear chain depth counted correctly; a cycle is detected and
   reported (not thrown); depth cap from settings respected.
-- Infinite-form warning fires for a cyclic reference graph but does not block save.
-- Preset diff: added required live Field → drift; removed live Field → drift; type
-  change → drift; matching schema → no drift.
+- Infinite-form warning fires for a cyclic reference graph but does not block commit.
+- `commitDraft`: a Draft identical to the current Version's fields does not create a new
+  Version; a Draft that changes ≥1 Field creates Version `current + 1`; the new Version's
+  field list matches the Draft exactly; the previous Version's stored field list is
+  unchanged.
+- `updateMeta` (name / defaultTimeMode) never changes `currentVersion` and is visible
+  immediately across every existing Entry's display of the Tracker.
+- `archive` / `unarchive`: archived Tracker excluded from "creatable" and
+  "reference-target" listings; its Entries and Versions are unaffected and still
+  readable.
+- Preset staleness: `preset.trackerVersion < tracker.currentVersion` → stale;
+  re-saving a stale Preset sets `preset.trackerVersion = tracker.currentVersion` and
+  clears staleness; using a stale Preset (without re-saving) does not change its
+  `trackerVersion`.
 - Preset deep-copy produces an independent value tree (mutating the copy does not touch
   the Preset).
-- `delete` via `TrackerRepository` without a migration plan is rejected.
 
 ## Out of scope
 
-- Standalone Entry linking (children are always embedded — see feature-scope "Later").
+- Tracker Version history/diff viewer, cross-Version Snapshot migration, Tracker
+  merging, and Field-rename-lineage tracking for Correlation — one consolidated
+  **Later** theme (see [ADR 0005](../../../../docs/adr/0005-tracker-versioning.md)).
+- Standalone Entry linking (children are always embedded).
 - Field-level permissions, computed Fields, Field descriptions/help text.
 - Importing a Tracker schema from a template library.

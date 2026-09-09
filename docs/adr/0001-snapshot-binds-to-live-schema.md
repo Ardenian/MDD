@@ -1,5 +1,9 @@
 # Entry Snapshots bind to the live Tracker schema by (name, dataType)
 
+> **Status: superseded by [ADR 0005](./0005-tracker-versioning.md).** Kept for history —
+> the live-binding/Orphaned-Field model described below was replaced by Tracker
+> Versioning before any code was built against it.
+
 ## Context
 
 Every Entry stores a Snapshot of its Tracker's schema and the values entered against it,

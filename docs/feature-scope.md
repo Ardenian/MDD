@@ -6,44 +6,51 @@ terms are defined in [`CONTEXT.md`](../CONTEXT.md).
 
 ## Product in one paragraph
 
-A frontend-only Angular diary. Users design their own **Trackers** (named schemas of
-typed **Fields**, including references to other Trackers), then log **Entries** onto a
-**Calendar** as **Point / Period / Day-bucketed** placements with **Fadeout** uncertainty
-margins. Each Entry keeps a **Snapshot** that binds back to its live Tracker. A separate
-**Correlation** page mines the data for time-lagged relationships between **Signals**.
-All data lives in the browser (IndexedDB) behind a shared data-access layer; a backend
-can replace that later without touching features.
+A frontend-only Angular diary. Users design their own **Trackers** — each a name plus a
+sequence of immutable, versioned Field schemas (**Tracker Versions**) — then log
+**Entries** onto a **Calendar** as **Point / Period / Day-bucketed** placements with
+**Fadeout** uncertainty margins. Each Entry keeps a **Snapshot** pinned to the exact
+Tracker Version it was created against, so it renders correctly forever regardless of
+later schema changes. A separate **Correlation** page mines the data for time-lagged
+relationships between **Signals**. All data lives in the browser (IndexedDB) behind a
+shared data-access layer; a backend can replace that later without touching features.
 
 ---
 
 ## In scope — v1
 
 ### Tracker designer — [`src/app/features/trackers/SPEC.md`](../src/app/features/trackers/SPEC.md)
-- Create, rename, delete Trackers (delete triggers guided Entry migration)
-- Add / rename / remove / reorder Fields; 8 data types: text, long text, integer,
-  decimal, boolean, single-select, multi-select, reference
+- Create Trackers; rename a Tracker or change its default Time mode in place (no new
+  Tracker Version)
+- Edit Fields in a Draft; committing a Draft that changed ≥1 Field mints the next
+  **Tracker Version** (sequential integer, starting at 1)
+- Add / rename / remove / reorder Fields in the Draft; 8 data types: text, long text,
+  integer, decimal, boolean, single-select, multi-select, reference
 - Per-Field: required/optional; select options; reference target Tracker + cardinality
   (one / many); self-reference allowed
-- Default Time mode per Tracker
 - Expansion-depth cap on reference chains; infinite-form warning (non-blocking)
-- Preset drift indicator when a schema change diverges a Preset
+- Archive / unarchive a Tracker (hidden from "create new" and reference-target pickers;
+  record and every Tracker Version kept; no migration)
+- Preset staleness indicator when the Tracker has moved past a Preset's pinned Version
 
 ### Presets — [`src/app/features/trackers/SPEC.md`](../src/app/features/trackers/SPEC.md)
-- Author zero or more Presets per Tracker, including filled child Entries
-- Deep-copy a Preset into a new Entry's Snapshot; fully editable afterward
+- Author zero or more Presets per Tracker, pinned to a Tracker Version, including
+  filled child Entries
+- Deep-copy a Preset into a new Entry's Snapshot (snapshotted at the Tracker's current
+  Version); fully editable afterward
 - Editing a Preset never changes Entries already made from it
+- A stale Preset (pinned Version < current Version) still works when used; clearing
+  the stale flag requires an explicit re-save
 
 ### Entries — [`src/app/features/entries/SPEC.md`](../src/app/features/entries/SPEC.md)
-- Schema-driven create/edit form from a Tracker's live schema or a Preset
+- Schema-driven create/edit form from a Tracker's current Version or a Preset
 - Placement: Point / Period / Day-bucketed, with leading/trailing Fadeout on Point and
   Period; per-Entry Time-mode override
 - Embedded child-Entry editing for reference Fields; child placement locked to parent;
   removing a child deletes it; entries cannot be re-parented
 - Tags with free text + autocomplete from existing Tags
-- Snapshot binding by `(name, dataType)`; Orphaned Fields shown read-only
-- Manual rebind of an Orphaned Field, with bulk-apply to other Entries of the Tracker
-- Guided Tracker-deletion migration: map source Fields to a target Tracker's Fields
-  (seeded by `(name, dataType)`), unmapped values retained as Orphaned Fields
+- Every Entry pins to the Tracker Version current at its creation; renders from that
+  Version forever, independent of later Tracker changes
 
 ### Calendar — [`src/app/features/calendar/SPEC.md`](../src/app/features/calendar/SPEC.md)
 - Day view (vertical time grid) and Week view
@@ -98,6 +105,12 @@ can replace that later without touching features.
 - Deeper correlation: automatic lag recommendation from data, partial correlation,
   controlling for confounders
 - Integration and end-to-end test suites for UI and interaction
+- **Tracker Version & merge migration tooling** (one consolidated theme — see
+  [ADR 0005](adr/0005-tracker-versioning.md)): a read-only Tracker Version history/diff
+  viewer; migrating a Snapshot from an old Tracker Version to a newer one; merging one
+  Tracker's data into another (e.g. consolidating "Water" into "Liquid"); unifying a
+  Field's rename lineage across Versions so Correlation treats it as one continuous
+  Signal
 
 ---
 

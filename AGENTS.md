@@ -91,6 +91,10 @@ This repo is the Diary Calendar app. Before changing anything, read
 - Every persisted aggregate carries: client-generated UUID `id`, `createdAt`,
   `updatedAt`, nullable `deletedAt` (soft delete), integer `revision`, `ownerId`,
   `userId`. Default reads exclude soft-deleted rows. See ADR 0003.
+- A Tracker's Field schema is versioned, not mutated in place: edits live in a Draft
+  until explicitly committed, which mints an immutable `TrackerVersion`; every Entry and
+  Preset pins to one. There is no live-schema rebinding and no "Orphaned Field" — see
+  ADR 0005.
 
 ### API contract (enforced)
 
@@ -103,9 +107,9 @@ This repo is the Diary Calendar app. Before changing anything, read
 ### Testing
 
 - Every non-UI unit of logic ships with Vitest tests in the same change. This
-  specifically includes snapshot binding, Orphaned-Field rebind, Tracker-deletion
-  migration, Fadeout resolution, calendar layout, signal extraction, bucketing,
-  correlation statistics, lag scan, and significance correction.
+  specifically includes Tracker Draft/commit versioning, Preset staleness, Fadeout
+  resolution, calendar layout, signal extraction, bucketing, correlation statistics,
+  lag scan, and significance correction.
 - Pure logic lives in framework-free modules so it is testable without Angular.
 - UI and interaction coverage is deferred to future integration and e2e suites — do not
   add component/DOM tests in v1 unless asked.
@@ -122,9 +126,9 @@ This repo is the Diary Calendar app. Before changing anything, read
 
 ### Domain language
 
-- Use `CONTEXT.md` terms exactly: Tracker, Entry, Field, Reference Field, Child Entry,
-  Preset, Snapshot, Orphaned Field, Calendar, Owner, User, Time mode, Point, Period,
-  Day-bucketed, Fadeout, Tag, Correlation, Signal, Bucket, Lag, Discovery scan, Directed
-  view.
+- Use `CONTEXT.md` terms exactly: Tracker, Tracker Version, Draft, Archived Tracker,
+  Entry, Field, Reference Field, Child Entry, Preset, Snapshot, Calendar, Owner, User,
+  Time mode, Point, Period, Day-bucketed, Fadeout, Tag, Correlation, Signal, Bucket, Lag,
+  Discovery scan, Directed view.
 - Never use a term from an `_Avoid_` list (entity, instance, category, interval, …) for
   the concept it warns against — not in code identifiers, comments, or docs.

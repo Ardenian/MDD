@@ -89,6 +89,11 @@ export interface Entry {
   ownerId: string;
   userId: string;
   trackerId: string;
+  /**
+   * The Tracker Version current when this Entry was created. Immutable thereafter.
+   * @format int32
+   */
+  trackerVersion: number;
   /** Zero or one parent; a child's placement always mirrors its parent's. */
   parentEntryId: string | null;
   placement: Placement;
@@ -96,6 +101,10 @@ export interface Entry {
   tags: string[];
 }
 
+/**
+ * No `trackerVersion` field: the adapter resolves it from the target Tracker's
+ * `currentVersion` at creation time — a caller never supplies it. See ADR 0005.
+ */
 export interface EntryInput {
   trackerId: string;
   parentEntryId: string | null;
@@ -116,25 +125,13 @@ export interface FieldBase {
   required: boolean;
 }
 
-/** One property in a Tracker's schema. */
+/** One property in a Tracker Version's schema. */
 export type FieldDef =
   | TextFieldDef
   | NumberFieldDef
   | BooleanFieldDef
   | SelectFieldDef
   | ReferenceFieldDef;
-
-export interface FieldMapping {
-  sourceFieldName: string;
-  /** null = leave unmapped; the value is retained as an Orphaned Field. */
-  targetFieldName: string | null;
-}
-
-/** Required when deleting a Tracker that still has Entries. */
-export interface MigrationPlan {
-  targetTrackerId: string;
-  mappings: FieldMapping[];
-}
 
 export type NumberFieldDef = FieldBase & {
   dataType: "integer" | "decimal";
@@ -178,6 +175,11 @@ export interface Preset {
   ownerId: string;
   userId: string;
   trackerId: string;
+  /**
+   * The Tracker Version this Preset's values were authored against.
+   * @format int32
+   */
+  trackerVersion: number;
   name: string;
   values: PresetFieldValue[];
   /** Filled child Entries for reference Fields, resolved depth-first. */
@@ -187,6 +189,8 @@ export interface Preset {
 export interface PresetChild {
   fieldName: string;
   trackerId: string;
+  /** @format int32 */
+  trackerVersion: number;
   values: PresetFieldValue[];
   children: PresetChild[];
 }
@@ -208,10 +212,12 @@ export type SelectFieldDef = FieldBase & {
   options: string[];
 };
 
-/** A Field frozen onto an Entry; binds to a live Tracker Field by (name, dataType). */
+/**
+ * A Field value frozen onto an Entry. No dataType or schema copy — that's looked up
+ * from the Entry's pinned `(trackerId, trackerVersion)` TrackerVersion. See ADR 0005.
+ */
 export interface SnapshotField {
-  name: string;
-  dataType: FieldDataType;
+  fieldName: string;
   value: any;
 }
 
@@ -219,6 +225,10 @@ export type TextFieldDef = FieldBase & {
   dataType: "text" | "longText";
 };
 
+/**
+ * A Tracker's header: identity, metadata, and its current place in its own version
+ * history. The Field schema itself lives on `TrackerVersion`, not here. See ADR 0005.
+ */
 export interface Tracker {
   /** Client-generated UUID. */
   id: string;
@@ -240,12 +250,58 @@ export interface Tracker {
   userId: string;
   name: string;
   defaultTimeMode: TimeMode;
+  /**
+   * The highest committed TrackerVersion.version. 0 until the first commit.
+   * @format int32
+   */
+  currentVersion: number;
+  /** Hidden from "create new" / reference-target pickers; never migrated, never deleted. */
+  archived: boolean;
+  /** Uncommitted working schema; equals the current Version's fields right after a commit. */
+  draftFields: FieldDef[];
+}
+
+export interface TrackerCreateInput {
+  name: string;
+  defaultTimeMode: TimeMode;
+  /** Committed immediately as Version 1. */
   fields: FieldDef[];
 }
 
-export interface TrackerInput {
-  name: string;
-  defaultTimeMode: TimeMode;
+export interface TrackerMetaInput {
+  name?: string;
+  defaultTimeMode?: TimeMode;
+}
+
+/**
+ * An immutable, sequentially numbered snapshot of a Tracker's Field schema. Never
+ * updated or deleted — an Entry's Snapshot pins to one of these forever. See ADR 0005.
+ */
+export interface TrackerVersion {
+  /** Client-generated UUID. */
+  id: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+  /**
+   * Set when soft-deleted; default reads exclude these rows.
+   * @format date-time
+   */
+  deletedAt: string | null;
+  /**
+   * Monotonic per-record counter for conflict detection.
+   * @format int32
+   */
+  revision: number;
+  ownerId: string;
+  userId: string;
+  trackerId: string;
+  /**
+   * Sequential per Tracker, starting at 1.
+   * @format int32
+   */
+  version: number;
   fields: FieldDef[];
 }
 
@@ -705,12 +761,12 @@ export class Api<
       }),
 
     /**
-     * No description
+     * @description Creates the Tracker header and commits its Field schema as Version 1.
      *
      * @name TrackersCreate
      * @request POST:/trackers
      */
-    trackersCreate: (data: TrackerInput, params: RequestParams = {}) =>
+    trackersCreate: (data: TrackerCreateInput, params: RequestParams = {}) =>
       this.request<Tracker, any>({
         path: `/trackers`,
         method: "POST",
@@ -735,14 +791,14 @@ export class Api<
       }),
 
     /**
-     * No description
+     * @description Renames / changes default Time mode. Never versions.
      *
-     * @name TrackersUpdate
+     * @name TrackersUpdateMeta
      * @request PATCH:/trackers/{id}
      */
-    trackersUpdate: (
+    trackersUpdateMeta: (
       id: string,
-      data: TrackerInput,
+      data: TrackerMetaInput,
       params: RequestParams = {},
     ) =>
       this.request<Tracker, ApiError>({
@@ -757,19 +813,80 @@ export class Api<
     /**
      * No description
      *
-     * @name TrackersRemove
-     * @request DELETE:/trackers/{id}
+     * @name TrackersArchive
+     * @request POST:/trackers/{id}/archive
      */
-    trackersRemove: (
+    trackersArchive: (id: string, params: RequestParams = {}) =>
+      this.request<Tracker, ApiError>({
+        path: `/trackers/${id}/archive`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Replaces the working Draft. Does not version until `commitDraft` is called.
+     *
+     * @name TrackersSaveDraft
+     * @request PUT:/trackers/{id}/draft
+     */
+    trackersSaveDraft: (
       id: string,
-      data: MigrationPlan,
+      data: FieldDef[],
       params: RequestParams = {},
     ) =>
-      this.request<void, ApiError>({
-        path: `/trackers/${id}`,
-        method: "DELETE",
+      this.request<Tracker, ApiError>({
+        path: `/trackers/${id}/draft`,
+        method: "PUT",
         body: data,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Mints `currentVersion + 1` iff the Draft differs from the current Version.
+     *
+     * @name TrackersCommitDraft
+     * @request POST:/trackers/{id}/draft/commit
+     */
+    trackersCommitDraft: (id: string, params: RequestParams = {}) =>
+      this.request<Tracker, ApiError>({
+        path: `/trackers/${id}/draft/commit`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name TrackersUnarchive
+     * @request POST:/trackers/{id}/unarchive
+     */
+    trackersUnarchive: (id: string, params: RequestParams = {}) =>
+      this.request<Tracker, ApiError>({
+        path: `/trackers/${id}/unarchive`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name TrackersReadVersion
+     * @request GET:/trackers/{id}/versions/{version}
+     */
+    trackersReadVersion: (
+      id: string,
+      version: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TrackerVersion, ApiError>({
+        path: `/trackers/${id}/versions/${version}`,
+        method: "GET",
+        format: "json",
         ...params,
       }),
   };
