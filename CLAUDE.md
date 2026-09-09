@@ -56,3 +56,75 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use the `providedIn: 'root'` option for singleton services
 - Prefer the `@Service` decorator over `@Injectable({providedIn: 'root'})` for new singleton services (Angular v22+)
 - Use the `inject()` function instead of constructor injection
+
+## Project: Diary Calendar
+
+This repo is the Diary Calendar app. Before changing anything, read
+[`CONTEXT.md`](CONTEXT.md) for domain vocabulary,
+[`docs/feature-scope.md`](docs/feature-scope.md) for what is and is not in scope, and
+[`docs/adr/`](docs/adr/) for the architecture decisions.
+
+### Architecture (enforced)
+
+- The folder structure under `src/app/` is fixed:
+  - `core/` — app-wide singletons: DI wiring of data adapters, offline shell, routing
+    skeleton, error handling. The ONLY place that names a concrete adapter.
+  - `data/` — the shared data-access layer: port interfaces + DI tokens, hand-written
+    models, `generated/` API client (committed, never hand-edited), adapters, and
+    in-memory fakes for tests.
+  - `features/<feature>/` — one folder per feature (`calendar`, `trackers`, `entries`,
+    `correlation`, `settings`). Feature state (signal stores) lives here.
+  - `shared/` — dumb reusable UI components, pipes, directives.
+- A feature MUST NOT import from another feature. `shared/` imports only from `shared/`.
+  Cross-feature data flows through `data/` ports.
+- Feature routes are lazy-loaded (`loadComponent` / `loadChildren`). No eager feature
+  imports in the root.
+
+### Data access (enforced)
+
+- All reads and writes go through a `data/` port interface (`TrackerRepository`,
+  `EntryRepository`, `PresetRepository`, `TagRepository`, `SettingsRepository`,
+  `CorrelationDataSource`, `MaintenancePort`).
+- Presentation code injects a port TOKEN only. It must not name, import, or branch on a
+  concrete service, store, adapter, `HttpClient`, or IndexedDB API.
+- Adapters are bound to tokens only in `core/`.
+- Every persisted aggregate carries: client-generated UUID `id`, `createdAt`,
+  `updatedAt`, nullable `deletedAt` (soft delete), integer `revision`, `ownerId`,
+  `userId`. Default reads exclude soft-deleted rows. See ADR 0003.
+
+### API contract (enforced)
+
+- The API is defined in the `api-spec/` TypeSpec package and emitted to
+  `api-spec/dist/openapi.yaml`. The client in `src/app/data/generated/` is produced by
+  `swagger-typescript-api`.
+- The OpenAPI document and the generated client are committed. Regenerate via the
+  project script; never hand-edit generated files. See ADR 0004.
+
+### Testing
+
+- Every non-UI unit of logic ships with Vitest tests in the same change. This
+  specifically includes snapshot binding, Orphaned-Field rebind, Tracker-deletion
+  migration, Fadeout resolution, calendar layout, signal extraction, bucketing,
+  correlation statistics, lag scan, and significance correction.
+- Pure logic lives in framework-free modules so it is testable without Angular.
+- UI and interaction coverage is deferred to future integration and e2e suites — do not
+  add component/DOM tests in v1 unless asked.
+
+### Spec-driven development
+
+- No feature code without a committed `SPEC.md` in that feature's folder
+  (`src/app/features/<feature>/SPEC.md`, plus `src/app/core/SPEC.md` and
+  `src/app/data/SPEC.md` for platform work).
+- A behaviour change updates its `SPEC.md` in the same change. If scope shifts, update
+  [`docs/feature-scope.md`](docs/feature-scope.md) too.
+- Each `SPEC.md` keeps its sections: Purpose, User stories / flows, Domain terms used,
+  UI, Data & API contract touched, Test cases, Out of scope.
+
+### Domain language
+
+- Use `CONTEXT.md` terms exactly: Tracker, Entry, Field, Reference Field, Child Entry,
+  Preset, Snapshot, Orphaned Field, Calendar, Owner, User, Time mode, Point, Period,
+  Day-bucketed, Fadeout, Tag, Correlation, Signal, Bucket, Lag, Discovery scan, Directed
+  view.
+- Never use a term from an `_Avoid_` list (entity, instance, category, interval, …) for
+  the concept it warns against — not in code identifiers, comments, or docs.

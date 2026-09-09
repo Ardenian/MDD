@@ -6,7 +6,10 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "api:build": "pnpm --filter @ard/api-spec build",
+    "api:generate": "swagger-typescript-api generate -p api-spec/dist/openapi.yaml -o src/app/data/generated -n api-client.ts",
+    "api:sync": "pnpm run api:build && pnpm run api:generate"
   },
   "private": true,
   "packageManager": "pnpm@12.3.4",
@@ -26,6 +29,7 @@
     "@angular/compiler-cli": "^22.1.0",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
+    "swagger-typescript-api": "^13.0.23",
     "typescript": "~6.0.2",
     "vitest": "^4.0.8"
   }

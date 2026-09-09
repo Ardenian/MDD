@@ -1,0 +1,3 @@
+node_modules/
+tsp-output/
+# dist/ is committed on purpose (ADR 0004) — do not ignore it.
