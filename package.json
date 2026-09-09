@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "audit": "pnpm audit --fix",
     "api:build": "pnpm --filter @ard/api-spec build",
     "api:generate": "swagger-typescript-api generate -p api-spec/dist/openapi.yaml -o src/app/data/generated -n api-client.ts",
     "api:sync": "pnpm run api:build && pnpm run api:generate"
@@ -14,6 +15,7 @@
   "private": true,
   "packageManager": "pnpm@12.3.4",
   "dependencies": {
+    "@angular/cdk": "^22.1.5",
     "@angular/common": "^22.1.0",
     "@angular/compiler": "^22.1.0",
     "@angular/core": "^22.1.0",

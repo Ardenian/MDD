@@ -6,6 +6,8 @@ allowBuilds:
   esbuild: set this to true or false
   lmdb: set this to true or false
   msgpackr-extract: set this to true or false
+minimumReleaseAgeExclude:
+  - '@angular/cdk@22.1.6'
 overrides:
   '@typespec/compiler@<=1.15.0': ^1.16.0-dev.0
   '@typespec/openapi3@<=1.15.0': ^1.16.0-dev.0
