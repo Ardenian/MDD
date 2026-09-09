@@ -2,6 +2,7 @@
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false,
     "network": {
       "allowedDomains": ["registry.npmjs.org", "registry.yarnpkg.com"]
     },
