@@ -10,7 +10,7 @@
       "settings": {
         "git.enabled": false
       },
-      "extensions": ["Angular.ng-template", "dbaeumer.vscode-eslint", "lokalise.i18n-ally", "esbenp.prettier-vscode", "anthropic.claude-code"]
+      "extensions": ["Angular.ng-template", "dbaeumer.vscode-eslint", "lokalise.i18n-ally", "esbenp.prettier-vscode", "anthropic.claude-code", "typespec.typespec-vscode"]
     }
   }
 }
