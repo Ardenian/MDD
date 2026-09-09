@@ -45,3 +45,6 @@ Thumbs.db
 
 # PNPM
 .pnpm-store/*
+
+# API
+api-spec/dist
