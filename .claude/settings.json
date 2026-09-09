@@ -1,12 +1,22 @@
 {
-  "permissions": {
-    "deny": [
-      "Bash(npm:*)",
-      "Bash(npx:*)",
-      "Bash(pnpm:*)",
-      "Bash(yarn:*)",
-      "Bash(bun:*)"
-    ]
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowedDomains": ["registry.npmjs.org", "registry.yarnpkg.com"]
+    },
+    "filesystem": {
+      "denyWrite": [
+        "node_modules",
+        "package.json",
+        "npm-shrinkwrap.json",
+        "package-lock.json",
+        "pnpm-lock.yaml",
+        "yarn.lock",
+        "bun.lockb",
+        "bun.lock"
+      ]
+    }
   },
   "extraKnownMarketplaces": {
     "mattpocock": {
