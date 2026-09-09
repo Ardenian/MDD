@@ -69,24 +69,66 @@ This repo is the Diary Calendar app. Before changing anything, read
 - The folder structure under `src/app/` is fixed:
   - `core/` — app-wide singletons: DI wiring of data adapters, offline shell, routing
     skeleton, error handling. The ONLY place that names a concrete adapter.
-  - `data/` — the shared data-access layer: port interfaces + DI tokens, hand-written
+  - `data/` — the shared data-access layer: raw port interfaces + DI tokens (storage-
+    shaped), shared cross-feature facades (consumer-shaped, ADR 0002), hand-written
     models, `generated/` API client (committed, never hand-edited), adapters, and
     in-memory fakes for tests.
+  - `ui/` — the presentation-layer foundation: `@angular/cdk` + `@angular/aria`-backed
+    components and their coordination-only singleton services, plus the design-token
+    runtime bridge (ADR 0006, ADR 0007). See `src/app/ui/SPEC.md`.
   - `features/<feature>/` — one folder per feature (`calendar`, `trackers`, `entries`,
-    `correlation`, `settings`). Feature state (signal stores) lives here.
-  - `shared/` — dumb reusable UI components, pipes, directives.
+    `correlation`, `settings`). Each feature's facade(s) live here.
+  - `shared/` — dumb reusable pieces with **no** CDK/aria involvement (pipes,
+    presentational components); pure, zero-DI. CDK/aria-backed reusable pieces go in
+    `ui/`, not here.
+  - `styles/` — global SCSS: design-token source (`tokens/`), base/reset, utilities.
+    Feature-specific styling stays component-colocated, never a separate per-feature
+    global stylesheet.
 - A feature MUST NOT import from another feature. `shared/` imports only from `shared/`.
-  Cross-feature data flows through `data/` ports.
+  Cross-feature data flows through `data/`'s shared facades, never a feature reaching
+  into another feature's folder.
 - Feature routes are lazy-loaded (`loadComponent` / `loadChildren`). No eager feature
-  imports in the root.
+  imports in the root. Heavier `ui/`-adjacent CDK modules (`drag-drop`, `table`, `tree`,
+  `scrolling`) are imported only inside the lazy chunk of the feature that uses them;
+  only the lightweight ones (`a11y`, `overlay`, `portal`, `bidi`) may run eagerly.
+- **Dependency injection boundary**: only a feature's top-level (route-loaded)
+  component may inject a facade or a `ui/` service. Every component it renders beneath
+  itself is presentation-only — `input()` / `output()` / `model()` and nothing else.
+  (Framework primitives a component structurally needs — `ElementRef`, `DestroyRef` —
+  aren't "a service" in this sense and stay unrestricted.) This makes a component's
+  injection list a direct, mechanical signal for shared-component candidacy: a nested
+  component with zero injected services is a `shared/`-or-`ui/` candidate; one that
+  needs to inject something isn't nested correctly. See ADR 0002.
+
+### Presentation layer (enforced)
+
+- Built on `@angular/cdk` + `@angular/aria`, never Angular Material — every visual is
+  hand-styled with SCSS + design tokens. See ADR 0006.
+- A component builds on the matching CDK/aria primitive only where it has non-trivial
+  interactive or accessibility-relevant behavior (focus, keyboard nav, overlays,
+  drag/reorder, live-region announcements, virtualization). Purely static components
+  are exempt.
+- `@angular/aria` owns Combobox, Listbox, Select, Multiselect, Menu, Tree.
+  `@angular/cdk` owns everything else (a11y, overlay/portal, dialog, drag-drop,
+  scrolling, table, layout, bidi, clipboard, text-field).
+- A `ui/` service exists only for genuine shared runtime state to coordinate (one
+  overlay stack, one dialog stack, one live region, focus coordination) — not merely
+  because a directive is reused in more than one place.
 
 ### Data access (enforced)
 
-- All reads and writes go through a `data/` port interface (`TrackerRepository`,
-  `EntryRepository`, `PresetRepository`, `TagRepository`, `SettingsRepository`,
-  `CorrelationDataSource`, `MaintenancePort`).
-- Presentation code injects a port TOKEN only. It must not name, import, or branch on a
-  concrete service, store, adapter, `HttpClient`, or IndexedDB API.
+- All reads and writes ultimately go through a `data/` raw port interface
+  (`TrackerRepository`, `EntryRepository`, `PresetRepository`, `TagRepository`,
+  `SettingsRepository`, `CorrelationDataSource`, `MaintenancePort`) — but **presentation
+  code never injects one directly**. It injects a **facade**: feature-local
+  (`features/<feature>/`, wraps that feature's own ports) or shared (`data/`, when a
+  shape is reused across ≥2 features — promote on second use). Only facades and
+  `core/`'s wiring inject raw ports. See ADR 0002.
+- Naming makes the kind legible: raw ports keep `*Repository`/`*Port`/`*Source`;
+  facades get a distinct, purpose-named identifier, never named to look like a
+  repository.
+- Presentation code must not name, import, or branch on a concrete service, store,
+  adapter, `HttpClient`, or IndexedDB API.
 - Adapters are bound to tokens only in `core/`.
 - Every persisted aggregate carries: client-generated UUID `id`, `createdAt`,
   `updatedAt`, nullable `deletedAt` (soft delete), integer `revision`, `ownerId`,
@@ -117,8 +159,8 @@ This repo is the Diary Calendar app. Before changing anything, read
 ### Spec-driven development
 
 - No feature code without a committed `SPEC.md` in that feature's folder
-  (`src/app/features/<feature>/SPEC.md`, plus `src/app/core/SPEC.md` and
-  `src/app/data/SPEC.md` for platform work).
+  (`src/app/features/<feature>/SPEC.md`, plus `src/app/core/SPEC.md`,
+  `src/app/data/SPEC.md`, and `src/app/ui/SPEC.md` for platform work).
 - A behaviour change updates its `SPEC.md` in the same change. If scope shifts, update
   [`docs/feature-scope.md`](docs/feature-scope.md) too.
 - Each `SPEC.md` keeps its sections: Purpose, User stories / flows, Domain terms used,

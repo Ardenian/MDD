@@ -36,11 +36,20 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
 
 ## UI
 
-- **Entry form**: header (Tracker name + current Version badge, Preset picker,
-  placement editor); one control per Field of the Tracker's **current** Version (or, for
-  an existing Entry being viewed, its **pinned** Version); reference Fields render an
-  embedded child-Entry list with add (schema or Preset) / edit / remove; Tag input with
-  autocomplete.
+- **Entry form**: opened as `ui/`'s **Modal** (built on `DialogService`) — this is the
+  literal implementation of "focus moves into the form on open and returns to the
+  trigger on close" below, not a separately hand-built behavior. The component that
+  opens it (from Calendar) is that feature's top-level component, per the DI boundary;
+  the form component itself is where `EntriesFacade` is injected.
+  - header (Tracker name + current Version badge, Preset picker, placement editor)
+  - one control per Field of the Tracker's **current** Version (or, for an existing
+    Entry being viewed, its **pinned** Version): single/multi-select Fields render as
+    `ui/`'s **Select** / **Multiselect** (`@angular/aria`)
+  - reference Fields render an embedded child-Entry list via `ui/`'s **Nested list**
+    (`cdk/tree`, fits the self-referencing shape without flattening) with add (schema
+    or Preset) / edit / remove
+  - Tag input via `ui/`'s **Combobox** (`@angular/aria`), autocompleting against
+    `EntriesFacade`'s Tag suggestions
 - **Placement editor**: mode toggle (point / period / day-bucketed); time input(s);
   Fadeout before/after amount inputs (hidden for day-bucketed); "Now" shortcut.
 - Viewing an existing Entry shows a small **"Tracker Version N"** label so the user
@@ -50,10 +59,13 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
   mirrors parent), depth breadcrumb, block save if a required reference cannot be added
   because the expansion-depth cap is hit.
 - Full keyboard support; focus moves into the form on open and returns to the trigger on
-  close; validation errors linked via `aria-describedby`.
+  close (via Modal/`DialogService`); validation errors linked via `aria-describedby`.
 
 ## Data & API contract touched
 
+- The Entry form injects a feature-local `EntriesFacade` (never the raw ports below
+  directly) plus `TrackerLookup` (`data/`'s shared facade, for Preset/Tracker naming in
+  the header) — per ADR 0002. `EntriesFacade` wraps:
 - `EntryRepository`: `get`, `listByRange`, `listByTracker`, `listChildren`, `create`,
   `update`, `softDelete`. `create` resolves `trackerVersion` itself from the target
   Tracker's `currentVersion` at call time — callers never pass it.

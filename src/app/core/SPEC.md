@@ -33,8 +33,10 @@ the only place that names concrete adapters (ADR 0002).
 - A layout shell (nav, skip-link, live region for route-change announcements).
 
 ### Error handling
-- A global `ErrorHandler` that logs and shows a non-blocking, accessible error toast;
-  never a white screen.
+- A global `ErrorHandler` that logs and calls `ui/`'s `ToastService` to show a
+  non-blocking, accessible error message; never a white screen. `core/` is the one
+  exception to "only a top-level component injects a `ui/` service" — it's the
+  bootstrapping root, not a presentation component.
 - Adapter/port errors are normalised to a small `DataError` type before reaching
   features.
 
@@ -52,7 +54,8 @@ Calendar, Owner, User, Tracker, Entry. See [`CONTEXT.md`](../../../CONTEXT.md).
   provider set swaps all of them together.
 - `IdentityContext` returns `dev`/`dev`; adapters stamp `ownerId`/`userId` from it.
 - First-run bootstrap creates exactly one Calendar; second run creates none.
-- `ErrorHandler` maps a thrown adapter error to `DataError` and does not rethrow.
+- `ErrorHandler` maps a thrown adapter error to `DataError`, does not rethrow, and
+  calls `ToastService` exactly once per error.
 - Route config: all four feature routes are lazy (`loadComponent`/`loadChildren`), no
   eager feature imports in the root.
 

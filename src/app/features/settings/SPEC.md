@@ -20,22 +20,27 @@ Bucket, Lag, expansion depth, Tracker, Entry. See [`CONTEXT.md`](../../../../CON
 
 ## UI
 
+- The Settings page is this feature's top-level (route) component — the only place
+  here allowed to inject a facade or a `ui/` service.
 - **Correlation defaults**: Bucket size, Lag range, guardrail thresholds (min n, p-value,
   BH on/off).
 - **Schema**: expansion-depth cap (integer, min 1).
-- **Data**: "Clear local data" with a confirm-by-typing guard; shows current record
-  counts per aggregate.
-- All settings are labelled form controls; the destructive action has an explicit
+- **Data**: "Clear local data" opens `ui/`'s **Modal** with a confirm-by-typing guard;
+  shows current record counts per aggregate.
+- All settings are labelled form controls; the destructive action requires the Modal
   confirmation and is not focus-first.
 
 ## Data & API contract touched
 
+- The Settings page injects a feature-local `SettingsFacade` (never the raw ports
+  below directly) — per ADR 0002. `SettingsFacade` wraps:
 - Settings persist via a `SettingsRepository` port (IndexedDB adapter) so they survive
   reloads and are covered by ADR 0003 fields like everything else.
 - "Clear local data" calls a `MaintenancePort.clearAll()` implemented by the adapter
   layer in `core/` (drops every object store, re-seeds the single implicit Calendar).
-- Defaults are read by the Correlation and Trackers features through the same port;
-  no feature reads another feature's state.
+- Defaults are read by the Correlation and Trackers features' own facades, each
+  injecting `SettingsRepository` themselves — never by reaching into Settings' facade or
+  another feature's folder.
 
 ## Test cases (Vitest — logic only)
 

@@ -80,13 +80,21 @@ shared data-access layer; a backend can replace that later without touching feat
 - Expansion-depth cap value
 - Data reset (clear local database)
 
-### Platform — [`src/app/core/SPEC.md`](../src/app/core/SPEC.md) · [`src/app/data/SPEC.md`](../src/app/data/SPEC.md)
+### Platform — [`src/app/core/SPEC.md`](../src/app/core/SPEC.md) · [`src/app/data/SPEC.md`](../src/app/data/SPEC.md) · [`src/app/ui/SPEC.md`](../src/app/ui/SPEC.md)
 - Shared data-access ports + IndexedDB adapter; adapter wiring in `core/`
+- Presentation never injects a raw port — only feature-local or shared facades
+  (`data/`), and only from a feature's top-level component (ADR 0002)
 - Offline-first record fields on every aggregate: client UUID, `createdAt` /
   `updatedAt` / `deletedAt` (soft delete), `revision`, `ownerId` / `userId` = `dev`
 - Single implicit Calendar
 - Service-worker app-shell caching (loads offline on repeat visits)
 - TypeSpec `api-spec/` package; committed OpenAPI + generated client
+- Presentation layer on `@angular/cdk` + `@angular/aria`, no Angular Material, fully
+  hand-styled (ADR 0006); shared behavioral foundation in `ui/` (Overlay, Dialog,
+  Toast, Focus services; Modal, Select, Multiselect, Combobox, Reorderable list,
+  Nested list components)
+- Design tokens authored in SCSS (`src/styles/tokens/`), applied at runtime as CSS
+  custom properties via `DesignTokenService` (ADR 0007)
 - Responsive layout; WCAG AA, AXE-clean; keyboard and focus management
 
 ---
@@ -114,6 +122,10 @@ shared data-access layer; a backend can replace that later without touching feat
 - **Switch the generated API client to Angular's `HttpClient`** instead of the current
   fetch-based `swagger-typescript-api` output. Flagged, not yet designed — see the note
   in [ADR 0004](adr/0004-typespec-api-contract.md).
+- **Dark/light theming.** The design-token runtime bridge (ADR 0007) is deliberately
+  pre-wired for this — v1 applies static values only.
+- **A generic `ui/` Table component**, once a second feature (beyond Correlation) needs
+  tabular data — see `ui/SPEC.md`.
 
 ---
 

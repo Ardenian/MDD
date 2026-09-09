@@ -2,16 +2,18 @@
 
 ## Purpose
 
-The shared boundary between the whole app and where data lives. Presentation code
-depends only on the **port interfaces** defined here; concrete adapters are wired in
-`core/` and never named by features (ADR 0002). The API contract is generated from the
-`api-spec/` TypeSpec package (ADR 0004).
+The shared boundary between the whole app and where data lives. Two layers live here
+(ADR 0002): **raw ports**, storage-shaped, injected only by facades and by `core/`'s
+wiring; and **shared facades**, consumer-shaped, injected directly by any feature's
+top-level component when a data shape is reused across ≥2 features. Concrete adapters
+are wired in `core/` and never named by features. The API contract is generated from
+the `api-spec/` TypeSpec package (ADR 0004).
 
 ## Structure
 
 ```
 src/app/data/
-  ports/            # interfaces + DI tokens, one file per aggregate
+  ports/            # raw interfaces + DI tokens, one file per aggregate
     tracker-repository.ts
     entry-repository.ts
     preset-repository.ts
@@ -19,6 +21,8 @@ src/app/data/
     settings-repository.ts
     correlation-data-source.ts
     maintenance-port.ts
+  facades/          # shared, consumer-shaped facades — promoted here on second use
+    tracker-lookup.ts
   model/            # hand-written domain types re-exported for app use
   generated/        # swagger-typescript-api output — committed, never hand-edited
   adapters/
@@ -27,7 +31,15 @@ src/app/data/
   testing/          # in-memory fakes of every port, for feature unit tests
 ```
 
-## Ports (v1 surface)
+## Shared facades (v1 surface)
+
+- **`TrackerLookup`**: `list(): { id, name, archived }[]`. Wraps `TrackerRepository`,
+  stripped to the shape every consumer actually needs — a name and archived-state per
+  Tracker, nothing about Fields or Versions. Consumed directly by Trackers' own list
+  view, Calendar's per-Tracker toggle panel, and Correlation's Signal-scope picker; none
+  of those three own it, so it lives here rather than in any one `features/` folder.
+
+## Raw ports (v1 surface)
 
 - **TrackerRepository**: `list()`, `get(id)`, `create(input)`, `saveDraft(id, fields)`,
   `commitDraft(id)` (mints the next `TrackerVersion`; no-op if unchanged from current),
@@ -45,6 +57,8 @@ src/app/data/
 
 All returns are the hand-written `model/` types. Ports are transport-agnostic: no
 `HttpClient`, no `Observable<HttpResponse>`, no IndexedDB types leak through.
+Presentation code never injects these directly — only `facades/` and feature-local
+facades do (ADR 0002).
 
 ## Record invariants (every aggregate — ADR 0003)
 
@@ -89,6 +103,9 @@ All returns are the hand-written `model/` types. Ports are transport-agnostic: n
   fields differ from the current `TrackerVersion`; a no-op Draft mints nothing.
   `archive`/`unarchive` never touch `TrackerVersion` rows or existing Entries.
 - `TagRepository.suggest`: prefix match, case-insensitive, ranked by frequency.
+- `TrackerLookup.list()`: returns every Tracker (including archived) as `{id, name,
+  archived}` only — no Fields, no Versions; reflects a rename immediately (it's
+  metadata, not versioned, per ADR 0005).
 - In-memory fakes in `testing/` satisfy the same contract tests as the IndexedDB adapter
   (shared test suite runs against both).
 - `generated/` is import-clean and not referenced anywhere outside `adapters/http/`.

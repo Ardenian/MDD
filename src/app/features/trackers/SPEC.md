@@ -44,12 +44,17 @@ Preset, Snapshot, Time mode, expansion depth. See [`CONTEXT.md`](../../../../CON
 - **Tracker list**: name, current Version number, Field count, Entry count, Preset
   count, archived badge; create button; archived Trackers shown in a separate,
   collapsed section, excluded from every picker elsewhere in the app.
-- **Tracker editor**:
+- **Tracker editor**: the feature's top-level (route) component — the only place in
+  this feature allowed to inject a facade or a `ui/` service.
   - name; default Time mode (point / period / day-bucketed) — both apply immediately,
     no commit needed
-  - **Draft** Field rows, reorderable: name, data type, required toggle; type-specific
-    editors — select options list (add/rename/remove); reference target Tracker +
-    cardinality
+  - **Draft** Field rows, built on `ui/`'s **Reorderable list** (`cdk/drag-drop`,
+    keyboard-operable — satisfies "Field reordering operable without a pointer" below
+    without hand-building drag/keyboard handling): name, data type, required toggle;
+    type-specific editors — a plain add/rename/remove list for authoring a select
+    Field's own option set (there's nothing to pick from yet, so no `ui/` Select here);
+    reference target Tracker via `ui/`'s **Select** (via `TrackerLookup`, `data/`'s
+    shared facade) and cardinality via a small `ui/` **Select**
   - a visible **Draft ≠ current Version** indicator whenever the Draft differs from the
     committed schema; **Commit** action mints the next Version; **Discard draft**
     reverts to the current Version
@@ -64,6 +69,9 @@ Preset, Snapshot, Time mode, expansion depth. See [`CONTEXT.md`](../../../../CON
 
 ## Data & API contract touched
 
+- The Tracker editor injects a feature-local `TrackersFacade` (never the raw ports
+  below directly) plus `TrackerLookup` (`data/`'s shared facade, for the reference
+  target picker) — per ADR 0002. `TrackersFacade` wraps:
 - `TrackerRepository`: `list`, `get(id)`, `create(input)`, `saveDraft(id, fields)`,
   `commitDraft(id)` (mints the next `TrackerVersion`, no-ops if the Draft is unchanged
   from the current Version), `updateMeta(id, { name?, defaultTimeMode? })`, `archive(id)`,

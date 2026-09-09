@@ -62,10 +62,17 @@ Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
 
 ## UI
 
+- The Correlation page is this feature's top-level (route) component — the only place
+  here allowed to inject a facade or a `ui/` service.
 - **Controls bar**: date range, Bucket size (hour/day/week/month), Signal-scope picker
-  (Trackers / specific Signals), guardrail panel, **Find correlations** button.
-- **Results list**: sortable table — Signal A, Signal B, best lag, effect size, n,
-  significance flag; row → Directed view.
+  (Trackers / specific Signals, via `TrackerLookup`, `data/`'s shared facade), guardrail
+  panel, **Find correlations** button.
+- **Results list**: built on `ui/`'s **Table** (`cdk/table`, headless) — this feature
+  owns the concrete column definitions (Signal A, Signal B, best lag, effect size, n,
+  significance flag) and a hand-built clickable-header sort comparator (stable CDK ships
+  no sort primitive — see ADR 0006). This is v1's only Table consumer; it stays here
+  rather than in `ui/` until a second feature needs one (`ui/SPEC.md`'s promotion rule).
+  Row → Directed view.
 - **Directed view**: shared zoomable time-axis chart (two series), scatter plot, lag
   slider, method + n + p-value readout, "add to pinned" .
 - **Manual pair**: two Signal pickers that jump straight to the Directed view.
@@ -74,6 +81,9 @@ Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
 
 ## Data & API contract touched
 
+- The Correlation page injects a feature-local `CorrelationFacade` (never the raw port
+  below directly) plus `TrackerLookup` (`data/`'s shared facade, for the Signal-scope
+  picker) — per ADR 0002. `CorrelationFacade` wraps:
 - `CorrelationDataSource` port: `loadEntriesForScope(range, signalScope)` returning
   Entries + needed children + the specific Tracker Versions each Entry references (not
   a Tracker's current schema — an old Entry's Signal reads against its own pinned

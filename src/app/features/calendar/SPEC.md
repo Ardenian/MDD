@@ -29,11 +29,17 @@ Calendar, Entry, Tracker, Point, Period, Day-bucketed, Fadeout, Child Entry. See
 
 ## UI
 
+- The Calendar page is this feature's top-level (route) component — the only place
+  here allowed to inject a facade or a `ui/` service.
 - View switcher (Day / Week); date navigation (prev / next / today; date picker).
 - **Day view**: vertical 24h grid, current-time line, Day-bucketed strip, Point markers,
   Period blocks, Fadeout falloff bands, overlap layout (side-by-side columns).
 - **Week view**: 7 columns, same primitives at reduced density.
-- **Tracker toggle panel**: one switch per Tracker, colour swatch; "all / none".
+- Clicking an empty grid slot opens a small quick-create surface via `ui/`'s
+  `OverlayService` (a positioned popover, not a full Modal) offering a Tracker pick
+  before handing off to the Entry form.
+- **Tracker toggle panel**: one switch per Tracker (from `TrackerLookup`, `data/`'s
+  shared facade — name + archived state is all this needs), colour swatch; "all / none".
 - **Child-entry filter**: single toggle.
 - **Now** button in the day header.
 - Entries are buttons (open on Enter/Space); grid is navigable by keyboard (arrow keys
@@ -42,8 +48,11 @@ Calendar, Entry, Tracker, Point, Period, Day-bucketed, Fadeout, Child Entry. See
 
 ## Data & API contract touched
 
-- `EntryRepository.listByRange(start, end, { includeChildren })` — the only read.
-- No writes here beyond starting an Entry (delegated to the entries feature form).
+- The Calendar page injects a feature-local `CalendarFacade` (wrapping
+  `EntryRepository.listByRange(start, end, { includeChildren })` — the only read this
+  feature does) plus `TrackerLookup` (`data/`'s shared facade, for the toggle panel) —
+  never the raw ports directly, per ADR 0002.
+- No writes here beyond starting an Entry (delegated to the entries feature's Modal).
 - Pure module `calendar-layout` — given resolved covered intervals, compute overlap
   columns and pixel geometry for a viewport; independent of Angular.
 - Local (non-synced) UI state: selected view, visible date, Tracker toggle set,
