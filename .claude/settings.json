@@ -1,10 +1,25 @@
 {
+  "enabledPlugins": {
+    "mattpocock-skills@mattpocock": true
+  },
+  "extraKnownMarketplaces": {
+    "mattpocock": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/mattpocock/skills.git"
+      },
+      "autoUpdate": false
+    }
+  },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": false,
     "network": {
-      "allowedDomains": ["registry.npmjs.org", "registry.yarnpkg.com"]
+      "allowedDomains": [
+        "registry.npmjs.org",
+        "registry.yarnpkg.com"
+      ]
     },
     "filesystem": {
       "denyWrite": [
@@ -18,17 +33,5 @@
         "bun.lock"
       ]
     }
-  },
-  "extraKnownMarketplaces": {
-    "mattpocock": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/mattpocock/skills.git"
-      },
-      "autoUpdate": false
-    }
-  },
-  "enabledPlugins": {
-    "mattpocock-skills@mattpocock": true
   }
 }
