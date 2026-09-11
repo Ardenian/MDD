@@ -24,6 +24,7 @@ src/app/data/
   facades/          # shared, consumer-shaped facades — promoted here on second use
     tracker-lookup.ts
   model/            # hand-written domain types re-exported for app use
+  util/             # framework-free pure helpers (record stamping, Field-def equality)
   generated/        # swagger-typescript-api output — committed, never hand-edited
   adapters/
     indexeddb/      # v1 implementation of every port
@@ -54,6 +55,15 @@ src/app/data/
 - **CorrelationDataSource**: `loadEntriesForScope(range, signalScope)` — one batched read
   of Entries + children + the specific Tracker Versions they reference + Tags.
 - **MaintenancePort**: `clearAll()`.
+- **IdentityContext**: `current(): { ownerId, userId }`. Not an aggregate repository —
+  adapters read this to stamp `ownerId`/`userId` on every write (ADR 0003). The
+  interface lives in `data/` so adapters can depend on it without depending on `core/`;
+  `core/` provides the concrete (hardcoded `dev`/`dev`) implementation.
+- **CalendarRepository**: `get()`, `ensureExists()`. Added to back `core/SPEC.md`'s
+  "ensure exactly one Calendar record exists on first run" responsibility, which the
+  original port list didn't cover — same `AggregateMeta`-backed pattern as every other
+  aggregate rather than a one-off. Only `core/`'s bootstrap and `MaintenancePort` use it
+  in v1.
 
 All returns are the hand-written `model/` types. Ports are transport-agnostic: no
 `HttpClient`, no `Observable<HttpResponse>`, no IndexedDB types leak through.

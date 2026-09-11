@@ -1,0 +1,39 @@
+// Plain literals for now — src/styles/tokens/ + DesignTokenService (ADR 0007) aren't
+// built yet; these should become var(--token-name) once ui/ lands.
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: -9999px;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  color: #000;
+
+  &:focus {
+    left: 0.5rem;
+    top: 0.5rem;
+  }
+}
+
+.app-header nav {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+
+  a.is-active {
+    font-weight: 700;
+  }
+}
+
+.app-main {
+  padding: 1rem;
+
+  &:focus {
+    outline: none;
+  }
+}

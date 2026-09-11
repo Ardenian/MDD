@@ -1,10 +1,26 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import {
+  ApplicationConfig,
+  ErrorHandler,
+  isDevMode,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
+import { DATA_PROVIDERS } from './core/providers/data-providers';
+import { provideCalendarBootstrap } from './core/providers/calendar-bootstrap.provider';
+import { GlobalErrorHandler } from './core/services/global-error-handler';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes)
-  ]
+    provideRouter(routes),
+    ...DATA_PROVIDERS,
+    provideCalendarBootstrap(),
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
+  ],
 };
