@@ -14,7 +14,7 @@
     "api:sync": "pnpm run api:build && pnpm run api:generate"
   },
   "private": true,
-  "packageManager": "pnpm@12.3.4",
+  "packageManager": "pnpm@12.4.1",
   "dependencies": {
     "@angular/aria": "^22.1.0",
     "@angular/cdk": "^22.1.0",

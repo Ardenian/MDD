@@ -859,6 +859,20 @@ export class Api<
       }),
 
     /**
+     * @description Clears the working Draft, reverting to the current Version. No-op if there is none.
+     *
+     * @name TrackersDiscardDraft
+     * @request POST:/trackers/{id}/draft/discard
+     */
+    trackersDiscardDraft: (id: string, params: RequestParams = {}) =>
+      this.request<Tracker, ApiError>({
+        path: `/trackers/${id}/draft/discard`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * No description
      *
      * @name TrackersUnarchive

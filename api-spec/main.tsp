@@ -273,6 +273,10 @@ namespace Trackers {
   @post
   @route("/{id}/draft/commit")
   op commitDraft(@path id: Uuid): Tracker | ApiError;
+  /** Clears the working Draft, reverting to the current Version. No-op if there is none. */
+  @post
+  @route("/{id}/draft/discard")
+  op discardDraft(@path id: Uuid): Tracker | ApiError;
   @get
   @route("/{id}/versions/{version}")
   op readVersion(@path id: Uuid, @path version: int32): TrackerVersion | ApiError;

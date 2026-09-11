@@ -28,7 +28,7 @@ export type Placement = PointPlacement | PeriodPlacement | DayBucketedPlacement;
 
 /** A Field value recorded on an Entry, keyed by name against its pinned Tracker Version. */
 export interface SnapshotField {
-  readonly name: string;
+  readonly fieldName: string;
   readonly value: unknown;
 }
 

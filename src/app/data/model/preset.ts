@@ -9,6 +9,9 @@ export interface PresetFieldValue {
 export interface PresetChild {
   readonly fieldName: string;
   readonly trackerId: Uuid;
+  /** The Version this child's own values were authored against — pinned the same way
+   *  the parent Preset pins to its Tracker's Version (ADR 0005). */
+  readonly trackerVersion: number;
   readonly values: readonly PresetFieldValue[];
   readonly children: readonly PresetChild[];
 }
