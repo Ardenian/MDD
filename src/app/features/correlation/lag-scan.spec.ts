@@ -1,4 +1,4 @@
-import { scanLags } from './lag-scan';
+import { pairSignalsAtLag, scanLags } from './lag-scan';
 import { spearmanCorrelation } from './correlation-stats';
 import type { Signal, SignalPoint } from './signal-extraction';
 
@@ -57,5 +57,18 @@ describe('scanLags', () => {
     expect(result.zeroLag).toBeNull();
     expect(result.bestResult).toBeNull();
     expect(result.bestLag).toBe(0);
+  });
+});
+
+describe('pairSignalsAtLag', () => {
+  it('reports the bucketKey each pair came from, aligned with signal A', () => {
+    const a = signalShiftedBy('A', 0);
+    const b = signalShiftedBy('B', 2);
+
+    const { a: aValues, b: bValues, bucketKeys } = pairSignalsAtLag(a.points, b.points, 'day', 2);
+
+    expect(bucketKeys).toEqual(a.points.map((p) => p.bucketKey));
+    expect(aValues).toEqual(PATTERN);
+    expect(bValues).toEqual(PATTERN);
   });
 });

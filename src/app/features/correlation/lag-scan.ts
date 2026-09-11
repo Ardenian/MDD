@@ -34,7 +34,7 @@ export function scanLags(
   let bestResult: CorrelationResult | null = null;
 
   for (let lag = lagRange.min; lag <= lagRange.max; lag++) {
-    const { a, b } = pairAtLag(signalA.points, signalB.points, bucketSize, lag);
+    const { a, b } = pairSignalsAtLag(signalA.points, signalB.points, bucketSize, lag);
     if (a.length < MIN_POINTS_FOR_CORRELATION) {
       continue;
     }
@@ -56,26 +56,32 @@ export function scanLags(
   return { zeroLag, bestLag, bestResult };
 }
 
-/** Pairs `signalA[index]` with `signalB[index + lag]` for every Bucket index where both
- *  exist — lag > 0 means B's pattern trails A's by that many Buckets. */
-function pairAtLag(
+/**
+ * Pairs `signalA[index]` with `signalB[index + lag]` for every Bucket index where both
+ * exist — lag > 0 means B's pattern trails A's by that many Buckets. Exported so the
+ * Directed view can render the actual paired points as a scatter plot, not just the
+ * summary `CorrelationResult`.
+ */
+export function pairSignalsAtLag(
   pointsA: readonly SignalPoint[],
   pointsB: readonly SignalPoint[],
   bucketSize: BucketSize,
   lag: number,
-): { a: number[]; b: number[] } {
+): { a: number[]; b: number[]; bucketKeys: string[] } {
   const bByIndex = new Map(pointsB.map((point) => [bucketIndexForKey(point.bucketKey, bucketSize), point.value]));
 
   const a: number[] = [];
   const b: number[] = [];
+  const bucketKeys: string[] = [];
   for (const point of pointsA) {
     const indexA = bucketIndexForKey(point.bucketKey, bucketSize);
     const valueB = bByIndex.get(indexA + lag);
     if (valueB !== undefined) {
       a.push(point.value);
       b.push(valueB);
+      bucketKeys.push(point.bucketKey);
     }
   }
 
-  return { a, b };
+  return { a, b, bucketKeys };
 }
