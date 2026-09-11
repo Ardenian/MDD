@@ -71,6 +71,16 @@ export class FakeTrackerRepository implements TrackerRepository {
     return updated;
   }
 
+  async discardDraft(id: Uuid): Promise<Tracker> {
+    const tracker = this.getOrThrow(id);
+    if (tracker.draftFields === null) {
+      return tracker;
+    }
+    const updated = stampUpdate({ ...tracker, draftFields: null });
+    this.trackers.set(id, updated);
+    return updated;
+  }
+
   async updateMeta(id: Uuid, patch: TrackerMetaPatch): Promise<Tracker> {
     const tracker = this.getOrThrow(id);
     const updated = stampUpdate({

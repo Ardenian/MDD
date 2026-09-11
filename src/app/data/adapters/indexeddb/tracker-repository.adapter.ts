@@ -75,6 +75,14 @@ export class TrackerRepositoryIndexedDbAdapter implements TrackerRepository {
     return putRecord(STORE.trackers, updated);
   }
 
+  async discardDraft(id: Uuid): Promise<Tracker> {
+    const tracker = await this.getOrThrow(id);
+    if (tracker.draftFields === null) {
+      return tracker;
+    }
+    return putRecord(STORE.trackers, stampUpdate({ ...tracker, draftFields: null }));
+  }
+
   async updateMeta(id: Uuid, patch: TrackerMetaPatch): Promise<Tracker> {
     const tracker = await this.getOrThrow(id);
     const updated: Tracker = stampUpdate({

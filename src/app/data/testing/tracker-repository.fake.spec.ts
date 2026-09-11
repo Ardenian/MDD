@@ -80,4 +80,32 @@ describe('FakeTrackerRepository', () => {
     expect(archived.archived).toBe(true);
     expect(await repository.getVersion(tracker.id, 2)).toBeNull();
   });
+
+  describe('discardDraft', () => {
+    it('clears a pending Draft without touching the current Version', async () => {
+      const repository = new FakeTrackerRepository();
+      const tracker = await repository.create({ name: 'Sleep', defaultTimeMode: 'period' });
+      await repository.saveDraft(tracker.id, [satisfaction]);
+      await repository.commitDraft(tracker.id);
+
+      await repository.saveDraft(tracker.id, [satisfaction, notes]);
+      const discarded = await repository.discardDraft(tracker.id);
+
+      expect(discarded.draftFields).toBeNull();
+      expect(discarded.currentVersion).toBe(1);
+      expect(await repository.getVersion(tracker.id, 2)).toBeNull();
+    });
+
+    it('is a no-op when there is no pending Draft', async () => {
+      const repository = new FakeTrackerRepository();
+      const tracker = await repository.create({ name: 'Sleep', defaultTimeMode: 'period' });
+      await repository.saveDraft(tracker.id, [satisfaction]);
+      await repository.commitDraft(tracker.id);
+
+      const beforeRevision = (await repository.get(tracker.id))!.revision;
+      const result = await repository.discardDraft(tracker.id);
+
+      expect(result.revision).toBe(beforeRevision);
+    });
+  });
 });

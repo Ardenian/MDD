@@ -19,6 +19,8 @@ export interface TrackerRepository {
   saveDraft(id: Uuid, fields: readonly FieldDef[]): Promise<Tracker>;
   /** Mints the next Tracker Version; a no-op if the Draft is unchanged from current. */
   commitDraft(id: Uuid): Promise<Tracker>;
+  /** Reverts to the current Version by clearing the Draft; a no-op if there is none. */
+  discardDraft(id: Uuid): Promise<Tracker>;
   updateMeta(id: Uuid, patch: TrackerMetaPatch): Promise<Tracker>;
   archive(id: Uuid): Promise<Tracker>;
   unarchive(id: Uuid): Promise<Tracker>;

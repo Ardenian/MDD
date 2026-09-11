@@ -43,7 +43,11 @@ src/app/data/
 ## Raw ports (v1 surface)
 
 - **TrackerRepository**: `list()`, `get(id)`, `create(input)`, `saveDraft(id, fields)`,
-  `commitDraft(id)` (mints the next `TrackerVersion`; no-op if unchanged from current),
+  `commitDraft(id)` (mints the next `TrackerVersion`; no-op if unchanged from current —
+  except the very first commit, `currentVersion === 0`, which always mints Version 1
+  even from an empty Draft, since there is no existing Version to be "unchanged from"),
+  `discardDraft(id)` (clears the Draft, reverting to the current Version; a no-op if
+  there is none — backs the Tracker editor's "Discard draft" action, `trackers/SPEC.md`),
   `updateMeta(id, { name?, defaultTimeMode? })`, `archive(id)`, `unarchive(id)`,
   `getVersion(trackerId, version)`. No `delete` — see ADR 0005.
 - **EntryRepository**: `get`, `listByRange(start, end, opts)`, `listByTracker`,
