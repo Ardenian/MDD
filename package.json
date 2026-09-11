@@ -8,6 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "audit": "pnpm audit --fix",
+    "typecheck": "pnpm exec tsc --noEmit -p tsconfig.json",
     "api:build": "pnpm --filter @ard/api-spec build",
     "api:generate": "swagger-typescript-api generate -p api-spec/dist/openapi.yaml -o src/app/data/generated -n api-client.ts",
     "api:sync": "pnpm run api:build && pnpm run api:generate"
