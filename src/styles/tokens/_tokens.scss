@@ -1,0 +1,85 @@
+// Design token source (ui/SPEC.md, ADR 0007). Authoring format for future tooling that
+// would extract these into `src/app/ui/tokens.generated.ts` — until that build step
+// exists, the generated mirror is hand-kept in sync with this file. Every stylesheet in
+// the app references `var(--token-name)`, never these maps or a literal, directly.
+//
+// v1 applies exactly one (light, neutral placeholder) palette — dark/light theming is a
+// documented Later item (feature-scope.md); this structure is deliberately flat rather
+// than pre-branched so that work isn't half-started here.
+
+$color: (
+  'background': #ffffff,
+  'surface': #f6f7f9,
+  'surface-raised': #ffffff,
+  'border': #d8dbe0,
+  'border-strong': #b3b8c2,
+  'text-primary': #14161a,
+  'text-secondary': #565c66,
+  'text-disabled': #9aa0ab,
+  'accent': #2f6fed,
+  'accent-contrast': #ffffff,
+  'danger': #d1352b,
+  'danger-contrast': #ffffff,
+  'success': #1c8a4b,
+  'warning': #b6740a,
+  'focus-ring': #2f6fed,
+);
+
+$spacing: (
+  'xs': 0.25rem,
+  'sm': 0.5rem,
+  'md': 1rem,
+  'lg': 1.5rem,
+  'xl': 2rem,
+  '2xl': 3rem,
+);
+
+$typography: (
+  'font-family': (
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif,
+  ),
+  'size-xs': 0.75rem,
+  'size-sm': 0.875rem,
+  'size-md': 1rem,
+  'size-lg': 1.25rem,
+  'size-xl': 1.5rem,
+  'size-2xl': 2rem,
+  'weight-regular': 400,
+  'weight-medium': 500,
+  'weight-bold': 700,
+  'line-height-tight': 1.25,
+  'line-height-normal': 1.5,
+);
+
+$radius: (
+  'sm': 0.25rem,
+  'md': 0.5rem,
+  'lg': 0.75rem,
+  'full': 9999px,
+);
+
+$shadow: (
+  'sm': 0 1px 2px rgba(0, 0, 0, 0.06),
+  'md': 0 4px 8px rgba(0, 0, 0, 0.08),
+  'lg': 0 12px 24px rgba(0, 0, 0, 0.12),
+);
+
+$z-index: (
+  'base': 0,
+  'overlay': 1000,
+  'dialog': 1100,
+  'toast': 1200,
+);
+
+$motion: (
+  'duration-fast': 100ms,
+  'duration-base': 200ms,
+  'duration-slow': 350ms,
+  'easing-standard': cubic-bezier(0.2, 0, 0, 1),
+);
