@@ -3,7 +3,8 @@
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
   "workspaceFolder": "/workspace",
   "mounts": [
-    "source=${localWorkspaceFolderBasename}-git,target=/workspace/.git,type=volume"
+    "source=${localWorkspaceFolderBasename}-git,target=/workspace/.git,type=volume",
+    "source=${localWorkspaceFolderBasename}-claude-plugins,target=/home/node/.claude/plugins,type=volume"
   ],
   "customizations": {
     "vscode": {
