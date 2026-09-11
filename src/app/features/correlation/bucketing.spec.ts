@@ -1,4 +1,4 @@
-import { bucketContaining, bucketWeightsFor } from './bucketing';
+import { bucketContaining, bucketIndexForKey, bucketKeyForIndex, bucketWeightsFor, type BucketSize } from './bucketing';
 import type { Placement } from '../../data/model/entry';
 
 const DAY_MS = 86_400_000;
@@ -96,5 +96,30 @@ describe('bucketWeightsFor', () => {
       const total = bucketWeightsFor(placement, 'hour').reduce((sum, w) => sum + w.weight, 0);
       expect(total).toBeCloseTo(1, 9);
     }
+  });
+});
+
+describe('bucketIndexForKey / bucketKeyForIndex', () => {
+  const sizes: readonly BucketSize[] = ['hour', 'day', 'week', 'month'];
+
+  it('round-trips a real Bucket key through index and back, for every size', () => {
+    const timestamp = Date.parse('2026-03-17T14:00:00.000Z'); // an arbitrary Tuesday
+    for (const size of sizes) {
+      const key = bucketContaining(timestamp, size).key;
+      expect(bucketKeyForIndex(bucketIndexForKey(key, size), size)).toBe(key);
+    }
+  });
+
+  it('assigns consecutive real Buckets consecutive indices, for every size', () => {
+    for (const size of sizes) {
+      const first = bucketContaining(Date.parse('2026-03-17T00:00:00.000Z'), size);
+      const second = bucketContaining(first.end + 1, size); // 1ms into the next Bucket
+      expect(bucketIndexForKey(second.key, size)).toBe(bucketIndexForKey(first.key, size) + 1);
+    }
+  });
+
+  it('places a known Monday (2024-01-01) at a whole-number week index', () => {
+    expect(Number.isInteger(bucketIndexForKey('2024-01-01', 'week'))).toBe(true);
+    expect(bucketKeyForIndex(bucketIndexForKey('2024-01-01', 'week'), 'week')).toBe('2024-01-01');
   });
 });

@@ -45,6 +45,48 @@ export function bucketContaining(timestampMs: number, size: BucketSize): BucketB
   }
 }
 
+/**
+ * A comparable integer position for a Bucket key, such that consecutive Buckets of the
+ * given size always differ by exactly 1 — including week and month, whose real
+ * calendar duration isn't constant, so a plain epoch-ms division wouldn't stay aligned
+ * to calendar boundaries. This is what `lag-scan` shifts by.
+ */
+// 1970-01-01 (the Unix epoch) was a Thursday, so 1970-01-05 was the first Monday —
+// used as an exact anchor for week indices so the math is integer division, never a
+// rounded (and therefore phase-drift-prone) division of a raw epoch timestamp.
+const WEEK_ANCHOR_MS = Date.UTC(1970, 0, 5);
+
+export function bucketIndexForKey(key: string, size: BucketSize): number {
+  switch (size) {
+    case 'hour':
+      return Math.round(Date.parse(key) / HOUR_MS);
+    case 'day':
+      return Math.round(Date.parse(`${key}T00:00:00.000Z`) / DAY_MS);
+    case 'week':
+      return Math.round((Date.parse(`${key}T00:00:00.000Z`) - WEEK_ANCHOR_MS) / (7 * DAY_MS));
+    case 'month': {
+      const [year, month] = key.split('-').map(Number);
+      return year * 12 + (month - 1);
+    }
+  }
+}
+
+export function bucketKeyForIndex(index: number, size: BucketSize): string {
+  switch (size) {
+    case 'hour':
+      return new Date(index * HOUR_MS).toISOString();
+    case 'day':
+      return new Date(index * DAY_MS).toISOString().slice(0, 10);
+    case 'week':
+      return new Date(WEEK_ANCHOR_MS + index * 7 * DAY_MS).toISOString().slice(0, 10);
+    case 'month': {
+      const year = Math.floor(index / 12);
+      const month = ((index % 12) + 12) % 12;
+      return `${year}-${String(month + 1).padStart(2, '0')}`;
+    }
+  }
+}
+
 interface WeightProfile {
   readonly coreStart: number;
   readonly coreEnd: number;
