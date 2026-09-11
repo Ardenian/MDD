@@ -161,6 +161,18 @@ export function extractSelectStateSignal(
   );
 }
 
+export function extractBooleanFieldSignal(
+  ctx: SignalExtractionContext,
+  trackerId: Uuid,
+  fieldName: string,
+  signalName: string,
+): Signal {
+  return extractFractionFromEntries(entriesOfTracker(ctx, trackerId), ctx.bucketSize, signalName, (entry) => {
+    const field = fieldOf(ctx, entry, fieldName);
+    return field?.dataType === 'boolean' && snapshotValueOf(entry, fieldName) === true;
+  });
+}
+
 export function extractTagPresenceSignal(
   ctx: SignalExtractionContext,
   trackerId: Uuid,

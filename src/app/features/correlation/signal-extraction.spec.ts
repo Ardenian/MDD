@@ -1,5 +1,6 @@
 import {
   buildExtractionContext,
+  extractBooleanFieldSignal,
   extractNestedNumericSignal,
   extractNumericFieldSignal,
   extractOccurrenceSignal,
@@ -147,6 +148,23 @@ describe('extractSelectStateSignal', () => {
 
     expect(bloating.points).toEqual([{ bucketKey: '2026-01-01', value: 0.5 }]);
     expect(headache.points).toEqual([{ bucketKey: '2026-01-01', value: 1 }]);
+  });
+});
+
+describe('extractBooleanFieldSignal', () => {
+  it('reports the fraction of Entries where a boolean Field is true', () => {
+    const trackerId = 'workout';
+    const completed: FieldDef = { name: 'Completed', required: false, dataType: 'boolean' };
+    const entries = [
+      entry(trackerId, pointAt('2026-01-01T09:00:00.000Z'), [{ fieldName: 'Completed', value: true }]),
+      entry(trackerId, pointAt('2026-01-01T15:00:00.000Z'), [{ fieldName: 'Completed', value: false }]),
+      entry(trackerId, pointAt('2026-01-01T21:00:00.000Z'), [{ fieldName: 'Completed', value: true }]),
+    ];
+    const ctx = buildExtractionContext(entries, [version(trackerId, [completed])], 'day');
+
+    const signal = extractBooleanFieldSignal(ctx, trackerId, 'Completed', 'Workout.Completed');
+
+    expect(signal.points).toEqual([{ bucketKey: '2026-01-01', value: 2 / 3 }]);
   });
 });
 
