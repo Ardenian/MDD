@@ -15,8 +15,9 @@ features consume what it produces. See [ADR 0005](../../../../docs/adr/0005-trac
 - I create a Tracker "Meal" with a reference Field "Ingredients" targeting Tracker
   "Ingredient", cardinality many, and commit — "Meal" Version 1.
 - I make "Meal" reference itself via an optional reference Field "Component" so a meal
-  can contain a sub-meal; the designer warns that this can build an infinite form but
-  lets me commit.
+  can contain a sub-meal, and commit — the designer never checks or warns about this: a
+  self-reference commits exactly like any other Field. The expansion-depth cap only
+  bites later, when I'm actually nesting child Entries (see `entries/SPEC.md`).
 - I open "Sleep" again, rename Field "Energy" to "EnergyLevel" — this is a **Draft**;
   nothing changes for existing Entries until I commit. I commit → "Sleep" Version 2.
   Entries created under Version 1 still show "Energy"; new Entries show "EnergyLevel".
@@ -80,19 +81,19 @@ Preset, Snapshot, Time mode, expansion depth. See [`CONTEXT.md`](../../../../CON
 - TypeSpec models: `Tracker` (header: name, defaultTimeMode, currentVersion, archived),
   `TrackerVersion` (immutable: trackerId, version, fields), `FieldDef` (discriminated by
   `dataType`), `Preset`, `PresetFieldValue`. All carry the ADR 0003 fields.
-- Pure module `tracker-schema`: Field validity, option-set validity, self/rec reference
-  detection, expansion-depth computation, Draft-vs-current-Version diff (to decide
-  whether a commit is a no-op), Preset staleness check.
+- Pure module `tracker-schema`: Field validity, option-set validity, Draft-vs-current-
+  Version diff (to decide whether a commit is a no-op), Preset staleness check.
+  Expansion-depth computation lives in `entries/SPEC.md`'s pure modules instead — the
+  Tracker designer never checks depth, so this feature has no need for it, and a
+  feature must not import another feature's module.
 
 ## Test cases (Vitest — logic only)
 
 - Field name uniqueness within a Draft; empty name rejected.
 - Select Field: duplicate options rejected.
 - Reference Field requires a target Tracker; self-reference allowed; cardinality
-  defaults to one.
-- Expansion depth: linear chain depth counted correctly; a cycle is detected and
-  reported (not thrown); depth cap from settings respected.
-- Infinite-form warning fires for a cyclic reference graph but does not block commit.
+  defaults to one; committing a Draft with a self-referencing Field never checks or
+  warns about expansion depth (see `entries/SPEC.md` for where the cap is enforced).
 - `commitDraft`: a Draft identical to the current Version's fields does not create a new
   Version; a Draft that changes ≥1 Field creates Version `current + 1`; the new Version's
   field list matches the Draft exactly; the previous Version's stored field list is

@@ -27,8 +27,9 @@ shared data-access layer; a backend can replace that later without touching feat
 - Add / rename / remove / reorder Fields in the Draft; 8 data types: text, long text,
   integer, decimal, boolean, single-select, multi-select, reference
 - Per-Field: required/optional; select options; reference target Tracker + cardinality
-  (one / many); self-reference allowed
-- Expansion-depth cap on reference chains; infinite-form warning (non-blocking)
+  (one / many); self-reference allowed — no depth check at Draft/commit time, even for a
+  self-reference; the expansion-depth cap is enforced only when Entries are created (see
+  Entries below)
 - Archive / unarchive a Tracker (hidden from "create new" and reference-target pickers;
   record and every Tracker Version kept; no migration)
 - Preset staleness indicator when the Tracker has moved past a Preset's pinned Version
@@ -47,8 +48,11 @@ shared data-access layer; a backend can replace that later without touching feat
 - Placement: Point / Period / Day-bucketed, with leading/trailing Fadeout on Point and
   Period; per-Entry Time-mode override
 - Embedded child-Entry editing for reference Fields; child placement locked to parent;
-  removing a child deletes it; entries cannot be re-parented
-- Tags with free text + autocomplete from existing Tags
+  removing a child deletes it; entries cannot be re-parented; nesting is capped at the
+  expansion-depth limit (Settings-configurable, default 5) — enforced here, not at
+  Tracker Draft/commit time; children keep creation order (no reordering in v1)
+- Tags with free text + autocomplete from existing Tags; a child Entry's Tags are its
+  own, never inherited from its parent
 - Every Entry pins to the Tracker Version current at its creation; renders from that
   Version forever, independent of later Tracker changes
 
@@ -65,19 +69,23 @@ shared data-access layer; a backend can replace that later without touching feat
 - Client-side, explicitly triggered Discovery scan over in-scope Signal pairs
 - Signal extraction: numeric Field value; Tracker occurrence count; boolean/select
   state; nested child-Entry Field (numeric or presence), arbitrary depth; Tag presence
+  (including child Entries)
 - Buckets: hour / day / week / month; Entry contributes to every Bucket it touches;
   Fadeout as linearly weighted partial membership
-- Methods by pairing: Spearman (numeric×numeric), point-biserial (numeric×binary),
-  Cramér's V (categorical); effect size + n + p-value
+- Methods by pairing: Spearman (numeric×numeric), point-biserial (numeric×binary);
+  effect size + n + p-value
 - User-set Lag range with a recommended default; best-Lag result reported with zero-Lag
 - Discovery ranked list + Directed view (shared zoomable time axis + scatter)
+- Signal overlay: pick one or more Trackers, toggle their Signals (default: all on),
+  view them together on the shared time axis with no correlation math — the only way to
+  inspect Signals outside a Discovery-scan row
 - User-configurable guardrails: minimum n, p-value threshold, Benjamini–Hochberg
   correction on/off; standing "association, not causation" caveat
 - Page-level date-range scope and Signal-scope selection
 
 ### Settings — [`src/app/features/settings/SPEC.md`](../src/app/features/settings/SPEC.md)
 - Default Bucket size, default Lag range, default guardrail thresholds
-- Expansion-depth cap value
+- Expansion-depth cap value (default 5)
 - Data reset (clear local database)
 
 ### Platform — [`src/app/core/SPEC.md`](../src/app/core/SPEC.md) · [`src/app/data/SPEC.md`](../src/app/data/SPEC.md) · [`src/app/ui/SPEC.md`](../src/app/ui/SPEC.md)
@@ -112,6 +120,11 @@ shared data-access layer; a backend can replace that later without touching feat
 - Richer per-Field value visualisations (rating stars, gauges, etc.)
 - Deeper correlation: automatic lag recommendation from data, partial correlation,
   controlling for confounders
+- Cramér's V / categorical×categorical correlation (v1 ships Spearman and point-biserial
+  only — no Signal kind currently produces the multi-category input Cramér's V needs)
+- Child-Entry reordering (drag-and-drop) within a "many"-cardinality reference Field
+  (v1 keeps creation order; combining reorder with the self-referencing tree display is
+  a bigger a11y/interaction problem deferred past v1)
 - Integration and end-to-end test suites for UI and interaction
 - **Tracker Version & merge migration tooling** (one consolidated theme — see
   [ADR 0005](adr/0005-tracker-versioning.md)): a read-only Tracker Version history/diff

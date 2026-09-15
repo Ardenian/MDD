@@ -26,7 +26,10 @@ the Tracker's current **Tracker Version** at creation and renders from it foreve
   rebinding.
 - I remove an "Ingredient" child from a "Meal" Entry → the child Entry is deleted.
 - I try to add a required self-referencing child but the expansion-depth cap is already
-  reached → the field is flagged invalid and I cannot save until I remove a level.
+  reached → the field is flagged invalid and I cannot save until I remove a level. This
+  is the only place the cap applies — the Tracker Draft/commit that created this
+  self-reference never checked or warned about it (see `trackers/SPEC.md`), and the same
+  check applies identically to a non-self-referencing chain across distinct Trackers.
 
 ## Domain terms used
 
@@ -49,7 +52,8 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
     (`cdk/tree`, fits the self-referencing shape without flattening) with add (schema
     or Preset) / edit / remove
   - Tag input via `ui/`'s **Combobox** (`@angular/aria`), autocompleting against
-    `EntriesFacade`'s Tag suggestions
+    `EntriesFacade`'s Tag suggestions — each child Entry gets its own Tag input, entered
+    independently and never inherited from or synced with the parent's Tags
 - **Placement editor**: mode toggle (point / period / day-bucketed); time input(s);
   Fadeout before/after amount inputs (hidden for day-bucketed); "Now" shortcut.
 - Viewing an existing Entry shows a small **"Tracker Version N"** label so the user
@@ -77,6 +81,11 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
   - `fadeout` — resolve a placement + Fadeout to an absolute covered interval.
   - `entry-form` — given a `TrackerVersion` and (optionally) a Preset's values, build
     the form model; independent of which Version is current vs. pinned.
+  - `expansion-depth` — given an Entry's in-progress child nesting and the
+    Settings-configured cap, determines whether one more level of required nesting is
+    allowed; treats a self-referencing chain and a chain across distinct Trackers
+    identically (only the actual realized nesting depth matters, not the schema shape).
+    This also gates Preset authoring, since the Preset editor reuses this same form.
 - TypeSpec models: `Entry` (`trackerId`, `trackerVersion`, `parentEntryId`, `placement`,
   `snapshot: SnapshotField[]`, `tags`), `Placement` (discriminated), `Fadeout`,
   `SnapshotField` (`fieldName`, `value` — no `dataType`, per ADR 0005 Q11: schema is
@@ -98,7 +107,10 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
   the child `softDelete`; child cannot be re-parented (API rejects); a child's
   `trackerVersion` is resolved independently from its own target Tracker's current
   Version, which may differ from the parent's.
-- Required reference unsatisfiable at depth cap → form invalid → `create` rejected.
+- Required reference unsatisfiable at depth cap → form invalid → `create` rejected;
+  identical whether the chain is self-referencing or crosses distinct Trackers.
+- A child Entry's Tags are independent of its parent's — no inheritance either
+  direction.
 - Creating an Entry from a Preset copies the Preset's values regardless of the Preset's
   own `trackerVersion`, then snapshots at the *current* Tracker Version; any Field the
   Preset didn't cover renders empty; any Field the Preset covers that the current

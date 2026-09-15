@@ -19,7 +19,10 @@ created when the user commits a Draft that changes one or more Fields. Renaming 
 Tracker or changing its default Time mode does not create a new Version. Every past
 Version is kept forever, so any Entry created against it keeps rendering correctly no
 matter how the Tracker changes afterward.
-_Avoid_: revision, schema version, edition
+_Avoid_: revision, schema version, edition. Note: `revision` also exists as a literal
+field name (ADR 0003) — a monotonic per-record write-counter on *every* aggregate for
+conflict detection, unrelated to a Tracker's Version number. The two concepts share a
+word by coincidence; `entry.revision` is never a Tracker Version.
 
 **Draft**:
 The Tracker editor's working, uncommitted state. Field changes accumulate in the Draft;
@@ -117,7 +120,9 @@ _Avoid_: fuzz, tolerance, blur, margin of error
 
 **Tag**:
 A free-text label attached to a single Entry, independent of Trackers and schemas.
-Entered as free text with autocomplete suggestions drawn from existing Tags.
+Entered as free text with autocomplete suggestions drawn from existing Tags. Independent
+per Entry — a Child Entry's Tags are its own, never inherited from or shared with its
+parent.
 _Avoid_: label, keyword, category
 
 **Snapshot**:
@@ -164,6 +169,13 @@ correction).
 _Avoid_: auto-scan, sweep, search
 
 **Directed view**:
-The drill-in from one Discovery-scan row (or a hand-picked Signal pair): the two Signals
-on a shared zoomable time axis plus a scatter plot.
+The drill-in from one Discovery-scan row: the two Signals on a shared zoomable time axis
+plus a scatter plot, with method, lag, effect size, n, and p-value.
 _Avoid_: detail view, inspector
+
+**Signal overlay**:
+A stats-free view of one or more user-picked Trackers' Signals, plotted together on the
+shared zoomable time axis, each Signal individually toggleable (default: all on). No
+scatter plot, no Lag, no effect size, no significance — visual inspection only, reached
+by picking Trackers directly, never a Discovery-scan drill-in.
+_Avoid_: manual pair, comparison view
