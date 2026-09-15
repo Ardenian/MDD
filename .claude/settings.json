@@ -11,6 +11,9 @@
       "autoUpdate": false
     }
   },
+  "permissions": {
+    "allow": ["Grep"]
+  },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
