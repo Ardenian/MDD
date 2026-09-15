@@ -46,7 +46,9 @@ Storage Profile, Tracker, Tracker Version, Entry, Preset, Tag. See
 - The Data Transfer page injects a feature-local `DataTransferDataAccess` (a stateless
   DataAccess, ADR 0008 — never the raw port below directly) — per ADR 0002.
   `DataTransferDataAccess` wraps `resource()` around the record-count read (for the
-  import-confirmation display, same shape Settings already reads) and the two actions
+  import-confirmation display, same shape Settings already reads), exposing a
+  domain-shaped `recordCounts` signal plus a derived `isLoading` signal, and the two
+  actions
   below; it wraps:
 - `MaintenancePort`:
   - `exportAll()` — returns a format-versioned JSON bundle containing every **live**
@@ -57,7 +59,9 @@ Storage Profile, Tracker, Tracker Version, Entry, Preset, Tag. See
     version; a mismatch is rejected with an error and nothing is touched. On a match,
     replaces all existing data with the bundle's contents (equivalent to `clearAll()`
     followed by a full restore) and re-seeds the single implicit Calendar exactly as
-    `clearAll()` does.
+    `clearAll()` does. `activeProfileId` is never touched by this replace, in either
+    direction — it isn't wiped and it isn't read from the bundle, since it never left
+    the device to begin with (ADR 0009).
 - No merge semantics — import is always a full, confirmed replace. No TypeSpec model:
   the export bundle is an internal format versioned independently of the API contract,
   never exposed over the future HTTP adapter.

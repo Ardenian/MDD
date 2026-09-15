@@ -182,6 +182,6 @@ This repo is the Diary Calendar app. Before changing anything, read
 - Use `CONTEXT.md` terms exactly: Tracker, Tracker Version, Draft, Archived Tracker,
   Entry, Field, Reference Field, Child Entry, Preset, Snapshot, Calendar, Owner, User,
   Storage Profile, Time mode, Point, Period, Day-bucketed, Fadeout, Tag, Correlation,
-  Signal, Bucket, Lag, Discovery scan, Directed view, Signal overlay.
+  Series, Bucket, Lag, Discovery scan, Directed view, Series overlay.
 - Never use a term from an `_Avoid_` list (entity, instance, category, interval, …) for
   the concept it warns against — not in code identifiers, comments, or docs.

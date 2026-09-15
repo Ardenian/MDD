@@ -144,47 +144,49 @@ _Avoid_: freeze, copy, live binding
 ## Correlation
 
 **Correlation**:
-A relationship between two Signals over time, surfaced only on the dedicated Correlation
+A relationship between two Series over time, surfaced only on the dedicated Correlation
 page — never on the Calendar. Reported as an effect size with a sample size and a
 p-value.
 _Avoid_: association, link, insight
 
-**Signal**:
+**Series**:
 A single time series derived from Entry data for correlation: a numeric Field's value, a
 Tracker's Entry count ("occurrence"), a boolean or select Field's state, a numeric or
 presence value drawn from a nested child Entry Field, or the presence of a Tag. Keyed to
 an exact `(Tracker, Field name, data type)` as defined by whichever Tracker Version each
 Entry was snapshotted against — a Field rename across Tracker Versions produces two
-distinct Signals rather than one continuous history.
-_Avoid_: series, metric, variable, feature
+distinct Series rather than one continuous history.
+_Avoid_: signal (reserved in this codebase for Angular's `signal()`/`Signal<T>` — a
+Series is never called a Signal), metric, variable, feature
 
 **Bucket**:
-The time unit Signals are aligned to — hour, day, week, or month. An Entry contributes
+The time unit Series are aligned to — hour, day, week, or month. An Entry contributes
 to every Bucket its placement touches; a Fadeout contributes with weight falling off
 linearly across its span.
 _Avoid_: bin, window, slot, period (Period is a placement)
 
 **Lag**:
-An offset, measured in Buckets, applied to one Signal before correlating, so that a
+An offset, measured in Buckets, applied to one Series before correlating, so that a
 cause preceding an effect can be detected. The user sets the Lag range to scan; the app
 reports the strongest Lag alongside the zero-Lag result.
 _Avoid_: delay, offset, shift
 
 **Discovery scan**:
-An explicitly triggered, client-side pass over every pair of in-scope Signals across the
+An explicitly triggered, client-side pass over every pair of in-scope Series across the
 Lag range, producing a ranked list of candidate Correlations subject to the user's
 significance guardrails (minimum sample size, p-value threshold, Benjamini–Hochberg
 correction).
 _Avoid_: auto-scan, sweep, search
 
 **Directed view**:
-The drill-in from one Discovery-scan row: the two Signals on a shared zoomable time axis
+The drill-in from one Discovery-scan row: the two Series on a shared zoomable time axis
 plus a scatter plot, with method, lag, effect size, n, and p-value.
 _Avoid_: detail view, inspector
 
-**Signal overlay**:
-A stats-free view of one or more user-picked Trackers' Signals, plotted together on the
-shared zoomable time axis, each Signal individually toggleable (default: all on). No
+**Series overlay**:
+A stats-free view of one or more user-picked Trackers' Series, plotted together on the
+shared zoomable time axis, each Series individually toggleable (default: all on). No
 scatter plot, no Lag, no effect size, no significance — visual inspection only, reached
 by picking Trackers directly, never a Discovery-scan drill-in.
-_Avoid_: manual pair, comparison view
+_Avoid_: manual pair, comparison view, signal overlay (the earlier name for this
+concept, retired with the Signal → Series rename)

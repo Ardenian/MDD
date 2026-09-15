@@ -70,15 +70,12 @@ Preset, Snapshot, Time mode, expansion depth. See [`CONTEXT.md`](../../../../CON
 
 ## Data & API contract touched
 
-- The Tracker editor injects a feature-local `TrackersStore` (a stateful Store, built
-  on `@ngrx/signals`, ADR 0008 — never the raw ports below directly) plus
-  `TrackerLookup` (`data/`'s shared facade, for the reference target picker) — per ADR
-  0002. Unlike a plain DataAccess, `TrackersStore` owns the in-progress **Draft** as
-  patched state — accumulated Field edits persist across the whole editing session
-  until the user commits (`commitDraft`) or discards it (a local state reset; nothing
-  is persisted for a discarded Draft), which a stateless resource-backed wrapper can't
-  represent — alongside domain-shaped signals (`trackers`, `currentVersion`,
-  `currentDraft`) and a derived `isLoading` signal; it wraps:
+- The Tracker editor injects a feature-local `TrackersDataAccess` (a stateless
+  DataAccess, ADR 0008 — never the raw ports below directly) plus `TrackerLookup`
+  (`data/`'s shared facade, for the reference target picker) — per ADR 0002.
+  `TrackersDataAccess` wraps `resource()` around each read below and exposes
+  domain-shaped signals (e.g. `trackers`, `currentDraft`) plus a derived `isLoading`
+  signal; it wraps:
 - `TrackerRepository`: `list`, `get(id)`, `create(input)`, `saveDraft(id, fields)`,
   `commitDraft(id)` (mints the next `TrackerVersion`, no-ops if the Draft is unchanged
   from the current Version), `updateMeta(id, { name?, defaultTimeMode? })`, `archive(id)`,

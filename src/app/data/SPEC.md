@@ -57,12 +57,13 @@ src/app/data/
   `activeProfileId`, naming the active **Storage Profile**; read by `core/` at
   bootstrap to decide adapter wiring (ADR 0009), and excluded from Data Transfer's
   export bundle as device-local, non-portable state.
-- **CorrelationDataSource**: `loadEntriesForScope(range, signalScope)` — one batched read
+- **CorrelationDataSource**: `loadEntriesForScope(range, seriesScope)` — one batched read
   of Entries + children + the specific Tracker Versions they reference + Tags.
 - **MaintenancePort**: `clearAll()`; `exportAll()` — a format-versioned JSON bundle of
   every live row of every aggregate plus Settings, excluding `activeProfileId`;
   `importAll(data)` — rejects a format-version mismatch outright, otherwise replaces all
-  existing data with the bundle's contents (ADR 0009, `data-transfer/SPEC.md`).
+  existing data with the bundle's contents, leaving `activeProfileId` untouched
+  throughout (ADR 0009, `data-transfer/SPEC.md`).
 
 All returns are the hand-written `model/` types. Ports are transport-agnostic: no
 `HttpClient`, no `Observable<HttpResponse>`, no IndexedDB types leak through.

@@ -12,7 +12,7 @@ sequence of immutable, versioned Field schemas (**Tracker Versions**) — then l
 **Fadeout** uncertainty margins. Each Entry keeps a **Snapshot** pinned to the exact
 Tracker Version it was created against, so it renders correctly forever regardless of
 later schema changes. A separate **Correlation** page mines the data for time-lagged
-relationships between **Signals**. Data lives behind a shared data-access layer under a
+relationships between **Series**. Data lives behind a shared data-access layer under a
 **Storage Profile** setting that names where it's stored; v1 ships one Storage Profile,
 **Offline** (the browser's IndexedDB) — a backend-backed Profile can replace or join it
 later without touching features. See [ADR 0009](adr/0009-storage-profile-and-data-transfer.md).
@@ -69,7 +69,7 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
 
 ### Correlation — [`src/app/features/correlation/SPEC.md`](../src/app/features/correlation/SPEC.md)
 - Client-side, explicitly triggered Discovery scan over in-scope Signal pairs
-- Signal extraction: numeric Field value; Tracker occurrence count; boolean/select
+- Series extraction: numeric Field value; Tracker occurrence count; boolean/select
   state; nested child-Entry Field (numeric or presence), arbitrary depth; Tag presence
   (including child Entries)
 - Buckets: hour / day / week / month; Entry contributes to every Bucket it touches;
@@ -78,12 +78,12 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
   effect size + n + p-value
 - User-set Lag range with a recommended default; best-Lag result reported with zero-Lag
 - Discovery ranked list + Directed view (shared zoomable time axis + scatter)
-- Signal overlay: pick one or more Trackers, toggle their Signals (default: all on),
+- Series overlay: pick one or more Trackers, toggle their Series (default: all on),
   view them together on the shared time axis with no correlation math — the only way to
-  inspect Signals outside a Discovery-scan row
+  inspect Series outside a Discovery-scan row
 - User-configurable guardrails: minimum n, p-value threshold, Benjamini–Hochberg
   correction on/off; standing "association, not causation" caveat
-- Page-level date-range scope and Signal-scope selection
+- Page-level date-range scope and Series-scope selection
 
 ### Settings — [`src/app/features/settings/SPEC.md`](../src/app/features/settings/SPEC.md)
 - Default Bucket size, default Lag range, default guardrail thresholds
@@ -133,7 +133,7 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
 - Richer per-Field value visualisations (rating stars, gauges, etc.)
 - Deeper correlation: automatic lag recommendation from data, partial correlation,
   controlling for confounders
-- Cramér's V / categorical×categorical correlation — no v1 Signal kind produces the
+- Cramér's V / categorical×categorical correlation — no v1 Series kind produces the
   multi-category input it needs (every kind reduces to a numeric mean or a [0,1]
   fraction per Bucket); revisit once one does — see `correlation/SPEC.md` → Out of scope
 - Child-Entry reordering (drag-and-drop) within a "many"-cardinality reference Field

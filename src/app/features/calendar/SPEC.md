@@ -77,4 +77,5 @@ Calendar, Entry, Tracker, Point, Period, Day-bucketed, Fadeout, Child Entry. See
 - Month view (feature-scope "Later").
 - Drag-to-move / drag-to-resize Entries.
 - Printing / export of the calendar.
-- Displaying any correlation overlay on the Calendar (Correlation lives on its own page).
+- Displaying a Series overlay or Directed view on the Calendar (Correlation lives on its
+  own page).
