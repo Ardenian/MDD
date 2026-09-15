@@ -81,7 +81,7 @@ This repo is the Diary Calendar app. Before changing anything, read
     components and their coordination-only singleton services, plus the design-token
     runtime bridge (ADR 0006, ADR 0007). See `src/app/ui/SPEC.md`.
   - `features/<feature>/` — one folder per feature (`calendar`, `trackers`, `entries`,
-    `correlation`, `settings`). Each feature's facade(s) live here.
+    `correlation`, `settings`, `data-transfer`). Each feature's facade(s) live here.
   - `shared/` — dumb reusable pieces with **no** CDK/aria involvement (pipes,
     presentational components); pure, zero-DI. CDK/aria-backed reusable pieces go in
     `ui/`, not here.
@@ -181,7 +181,7 @@ This repo is the Diary Calendar app. Before changing anything, read
 
 - Use `CONTEXT.md` terms exactly: Tracker, Tracker Version, Draft, Archived Tracker,
   Entry, Field, Reference Field, Child Entry, Preset, Snapshot, Calendar, Owner, User,
-  Time mode, Point, Period, Day-bucketed, Fadeout, Tag, Correlation, Signal, Bucket, Lag,
-  Discovery scan, Directed view, Signal overlay.
+  Storage Profile, Time mode, Point, Period, Day-bucketed, Fadeout, Tag, Correlation,
+  Signal, Bucket, Lag, Discovery scan, Directed view, Signal overlay.
 - Never use a term from an `_Avoid_` list (entity, instance, category, interval, …) for
   the concept it warns against — not in code identifiers, comments, or docs.

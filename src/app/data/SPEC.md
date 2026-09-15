@@ -53,10 +53,16 @@ src/app/data/
   `trackerVersion` from the target Tracker's `currentVersion` itself.
 - **PresetRepository**: `listByTracker`, `get`, `create`, `update`, `delete`.
 - **TagRepository**: `listAll`, `suggest(prefix)`.
-- **SettingsRepository**: `get()`, `save(patch)`.
+- **SettingsRepository**: `get()`, `save(patch)`. The settings model includes
+  `activeProfileId`, naming the active **Storage Profile**; read by `core/` at
+  bootstrap to decide adapter wiring (ADR 0009), and excluded from Data Transfer's
+  export bundle as device-local, non-portable state.
 - **CorrelationDataSource**: `loadEntriesForScope(range, signalScope)` — one batched read
   of Entries + children + the specific Tracker Versions they reference + Tags.
-- **MaintenancePort**: `clearAll()`.
+- **MaintenancePort**: `clearAll()`; `exportAll()` — a format-versioned JSON bundle of
+  every live row of every aggregate plus Settings, excluding `activeProfileId`;
+  `importAll(data)` — rejects a format-version mismatch outright, otherwise replaces all
+  existing data with the bundle's contents (ADR 0009, `data-transfer/SPEC.md`).
 
 All returns are the hand-written `model/` types. Ports are transport-agnostic: no
 `HttpClient`, no `Observable<HttpResponse>`, no IndexedDB types leak through.
@@ -112,6 +118,9 @@ facades do (ADR 0002).
 - In-memory fakes in `testing/` satisfy the same contract tests as the IndexedDB adapter
   (shared test suite runs against both).
 - `generated/` is import-clean and not referenced anywhere outside `adapters/http/`.
+- `MaintenancePort.exportAll()` / `importAll()`: see `data-transfer/SPEC.md` for the
+  full contract and test cases (excluded `activeProfileId`, format-version rejection,
+  full-replace semantics).
 
 ## Out of scope
 

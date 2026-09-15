@@ -48,9 +48,11 @@ component, there's nothing for a service to own.
 - **Modal** — the standard dialog chrome (header/body/footer/close-button), built on
   `DialogService`. Every v1 dialog-shaped flow uses this, never `DialogService` raw:
   the Entry create/edit form (its already-specified focus-trap-on-open/focus-return-
-  on-close behavior *is* this component), and Settings' "Clear local data" confirmation.
+  on-close behavior *is* this component), Settings' "Clear local data" confirmation,
+  and Data Transfer's import confirm-by-typing guard.
 - **Select / Multiselect** — `@angular/aria` Listbox/Select/Multiselect directives.
-  Backs single-select and multi-select Fields on the Entry form.
+  Backs single-select and multi-select Fields on the Entry form, the reference-target
+  and cardinality pickers in the Tracker designer, and Settings' Storage Profile picker.
 - **Combobox** — `@angular/aria` Combobox. Backs the Tag input's autocomplete.
 - **Reorderable list** — `cdk/drag-drop` (`CdkDropList`/`CdkDrag`), keyboard-operable
   per the existing a11y requirement. Backs Field reordering in the Tracker designer.

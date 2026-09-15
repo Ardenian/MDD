@@ -14,10 +14,14 @@ rules of its own.
   — the Tracker designer itself never checks this cap (see `entries/SPEC.md`).
 - I click **Clear local data**, confirm a typed phrase, and the IndexedDB database is
   wiped and the app reloads empty.
+- I open Settings and see a **Storage Profile** section showing "Offline" as the active
+  (and, in v1, only) Profile — nothing to change yet, but the seam is visible for when a
+  second Profile exists.
 
 ## Domain terms used
 
-Bucket, Lag, expansion depth, Tracker, Entry. See [`CONTEXT.md`](../../../../CONTEXT.md).
+Bucket, Lag, expansion depth, Tracker, Entry, Storage Profile. See
+[`CONTEXT.md`](../../../../CONTEXT.md).
 
 ## UI
 
@@ -26,8 +30,13 @@ Bucket, Lag, expansion depth, Tracker, Entry. See [`CONTEXT.md`](../../../../CON
 - **Correlation defaults**: Bucket size, Lag range, guardrail thresholds (min n, p-value,
   BH on/off).
 - **Schema**: expansion-depth cap (integer, min 1).
+- **Storage Profile**: a `ui/` **Select** showing the active Profile; v1 offers exactly
+  one option, "Offline", so the control is present but has nothing meaningful to switch
+  to yet. Selecting a different Profile (once one exists) triggers an app reload — see
+  [ADR 0009](../../../../docs/adr/0009-storage-profile-and-data-transfer.md).
 - **Data**: "Clear local data" opens `ui/`'s **Modal** with a confirm-by-typing guard;
-  shows current record counts per aggregate.
+  shows current record counts per aggregate. Exporting/importing the whole dataset is a
+  separate feature — see `data-transfer/SPEC.md`.
 - All settings are labelled form controls; the destructive action requires the Modal
   confirmation and is not focus-first.
 
@@ -53,7 +62,7 @@ Bucket, Lag, expansion depth, Tracker, Entry. See [`CONTEXT.md`](../../../../CON
 - `clearAll()` empties every store and leaves exactly one Calendar record.
 - Reading defaults before any have been saved returns the documented fallback values:
   expansion-depth cap **5**; Bucket size, Lag range, and guardrail thresholds as stated
-  in `correlation/SPEC.md`.
+  in `correlation/SPEC.md`; `activeProfileId` **"offline"**.
 
 ## Out of scope
 

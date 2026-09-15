@@ -43,7 +43,7 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
   literal implementation of "focus moves into the form on open and returns to the
   trigger on close" below, not a separately hand-built behavior. The component that
   opens it (from Calendar) is that feature's top-level component, per the DI boundary;
-  the form component itself is where `EntriesFacade` is injected.
+  the form component itself is where `EntriesDataAccess` is injected.
   - header (Tracker name + current Version badge, Preset picker, placement editor)
   - one control per Field of the Tracker's **current** Version (or, for an existing
     Entry being viewed, its **pinned** Version): single/multi-select Fields render as
@@ -52,8 +52,8 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
     (`cdk/tree`, fits the self-referencing shape without flattening) with add (schema
     or Preset) / edit / remove
   - Tag input via `ui/`'s **Combobox** (`@angular/aria`), autocompleting against
-    `EntriesFacade`'s Tag suggestions — each child Entry gets its own Tag input, entered
-    independently and never inherited from or synced with the parent's Tags
+    `EntriesDataAccess`'s Tag suggestions — each child Entry gets its own Tag input,
+    entered independently and never inherited from or synced with the parent's Tags
 - **Placement editor**: mode toggle (point / period / day-bucketed); time input(s);
   Fadeout before/after amount inputs (hidden for day-bucketed); "Now" shortcut.
 - Viewing an existing Entry shows a small **"Tracker Version N"** label so the user

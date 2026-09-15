@@ -12,8 +12,10 @@ sequence of immutable, versioned Field schemas (**Tracker Versions**) — then l
 **Fadeout** uncertainty margins. Each Entry keeps a **Snapshot** pinned to the exact
 Tracker Version it was created against, so it renders correctly forever regardless of
 later schema changes. A separate **Correlation** page mines the data for time-lagged
-relationships between **Signals**. All data lives in the browser (IndexedDB) behind a
-shared data-access layer; a backend can replace that later without touching features.
+relationships between **Signals**. Data lives behind a shared data-access layer under a
+**Storage Profile** setting that names where it's stored; v1 ships one Storage Profile,
+**Offline** (the browser's IndexedDB) — a backend-backed Profile can replace or join it
+later without touching features. See [ADR 0009](adr/0009-storage-profile-and-data-transfer.md).
 
 ---
 
@@ -86,10 +88,21 @@ shared data-access layer; a backend can replace that later without touching feat
 ### Settings — [`src/app/features/settings/SPEC.md`](../src/app/features/settings/SPEC.md)
 - Default Bucket size, default Lag range, default guardrail thresholds
 - Expansion-depth cap value (default 5)
+- Storage Profile display: v1 ships exactly one, **Offline**; selecting a Profile
+  requires an app reload (ADR 0009)
 - Data reset (clear local database)
 
+### Data Transfer — [`src/app/features/data-transfer/SPEC.md`](../src/app/features/data-transfer/SPEC.md)
+- Export the active Storage Profile's entire dataset (every Tracker, Tracker Version,
+  Entry, Preset, Tag, plus Settings) to one format-versioned JSON file
+- Import: full replace only, confirm-by-typing guard showing current record counts;
+  rejects a format-version mismatch outright, with no partial import
+- The v1 mitigation for local-only storage's durability gap, and the anticipated path
+  for moving data between Storage Profiles later (ADR 0009)
+
 ### Platform — [`src/app/core/SPEC.md`](../src/app/core/SPEC.md) · [`src/app/data/SPEC.md`](../src/app/data/SPEC.md) · [`src/app/ui/SPEC.md`](../src/app/ui/SPEC.md)
-- Shared data-access ports + IndexedDB adapter; adapter wiring in `core/`
+- Shared data-access ports + IndexedDB adapter; adapter wiring in `core/`, resolved from
+  the active Storage Profile at bootstrap (ADR 0009)
 - Presentation never injects a raw port — only feature-local or shared facades
   (`data/`), and only from a feature's top-level component (ADR 0002)
 - Offline-first record fields on every aggregate: client UUID, `createdAt` /
@@ -140,13 +153,16 @@ shared data-access layer; a backend can replace that later without touching feat
   pre-wired for this — v1 applies static values only.
 - **A generic `ui/` Table component**, once a second feature (beyond Correlation) needs
   tabular data — see `ui/SPEC.md`.
+- **Sync-capable Storage Profiles** (e.g. a cloud-backed Profile). The Storage Profile
+  abstraction (ADR 0009) is deliberately pre-wired for this — v1 ships Offline only, and
+  Data Transfer's export/import is the anticipated (manual) migration path until one
+  exists.
 
 ---
 
 ## Out of scope — not planned
 
 - Native mobile apps
-- Data import / export
 - Notifications and reminders
 - AI/ML-generated insights beyond the stated statistics
 - Server-side rendering

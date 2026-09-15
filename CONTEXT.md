@@ -92,6 +92,15 @@ An account that contributes data to a Calendar. A Calendar has one Owner and one
 more Users. Identified by `userId`. Hardcoded to `dev` until a real backend exists.
 _Avoid_: contributor, member, account
 
+**Storage Profile**:
+Where the app's data lives and whether it syncs. Selected on the Settings page and
+persisted locally; changing it requires a reload, since it determines which adapter
+set the app wires at bootstrap. v1 ships exactly one Storage Profile, **Offline**
+(IndexedDB, no sync) — the app is built so a future Storage Profile can point
+elsewhere and sync, but none exists yet. See [ADR 0009](docs/adr/0009-storage-profile-and-data-transfer.md).
+_Avoid_: profile (ambiguous with a future user-identity profile — always say "Storage
+Profile")
+
 **Time mode**:
 A Tracker's *default* placement style — **point**, **period**, or **day-bucketed** —
 offered to save the user a choice when creating an Entry. It is only a default: every
