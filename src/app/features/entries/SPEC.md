@@ -67,9 +67,11 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
 
 ## Data & API contract touched
 
-- The Entry form injects a feature-local `EntriesFacade` (never the raw ports below
-  directly) plus `TrackerLookup` (`data/`'s shared facade, for Preset/Tracker naming in
-  the header) — per ADR 0002. `EntriesFacade` wraps:
+- The Entry form injects a feature-local `EntriesDataAccess` (a stateless DataAccess,
+  ADR 0008 — never the raw ports below directly) plus `TrackerLookup` (`data/`'s
+  shared facade, for Preset/Tracker naming in the header) — per ADR 0002.
+  `EntriesDataAccess` wraps `resource()` around each read below and exposes
+  domain-shaped signals plus a derived `isLoading` signal; it wraps:
 - `EntryRepository`: `get`, `listByRange`, `listByTracker`, `listChildren`, `create`,
   `update`, `softDelete`. `create` resolves `trackerVersion` itself from the target
   Tracker's `currentVersion` at call time — callers never pass it.
@@ -121,6 +123,8 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
 ## Out of scope
 
 - Cross-Tracker-Version Snapshot migration (Later — [ADR 0005](../../../../docs/adr/0005-tracker-versioning.md)).
+- Child-Entry drag-and-drop reordering within a reference Field — v1 keeps creation
+  order only (Later — see `feature-scope.md`).
 - Recurring Entries.
 - Bulk edit of many Entries at once.
 - Attachments / photos on Entries.

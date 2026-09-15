@@ -42,6 +42,9 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use `computed()` for derived state
 - Keep state transformations pure and predictable
 - Do NOT use `mutate` on signals, use `update` or `set` instead
+- `patchState` on an `@ngrx/signals` Store (see ADR 0008) is the sanctioned exception to
+  the `mutate` ban — it performs the same kind of immutable update `update()`/`set()`
+  require, just at the store level
 
 ## Templates
 
@@ -70,9 +73,10 @@ This repo is the Diary Calendar app. Before changing anything, read
   - `core/` — app-wide singletons: DI wiring of data adapters, offline shell, routing
     skeleton, error handling. The ONLY place that names a concrete adapter.
   - `data/` — the shared data-access layer: raw port interfaces + DI tokens (storage-
-    shaped), shared cross-feature facades (consumer-shaped, ADR 0002), hand-written
-    models, `generated/` API client (committed, never hand-edited), adapters, and
-    in-memory fakes for tests.
+    shaped), shared cross-feature facades (consumer-shaped, ADR 0002; split into
+    stateless DataAccess and stateful Store, ADR 0008), hand-written models,
+    `generated/` API client (committed, never hand-edited), adapters, and in-memory
+    fakes for tests.
   - `ui/` — the presentation-layer foundation: `@angular/cdk` + `@angular/aria`-backed
     components and their coordination-only singleton services, plus the design-token
     runtime bridge (ADR 0006, ADR 0007). See `src/app/ui/SPEC.md`.
@@ -92,7 +96,8 @@ This repo is the Diary Calendar app. Before changing anything, read
   `scrolling`) are imported only inside the lazy chunk of the feature that uses them;
   only the lightweight ones (`a11y`, `overlay`, `portal`, `bidi`) may run eagerly.
 - **Dependency injection boundary**: only a feature's top-level (route-loaded)
-  component may inject a facade or a `ui/` service. Every component it renders beneath
+  component may inject a facade (a `DataAccess` or a `Store`, see ADR 0008) or a `ui/`
+  service. Every component it renders beneath
   itself is presentation-only — `input()` / `output()` / `model()` and nothing else.
   (Framework primitives a component structurally needs — `ElementRef`, `DestroyRef` —
   aren't "a service" in this sense and stay unrestricted.) This makes a component's
@@ -124,11 +129,17 @@ This repo is the Diary Calendar app. Before changing anything, read
   (`features/<feature>/`, wraps that feature's own ports) or shared (`data/`, when a
   shape is reused across ≥2 features — promote on second use). Only facades and
   `core/`'s wiring inject raw ports. See ADR 0002.
+- A facade is one of two kinds (ADR 0008): a stateless **DataAccess** — wraps a port
+  with `resource()`, exposes domain-shaped signals plus a derived loading signal, owns
+  no state of its own — or a stateful **Store**, built on `@ngrx/signals`, for the rare
+  case where a facade genuinely accumulates state beyond one async call. DataAccess is
+  the default; promote to a Store only when it earns it.
 - Naming makes the kind legible: raw ports keep `*Repository`/`*Port`/`*Source`;
-  facades get a distinct, purpose-named identifier, never named to look like a
-  repository.
-- Presentation code must not name, import, or branch on a concrete service, store,
-  adapter, `HttpClient`, or IndexedDB API.
+  DataAccess facades take a `*DataAccess` suffix, Stores a `*Store` suffix, and a
+  facade with a distinct purpose-named identifier (e.g. `TrackerLookup`) is exempt from
+  the suffix but never named to look like a repository.
+- Presentation injects a DataAccess or a Store and nothing beneath it — never a concrete
+  adapter, `HttpClient`, or IndexedDB API directly.
 - Adapters are bound to tokens only in `core/`.
 - Every persisted aggregate carries: client-generated UUID `id`, `createdAt`,
   `updatedAt`, nullable `deletedAt` (soft delete), integer `revision`, `ownerId`,
@@ -171,6 +182,6 @@ This repo is the Diary Calendar app. Before changing anything, read
 - Use `CONTEXT.md` terms exactly: Tracker, Tracker Version, Draft, Archived Tracker,
   Entry, Field, Reference Field, Child Entry, Preset, Snapshot, Calendar, Owner, User,
   Time mode, Point, Period, Day-bucketed, Fadeout, Tag, Correlation, Signal, Bucket, Lag,
-  Discovery scan, Directed view.
+  Discovery scan, Directed view, Signal overlay.
 - Never use a term from an `_Avoid_` list (entity, instance, category, interval, …) for
   the concept it warns against — not in code identifiers, comments, or docs.

@@ -48,10 +48,12 @@ Calendar, Entry, Tracker, Point, Period, Day-bucketed, Fadeout, Child Entry. See
 
 ## Data & API contract touched
 
-- The Calendar page injects a feature-local `CalendarFacade` (wrapping
-  `EntryRepository.listByRange(start, end, { includeChildren })` — the only read this
-  feature does) plus `TrackerLookup` (`data/`'s shared facade, for the toggle panel) —
-  never the raw ports directly, per ADR 0002.
+- The Calendar page injects a feature-local `CalendarDataAccess` (a stateless
+  DataAccess, ADR 0008 — wrapping `EntryRepository.listByRange(start, end,
+  { includeChildren })` via `resource()`, exposing a domain-shaped `entries` signal
+  plus a derived `isLoading` signal — the only read this feature does) plus
+  `TrackerLookup` (`data/`'s shared facade, for the toggle panel) — never the raw ports
+  directly, per ADR 0002.
 - No writes here beyond starting an Entry (delegated to the entries feature's Modal).
 - Pure module `calendar-layout` — given resolved covered intervals, compute overlap
   columns and pixel geometry for a viewport; independent of Angular.

@@ -88,9 +88,11 @@ Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
 
 ## Data & API contract touched
 
-- The Correlation page injects a feature-local `CorrelationFacade` (never the raw port
-  below directly) plus `TrackerLookup` (`data/`'s shared facade, for the Signal-scope
-  picker) — per ADR 0002. `CorrelationFacade` wraps:
+- The Correlation page injects a feature-local `CorrelationStore` (a stateful Store,
+  built on `@ngrx/signals`, ADR 0008 — never the raw port below directly) plus
+  `TrackerLookup` (`data/`'s shared facade, for the Signal-scope picker) — per ADR
+  0002. `CorrelationStore` owns scan progress, cancellation, the ranked results list,
+  and pinned-pair preferences as patched state, and wraps:
 - `CorrelationDataSource` port: `loadEntriesForScope(range, signalScope)` returning
   Entries + needed children + the specific Tracker Versions each Entry references (not
   a Tracker's current schema — an old Entry's Signal reads against its own pinned

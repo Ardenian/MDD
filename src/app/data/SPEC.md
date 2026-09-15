@@ -5,9 +5,11 @@
 The shared boundary between the whole app and where data lives. Two layers live here
 (ADR 0002): **raw ports**, storage-shaped, injected only by facades and by `core/`'s
 wiring; and **shared facades**, consumer-shaped, injected directly by any feature's
-top-level component when a data shape is reused across ≥2 features. Concrete adapters
-are wired in `core/` and never named by features. The API contract is generated from
-the `api-spec/` TypeSpec package (ADR 0004).
+top-level component when a data shape is reused across ≥2 features. A facade is either
+a stateless **DataAccess** or a stateful **Store** (ADR 0008); this repo's only shared
+facade, `TrackerLookup`, is a DataAccess. Concrete adapters are wired in `core/` and
+never named by features. The API contract is generated from the `api-spec/` TypeSpec
+package (ADR 0004).
 
 ## Structure
 
@@ -33,11 +35,12 @@ src/app/data/
 
 ## Shared facades (v1 surface)
 
-- **`TrackerLookup`**: `list(): { id, name, archived }[]`. Wraps `TrackerRepository`,
-  stripped to the shape every consumer actually needs — a name and archived-state per
-  Tracker, nothing about Fields or Versions. Consumed directly by Trackers' own list
-  view, Calendar's per-Tracker toggle panel, and Correlation's Signal-scope picker; none
-  of those three own it, so it lives here rather than in any one `features/` folder.
+- **`TrackerLookup`** (DataAccess): `list(): { id, name, archived }[]`, plus a derived
+  `isLoading` signal. Wraps `TrackerRepository` via `resource()`, stripped to the shape
+  every consumer actually needs — a name and archived-state per Tracker, nothing about
+  Fields or Versions. Consumed directly by Trackers' own list view, Calendar's
+  per-Tracker toggle panel, and Correlation's Signal-scope picker; none of those three
+  own it, so it lives here rather than in any one `features/` folder.
 
 ## Raw ports (v1 surface)
 

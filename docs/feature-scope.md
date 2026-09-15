@@ -120,8 +120,9 @@ shared data-access layer; a backend can replace that later without touching feat
 - Richer per-Field value visualisations (rating stars, gauges, etc.)
 - Deeper correlation: automatic lag recommendation from data, partial correlation,
   controlling for confounders
-- Cramér's V / categorical×categorical correlation (v1 ships Spearman and point-biserial
-  only — no Signal kind currently produces the multi-category input Cramér's V needs)
+- Cramér's V / categorical×categorical correlation — no v1 Signal kind produces the
+  multi-category input it needs (every kind reduces to a numeric mean or a [0,1]
+  fraction per Bucket); revisit once one does — see `correlation/SPEC.md` → Out of scope
 - Child-Entry reordering (drag-and-drop) within a "many"-cardinality reference Field
   (v1 keeps creation order; combining reorder with the self-referencing tree display is
   a bigger a11y/interaction problem deferred past v1)

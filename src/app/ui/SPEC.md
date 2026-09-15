@@ -101,7 +101,7 @@ lightweight — may be used from `core/`/`ui/` eagerly.
   index), produces the correctly reordered array without mutating the input.
 - Nested list's `childrenAccessor` resolves a self-referencing (cyclic-capable) data
   shape without infinite recursion, respecting the same expansion-depth cap used
-  elsewhere (`trackers/SPEC.md`).
+  elsewhere (`entries/SPEC.md`).
 - Table's sort comparator: stable sort (equal keys preserve original relative order);
   ascending/descending toggle; a `null`/`undefined` value sorts consistently to one end.
 

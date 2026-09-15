@@ -9,8 +9,9 @@ rules of its own.
 
 - I set the default Bucket size to weekly and the default Lag range to −7…+7; the
   Correlation page opens with those next time.
-- I lower the reference **expansion-depth cap** from 5 to 3; new deep reference chains in
-  the Tracker designer are limited accordingly.
+- I lower the reference **expansion-depth cap** from its default of 5 to 3; the next
+  time I nest a child Entry deep enough to hit the new limit, the Entry form blocks it
+  — the Tracker designer itself never checks this cap (see `entries/SPEC.md`).
 - I click **Clear local data**, confirm a typed phrase, and the IndexedDB database is
   wiped and the app reloads empty.
 
@@ -32,8 +33,10 @@ Bucket, Lag, expansion depth, Tracker, Entry. See [`CONTEXT.md`](../../../../CON
 
 ## Data & API contract touched
 
-- The Settings page injects a feature-local `SettingsFacade` (never the raw ports
-  below directly) — per ADR 0002. `SettingsFacade` wraps:
+- The Settings page injects a feature-local `SettingsDataAccess` (a stateless
+  DataAccess, ADR 0008 — never the raw ports below directly) — per ADR 0002.
+  `SettingsDataAccess` wraps `resource()` around the read below and exposes
+  domain-shaped signals plus a derived `isLoading` signal; it wraps:
 - Settings persist via a `SettingsRepository` port (IndexedDB adapter) so they survive
   reloads and are covered by ADR 0003 fields like everything else.
 - "Clear local data" calls a `MaintenancePort.clearAll()` implemented by the adapter
@@ -48,7 +51,9 @@ Bucket, Lag, expansion depth, Tracker, Entry. See [`CONTEXT.md`](../../../../CON
 - Lag range validation: min ≤ max; zero-width allowed (lag-0 only).
 - Guardrail thresholds: p in (0, 1]; min n ≥ 1.
 - `clearAll()` empties every store and leaves exactly one Calendar record.
-- Reading defaults before any have been saved returns the documented fallback values.
+- Reading defaults before any have been saved returns the documented fallback values:
+  expansion-depth cap **5**; Bucket size, Lag range, and guardrail thresholds as stated
+  in `correlation/SPEC.md`.
 
 ## Out of scope
 
