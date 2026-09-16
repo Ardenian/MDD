@@ -1,18 +1,6 @@
 {
-  "enabledPlugins": {
-    "mattpocock-skills@mattpocock": true
-  },
-  "extraKnownMarketplaces": {
-    "mattpocock": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/mattpocock/skills.git"
-      },
-      "autoUpdate": false
-    }
-  },
   "permissions": {
-    "deny":[      
+    "deny": [
       "Bash(npm install*)",
       "Bash(npm i *)",
       "Bash(npm uninstall*)",
@@ -34,5 +22,17 @@
       "MultiEdit(node_modules/**)",
       "MultiEdit(**/node_modules/**)"
     ]
+  },
+  "enabledPlugins": {
+    "mattpocock-skills@mattpocock": true
+  },
+  "extraKnownMarketplaces": {
+    "mattpocock": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/mattpocock/skills.git"
+      },
+      "autoUpdate": false
+    }
   }
 }
