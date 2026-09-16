@@ -2,5 +2,31 @@
   "greeting": "Welcome to {{ title }}",
   "languageSwitcher": {
     "label": "Language"
+  },
+  "app": {
+    "title": "Diary Calendar",
+    "skipToContent": "Skip to main content",
+    "nav": {
+      "label": "Main",
+      "calendar": "Calendar",
+      "trackers": "Trackers",
+      "correlation": "Correlation",
+      "settings": "Settings",
+      "dataTransfer": "Data Transfer"
+    },
+    "routeAnnouncement": "Navigated to {{ page }}"
+  },
+  "toast": {
+    "dismiss": "Dismiss"
+  },
+  "errors": {
+    "not-found": "That record no longer exists.",
+    "invalid": "That change is not allowed.",
+    "conflict": "Someone else changed this first. Reload and try again.",
+    "unsupported": "This app cannot read that file.",
+    "unavailable": "Your local data is unavailable right now."
+  },
+  "serviceWorker": {
+    "updateAvailable": "A new version is ready. Reload to update."
   }
 }

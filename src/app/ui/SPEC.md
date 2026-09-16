@@ -10,19 +10,36 @@ that does.
 
 ## Status
 
-As of this writing, only `UiLocaleService` (`ui/services/ui-locale.service.ts`) is
-built. Every other service (`OverlayService`, `DialogService`, `ToastService`,
-`FocusService`, `DesignTokenService`) and every component (Modal, Select/Multiselect,
-Combobox, Reorderable list, Nested list, Table) described below is target design, not
-yet implemented — this SPEC describes the shape they take as they land, per this repo's
-spec-driven-development practice.
+Built: every service (`UiLocaleService`, `DesignTokenService`, `ToastService`,
+`DialogService`, `OverlayService`, `FocusService`), the design-token pipeline, and the
+components with more than one consumer — **Modal**, **Select**, **Multiselect**,
+**Toast list** — plus the pure modules the remaining components are built on
+(`reorderable-list/reorder.ts`, `nested-list/bounded-children.ts`).
+
+**Combobox**, **Reorderable list** and **Nested list** land with their first consumer
+rather than ahead of one, per the promotion rule below and ADR 0006's "a CDK-backed
+piece with exactly one consumer" reasoning: Reorderable list with the Tracker designer,
+Combobox and Nested list with the Entry form. They still live here, not in those
+features, because this SPEC already establishes them as shared ground. **Table** remains
+unbuilt for the reason its own entry gives.
 
 ## Who may use what
 
 Per ADR 0002: only a feature's **top-level (route-loaded) component** may inject a
-`ui/` service. Every `ui/` **component** is itself presentation-only internally — no
-`ui/` component injects a facade or a `data/` port; it receives everything through
-`input()` / `output()` / `model()`, same as any other nested component.
+`ui/` service.
+
+**Every component under `ui/components/` injects nothing at all.** Its whole boundary is
+`input()` / `output()` / `model()`; the only exception is a framework primitive a
+component structurally needs (`ElementRef`, `DestroyRef`). This is stricter than "no
+facade, no `data/` port", and deliberately so: it makes `ui/` components trivially
+mountable in any context and keeps every question of *where data comes from* on the
+feature side of the boundary. `ui/services/` is the only DI-holding code here.
+
+Where a CDK primitive normally demands injection — `DIALOG_DATA`, `DialogRef`,
+`OverlayRef` — the injecting wrapper lives in the consuming feature, and `ui/` supplies
+the DI-free chrome that wrapper renders. `DialogService.open()` and
+`OverlayService.openPopover()` therefore take an `inputs` map and set it on the opened
+component, instead of handing it an injection token to read.
 
 ## Services (`ui/services/`) — singleton coordination only
 
@@ -61,11 +78,21 @@ component, there's nothing for a service to own.
 
 ## Components (`ui/components/`)
 
-- **Modal** — the standard dialog chrome (header/body/footer/close-button), built on
-  `DialogService`. Every v1 dialog-shaped flow uses this, never `DialogService` raw:
-  the Entry create/edit form (its already-specified focus-trap-on-open/focus-return-
-  on-close behavior *is* this component), Settings' "Clear local data" confirmation,
-  and Data Transfer's import confirm-by-typing guard.
+- **Modal** — the standard dialog chrome (header/body/footer/close-button), rendered
+  *inside* a dialog `DialogService` opened. The component itself injects nothing and
+  knows nothing about how it got on screen; the focus trap on open and focus restore on
+  close come from `cdk/dialog` underneath `DialogService`, not from this component. Every
+  v1 dialog-shaped flow renders this chrome rather than styling a bare dialog: the Entry
+  create/edit form, Settings' "Clear local data" confirmation, and Data Transfer's import
+  confirm-by-typing guard.
+- **Schema fields** — renders one control per `FieldDef` of a Tracker Version against a
+  set of values, and emits value changes. DI-free like every component here, so the Entry
+  form (entries) and the Preset editor (trackers) can each render it against their own
+  feature's data. It lives here rather than in either feature precisely because both need
+  it, which is what keeps `trackers` from importing `entries` to reuse the Entry form.
+- **Toast list** — renders `ToastService`'s queued messages and emits dismissals. The
+  announcing is the service's job; this is only the visible surface, so `core/`'s layout
+  shell injects the service and feeds this component.
 - **Select / Multiselect** — `@angular/aria` Listbox/Select/Multiselect directives.
   Backs single-select and multi-select Fields on the Entry form, the reference-target
   and cardinality pickers in the Tracker designer, and Settings' Storage Profile picker.
@@ -74,7 +101,14 @@ component, there's nothing for a service to own.
   per the existing a11y requirement. Backs Field reordering in the Tracker designer.
 - **Nested list** — `cdk/tree`, using `childrenAccessor` (fits a self-referencing
   structure without forcing flattening). Backs embedded child-Entry display
-  (Meal → Ingredients).
+  (Meal → Ingredients). Note the apparent conflict with `AGENTS.md`'s "`@angular/aria`
+  owns … Tree": that rule is about tree *widgets* — a navigable, roving-focus structure —
+  whereas this is a nest of embedded editable forms whose only tree-shaped requirement is
+  structural. ADR 0006's mandate is explicitly behaviour-scoped, so `cdk/tree`'s
+  structure-without-interaction is the right primitive here.
+  `nested-list/bounded-children.ts` supplies the `childrenAccessor`: it stops at the
+  expansion-depth cap and drops a node that is already its own ancestor, so a
+  self-referencing Tracker cannot make it recurse forever.
 - **Table** — `cdk/table`, headless: column definitions, row data, and sort state as
   inputs, sort-change as output; a hand-built clickable-header pattern for sorting
   (stable CDK ships no sort primitive — that's Material-only). Generic and reusable the
@@ -85,10 +119,11 @@ component, there's nothing for a service to own.
 
 ## Design tokens
 
-- Source: `src/styles/tokens/` (SCSS map — color, spacing, typography scale, radius,
-  shadow/elevation, z-index, motion).
-- Generated: `src/app/ui/tokens.generated.ts` (committed, never hand-edited), consumed
-  only by `DesignTokenService`.
+- Source: `src/styles/tokens/_tokens.scss` (one flat SCSS map — color, spacing,
+  typography scale, radius, shadow/elevation, z-index, motion, control sizing).
+- Generated: `src/app/ui/tokens.generated.ts` (committed, never hand-edited) via
+  `pnpm run tokens:generate` (`scripts/generate-tokens.mjs`), consumed only by
+  `DesignTokenService`.
 - Consumption: every stylesheet in the app (components, `src/styles/base/`) references
   `var(--token-name)` — never a literal, never the SCSS map directly.
 

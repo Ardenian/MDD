@@ -13,11 +13,9 @@ package (ADR 0004).
 
 ## Status
 
-As of this writing, none of the below is built yet — no `ports/`, `facades/`, `model/`,
-`adapters/`, or `testing/` exist in `src/app/data/` (only this `SPEC.md`, `README.md`,
-and the committed `generated/api-client.ts`). This SPEC describes the target shape those
-folders take as code lands, per this repo's spec-driven-development practice; see
-`README.md`'s "Planned layout" note for the same status on the folder tree.
+Built: `model/`, `ports/` (all seven), `adapters/indexeddb/` (every port), `testing/`
+(engine double, data-layer factory, shared contract suite), and `facades/tracker-lookup.ts`.
+`adapters/http/` is still the later milestone it always was.
 
 ## Structure
 
@@ -37,8 +35,12 @@ src/app/data/
   generated/        # swagger-typescript-api output — committed, never hand-edited
   adapters/
     indexeddb/      # v1 implementation of every port
+      idb-engine.ts     # the storage seam + the only code touching `indexedDB`
+      record-meta.ts    # pure ADR 0003 stamping
+      records.ts        # live-row filtering, creation ordering, not-found guards
+      *-repository.ts   # one per port, all logic over the engine
     http/           # later: implementation over generated/ client
-  testing/          # in-memory fakes of every port, for feature unit tests
+  testing/          # the engine double + the data-layer factory + the contract suite
 ```
 
 ## Shared facades (v1 surface)
@@ -71,7 +73,12 @@ src/app/data/
   every live row of every aggregate plus Settings, excluding `activeProfileId`;
   `importAll(data)` — rejects a format-version mismatch outright, otherwise replaces all
   existing data with the bundle's contents, leaving `activeProfileId` untouched
-  throughout (ADR 0009, `data-transfer/SPEC.md`).
+  throughout (ADR 0009, `data-transfer/SPEC.md`); `counts()` — live rows per aggregate,
+  backing the confirm-before-destroy displays Settings and Data Transfer both show;
+  `ensureCalendar()` — create-if-absent for the single implicit Calendar, called by
+  `core/` at bootstrap and by `clearAll()`/`importAll()` when they re-seed. The Calendar
+  has no port of its own precisely because nothing but these whole-database operations
+  touches it.
 
 All returns are the hand-written `model/` types. Ports are transport-agnostic: no
 `HttpClient`, no `Observable<HttpResponse>`, no IndexedDB types leak through.
@@ -93,11 +100,22 @@ facades do (ADR 0002).
 ## IndexedDB adapter (v1)
 
 - One object store per aggregate, plus a `trackerVersions` store keyed by
-  `(trackerId, version)`, append-only; indices for range queries on Entries
-  (`start`, `parentId`, `trackerId`, `trackerVersion`) and Tag prefix search.
+  `(trackerId, version)`, append-only, and a `calendars` store for the single implicit
+  Calendar.
+- **The engine seam.** No repository touches `indexedDB` itself. They all talk to
+  `IdbEngine`, a deliberately key-value-only interface (`getAll`/`get`/`put`/`putAll`/
+  `delete`/`clear`); `BrowserIdbEngine` is the single implementation over the real
+  database. Range math, soft-delete filtering and ordering therefore live in the
+  repositories, in one implementation, rather than being split between an index
+  definition and a predicate — which is also what lets the whole adapter be tested
+  without a database (see **Test cases**). Per-aggregate indices are a performance
+  optimisation available behind this same interface if a dataset ever grows enough to
+  need one; v1 does not.
 - Enforces the record invariants on write; honours `deletedAt` on read; `archived`
   Trackers are excluded from "creatable"/"reference-target" queries but not from direct
   `get`/`getVersion` lookups.
+- Soft-deleting an Entry cascades to its children: a child is only ever reachable
+  through its parent, so leaving it live would strand it.
 - No schema-version migration story needed yet (single app version); the store version
   is bumped only when indices change. (Not to be confused with **Tracker Version** —
   that's an application-level concept stored as ordinary rows, unrelated to the
@@ -124,8 +142,15 @@ facades do (ADR 0002).
 - `TrackerLookup.list()`: returns every Tracker (including archived) as `{id, name,
   archived}` only — no Fields, no Versions; reflects a rename immediately (it's
   metadata, not versioned, per ADR 0005).
-- In-memory fakes in `testing/` satisfy the same contract tests as the IndexedDB adapter
-  (shared test suite runs against both).
+- **How the adapter is tested.** `testing/port-contract.suite.ts` is one shared contract
+  suite, parameterised by a factory, stating the behaviour any implementation of these
+  ports must exhibit. `testing/in-memory-data-layer.ts` runs the **real** repositories
+  against `InMemoryIdbEngine` — the engine is swapped, the logic under test is not — and
+  is also what feature unit tests inject in place of the ports. So there is no second,
+  hand-written set of fakes to drift out of step with the adapter: the only code the
+  suite cannot reach is the thin `BrowserIdbEngine` wrapper, which e2e covers by driving
+  the real database. The suite takes a factory precisely so the later HTTP adapter runs
+  through it unchanged.
 - `generated/` is import-clean and not referenced anywhere outside `adapters/http/`.
 - `MaintenancePort.exportAll()` / `importAll()`: see `data-transfer/SPEC.md` for the
   full contract and test cases (excluded `activeProfileId`, format-version rejection,

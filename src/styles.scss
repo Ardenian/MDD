@@ -1,1 +1,6 @@
-/* You can add global styles to this file, and also import other style files */
+// Global styles. Design-token values are applied at runtime by DesignTokenService
+// (ADR 0007); everything here references them as `var(--name)`.
+
+@use '@angular/cdk/overlay-prebuilt.css';
+@use 'styles/base/reset';
+@use 'styles/base/utilities';

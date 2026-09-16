@@ -2,5 +2,31 @@
   "greeting": "Willkommen bei {{ title }}",
   "languageSwitcher": {
     "label": "Sprache"
+  },
+  "app": {
+    "title": "Tagebuch-Kalender",
+    "skipToContent": "Zum Hauptinhalt springen",
+    "nav": {
+      "label": "Hauptnavigation",
+      "calendar": "Kalender",
+      "trackers": "Tracker",
+      "correlation": "Korrelation",
+      "settings": "Einstellungen",
+      "dataTransfer": "Datenübertragung"
+    },
+    "routeAnnouncement": "Navigiert zu {{ page }}"
+  },
+  "toast": {
+    "dismiss": "Schließen"
+  },
+  "errors": {
+    "not-found": "Dieser Datensatz existiert nicht mehr.",
+    "invalid": "Diese Änderung ist nicht zulässig.",
+    "conflict": "Jemand hat dies zuerst geändert. Bitte neu laden und erneut versuchen.",
+    "unsupported": "Diese App kann diese Datei nicht lesen.",
+    "unavailable": "Deine lokalen Daten sind derzeit nicht verfügbar."
+  },
+  "serviceWorker": {
+    "updateAvailable": "Eine neue Version ist bereit. Zum Aktualisieren neu laden."
   }
 }

@@ -40,13 +40,28 @@ features consume what it produces. See [ADR 0005](../../../../docs/adr/0005-trac
 Tracker, Tracker Version, Draft, Archived Tracker, Field, Reference Field, Child Entry,
 Preset, Snapshot, Time mode, expansion depth. See [`CONTEXT.md`](../../../../CONTEXT.md).
 
+## Status
+
+Built: the Tracker list, the Tracker editor (Draft editing, reorder, commit/discard,
+rename, default Time mode, archive/unarchive), the `tracker-schema` pure module, and
+`TrackersDataAccess`. The **Preset panel** lands with the Entry form it reuses — see
+`ui/SPEC.md`'s Schema fields component and the note under **Preset panel** below.
+
 ## UI
+
+The feature has **two** route components, not one: `/trackers` (list) and
+`/trackers/:trackerId` (editor). Both are top-level, so both may inject a facade; the
+selected Tracker arrives as a route-bound `input()`, which is what keeps
+`TrackersDataAccess` a stateless DataAccess rather than something holding a selection
+(ADR 0008).
 
 - **Tracker list**: name, current Version number, Field count, Entry count, Preset
   count, archived badge; create button; archived Trackers shown in a separate,
-  collapsed section, excluded from every picker elsewhere in the app.
-- **Tracker editor**: the feature's top-level (route) component — the only place in
-  this feature allowed to inject a facade or a `ui/` service.
+  collapsed section, excluded from every picker elsewhere in the app. The Entry and
+  Preset counts come from `EntryRepository.countsByTracker()` /
+  `PresetRepository.countsByTracker()` — one read each, rather than a per-row query.
+- **Tracker editor**: the feature's other top-level (route) component — with the list,
+  the only place in this feature allowed to inject a facade or a `ui/` service.
   - name; default Time mode (point / period / day-bucketed) — both apply immediately,
     no commit needed
   - **Draft** Field rows, built on `ui/`'s **Reorderable list** (`cdk/drag-drop`,
@@ -62,9 +77,11 @@ Preset, Snapshot, Time mode, expansion depth. See [`CONTEXT.md`](../../../../CON
   - **Archive** / **Unarchive** action (no confirmation flow needed — reversible, no
     data at risk)
 - **Preset panel** within the Tracker editor: list of Presets, each showing its pinned
-  Version and a **stale** badge when behind current; Preset editor reuses the Entry form
-  (entries feature) in "no placement" mode; saving a stale Preset re-pins it to the
-  Tracker's current Version and clears the badge.
+  Version and a **stale** badge when behind current; saving a stale Preset re-pins it to
+  the Tracker's current Version and clears the badge. The Preset editor renders `ui/`'s
+  **Schema fields** component in "no placement" mode — the *same component* the Entry
+  form renders, rather than importing the entries feature, which `AGENTS.md` forbids.
+  That component is DI-free, so each feature feeds it from its own facade.
 - All controls keyboard reachable; Field reordering and Draft/Commit operable without a
   pointer; the stale badge and Draft indicator are announced via `aria-live`.
 

@@ -1,0 +1,70 @@
+{
+  "trackers": {
+    "list": {
+      "heading": "Tracker",
+      "create": "Neuer Tracker",
+      "namePlaceholder": "Tracker-Name",
+      "empty": "Noch keine Tracker. Lege einen an, um mit dem Erfassen zu beginnen.",
+      "archivedHeading": "Archiviert",
+      "version": "Version {{ version }}",
+      "noVersion": "Keine festgeschriebene Version",
+      "counts": "{{ fields }} Felder · {{ entries }} Einträge · {{ presets }} Presets",
+      "archivedBadge": "Archiviert",
+      "open": "Öffnen"
+    },
+    "designer": {
+      "heading": "Tracker-Designer",
+      "name": "Name",
+      "defaultTimeMode": "Standard-Zeitmodus",
+      "timeMode": {
+        "point": "Zeitpunkt",
+        "period": "Zeitraum",
+        "dayBucketed": "Tagesbezogen"
+      },
+      "draftHeading": "Entwurfsfelder",
+      "addField": "Feld hinzufügen",
+      "commit": "Entwurf festschreiben",
+      "discard": "Entwurf verwerfen",
+      "archive": "Archivieren",
+      "unarchive": "Aus Archiv holen",
+      "back": "Zurück zu den Trackern",
+      "draftDiffers": "Dieser Entwurf weicht von Version {{ version }} ab. Festschreiben erzeugt die nächste Version.",
+      "draftMatches": "Dieser Entwurf entspricht der festgeschriebenen Version.",
+      "committed": "Festgeschriebene Version {{ version }}.",
+      "noFields": "Noch keine Felder.",
+      "moveUp": "Feld nach oben",
+      "moveDown": "Feld nach unten"
+    },
+    "field": {
+      "name": "Feldname",
+      "dataType": "Datentyp",
+      "required": "Pflichtfeld",
+      "remove": "Feld entfernen",
+      "options": "Optionen",
+      "addOption": "Option hinzufügen",
+      "optionPlaceholder": "Option",
+      "removeOption": "Option entfernen",
+      "referenceTarget": "Ziel-Tracker",
+      "cardinality": "Kardinalität",
+      "cardinalityOne": "Eins",
+      "cardinalityMany": "Viele",
+      "type": {
+        "text": "Text",
+        "longText": "Langtext",
+        "integer": "Ganzzahl",
+        "decimal": "Dezimalzahl",
+        "boolean": "Ja/Nein",
+        "singleSelect": "Einfachauswahl",
+        "multiSelect": "Mehrfachauswahl",
+        "reference": "Referenz"
+      }
+    },
+    "problems": {
+      "empty-name": "Feld {{ index }}: Ein Feld braucht einen Namen.",
+      "duplicate-name": "Feld {{ index }}: „{{ name }}“ wird bereits verwendet.",
+      "empty-option-set": "Feld {{ index }}: Füge mindestens eine Option hinzu.",
+      "duplicate-option": "Feld {{ index }}: „{{ option }}“ ist doppelt vorhanden.",
+      "missing-reference-target": "Feld {{ index }}: Wähle einen Ziel-Tracker."
+    }
+  }
+}

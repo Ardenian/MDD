@@ -1,0 +1,70 @@
+{
+  "trackers": {
+    "list": {
+      "heading": "Trackers",
+      "create": "New Tracker",
+      "namePlaceholder": "Tracker name",
+      "empty": "No Trackers yet. Create one to start logging.",
+      "archivedHeading": "Archived",
+      "version": "Version {{ version }}",
+      "noVersion": "No committed Version",
+      "counts": "{{ fields }} Fields · {{ entries }} Entries · {{ presets }} Presets",
+      "archivedBadge": "Archived",
+      "open": "Open"
+    },
+    "designer": {
+      "heading": "Tracker designer",
+      "name": "Name",
+      "defaultTimeMode": "Default Time mode",
+      "timeMode": {
+        "point": "Point",
+        "period": "Period",
+        "dayBucketed": "Day-bucketed"
+      },
+      "draftHeading": "Draft Fields",
+      "addField": "Add Field",
+      "commit": "Commit Draft",
+      "discard": "Discard Draft",
+      "archive": "Archive",
+      "unarchive": "Unarchive",
+      "back": "Back to Trackers",
+      "draftDiffers": "This Draft differs from Version {{ version }}. Commit to mint the next Version.",
+      "draftMatches": "This Draft matches the committed Version.",
+      "committed": "Committed Version {{ version }}.",
+      "noFields": "No Fields yet.",
+      "moveUp": "Move Field up",
+      "moveDown": "Move Field down"
+    },
+    "field": {
+      "name": "Field name",
+      "dataType": "Data type",
+      "required": "Required",
+      "remove": "Remove Field",
+      "options": "Options",
+      "addOption": "Add option",
+      "optionPlaceholder": "Option",
+      "removeOption": "Remove option",
+      "referenceTarget": "Target Tracker",
+      "cardinality": "Cardinality",
+      "cardinalityOne": "One",
+      "cardinalityMany": "Many",
+      "type": {
+        "text": "Text",
+        "longText": "Long text",
+        "integer": "Integer",
+        "decimal": "Decimal",
+        "boolean": "Yes/No",
+        "singleSelect": "Single-select",
+        "multiSelect": "Multi-select",
+        "reference": "Reference"
+      }
+    },
+    "problems": {
+      "empty-name": "Field {{ index }}: a Field needs a name.",
+      "duplicate-name": "Field {{ index }}: \"{{ name }}\" is already used.",
+      "empty-option-set": "Field {{ index }}: add at least one option.",
+      "duplicate-option": "Field {{ index }}: \"{{ option }}\" is listed twice.",
+      "missing-reference-target": "Field {{ index }}: choose a target Tracker."
+    }
+  }
+}

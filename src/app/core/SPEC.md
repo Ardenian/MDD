@@ -6,6 +6,14 @@ App-wide wiring that is not a feature: dependency injection of data adapters, of
 shell, routing skeleton, error handling, and the single implicit Calendar. `core/` is
 the only place that names concrete adapters (ADR 0002).
 
+## Status
+
+Built: adapter wiring (`data-providers.ts`), Storage Profile resolution
+(`storage-profile.ts`), the Calendar bootstrap and design-token initializers, global
+error handling (`error/`), the lazy route table, the layout shell, route announcements,
+and the service worker. The feature route components exist as their features' top-level
+entry points and are filled in by each feature's own phase.
+
 ## Responsibilities
 
 ### Adapter wiring
@@ -16,8 +24,13 @@ the only place that names concrete adapters (ADR 0002).
   providers. v1 has exactly one Profile, **Offline**, which always resolves to the
   **IndexedDB adapter** — but the wiring is Profile-driven from day one, not
   hardcoded. See [ADR 0009](../../../docs/adr/0009-storage-profile-and-data-transfer.md).
-- A single switch point where an HTTP (or other) adapter set can be added as a new
-  Storage Profile later with no feature changes.
+- `ActivePortSet` holds the resolved set and **every port token reads from it**, so the
+  whole set swaps together and can never end up half one Profile and half another. The
+  `PORT_SET_BUILDERS` map is the single switch point: a later HTTP adapter set is one
+  entry there and no feature change.
+- Bootstrap reads the Profile with the default (Offline) set before binding the one it
+  names — the settings read has to come from somewhere, and in v1 both are the same
+  adapter anyway.
 - Changing the active Storage Profile (Settings) takes effect on the next app reload —
   adapters are not hot-swapped at runtime.
 
@@ -26,7 +39,10 @@ the only place that names concrete adapters (ADR 0002).
   `IdentityContext` service that adapters read when stamping records (ADR 0003).
   Internally backed by the app-wide `@ngrx/store` (see below); adapters read
   `identityContext.ownerId()` / `.userId()` as plain signals and stay unaware of that.
-- Ensure exactly one Calendar record exists on first run (create-if-absent).
+- Ensure exactly one Calendar record exists on first run, via
+  `MaintenancePort.ensureCalendar()` (create-if-absent). The Calendar gets no port of its
+  own because nothing but whole-database operations ever touches it — `clearAll()` and
+  `importAll()` re-seed through the same call.
 
 ### App-wide state (`@ngrx/store`)
 - `@ngrx/store` (not `@ngrx/signals`) holds state that must be reachable across the

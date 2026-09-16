@@ -10,6 +10,7 @@
   ],
   "exclude": [
     "src/**/*.spec.ts",
+    "src/**/*.suite.ts",
     "src/**/*.integration.ts",
     "src/**/*.pom.ts",
     "src/**/*.scenario.ts"
