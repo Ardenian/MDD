@@ -12,29 +12,27 @@
     }
   },
   "permissions": {
-    "allow": ["Grep"]
-  },
-  "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true,
-    "allowUnsandboxedCommands": false,
-    "network": {
-      "allowedDomains": [
-        "registry.npmjs.org",
-        "registry.yarnpkg.com"
-      ]
-    },
-    "filesystem": {
-      "denyWrite": [
-        "node_modules",
-        "package.json",
-        "npm-shrinkwrap.json",
-        "package-lock.json",
-        "pnpm-lock.yaml",
-        "yarn.lock",
-        "bun.lockb",
-        "bun.lock"
-      ]
-    }
+    "deny":[      
+      "Bash(npm install*)",
+      "Bash(npm i *)",
+      "Bash(npm uninstall*)",
+      "Bash(npm update*)",
+      "Bash(yarn add*)",
+      "Bash(yarn remove*)",
+      "Bash(pnpm add*)",
+      "Bash(pnpm remove*)",
+      "Bash(pip install*)",
+      "Bash(pip uninstall*)",
+      "Bash(poetry add*)",
+      "Bash(poetry remove*)",
+      "Bash(cargo add*)",
+      "Bash(cargo remove*)",
+      "Write(node_modules/**)",
+      "Write(**/node_modules/**)",
+      "Edit(node_modules/**)",
+      "Edit(**/node_modules/**)",
+      "MultiEdit(node_modules/**)",
+      "MultiEdit(**/node_modules/**)"
+    ]
   }
 }
