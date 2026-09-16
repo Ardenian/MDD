@@ -8,6 +8,15 @@ and the design-token runtime bridge (ADR 0007). `shared/` keeps its stricter "pu
 zero DI" meaning for everything with no CDK/aria involvement; `ui/` is for everything
 that does.
 
+## Status
+
+As of this writing, only `UiLocaleService` (`ui/services/ui-locale.service.ts`) is
+built. Every other service (`OverlayService`, `DialogService`, `ToastService`,
+`FocusService`, `DesignTokenService`) and every component (Modal, Select/Multiselect,
+Combobox, Reorderable list, Nested list, Table) described below is target design, not
+yet implemented — this SPEC describes the shape they take as they land, per this repo's
+spec-driven-development practice.
+
 ## Who may use what
 
 Per ADR 0002: only a feature's **top-level (route-loaded) component** may inject a

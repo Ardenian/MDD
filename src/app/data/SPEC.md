@@ -11,6 +11,14 @@ facade, `TrackerLookup`, is a DataAccess. Concrete adapters are wired in `core/`
 never named by features. The API contract is generated from the `api-spec/` TypeSpec
 package (ADR 0004).
 
+## Status
+
+As of this writing, none of the below is built yet — no `ports/`, `facades/`, `model/`,
+`adapters/`, or `testing/` exist in `src/app/data/` (only this `SPEC.md`, `README.md`,
+and the committed `generated/api-client.ts`). This SPEC describes the target shape those
+folders take as code lands, per this repo's spec-driven-development practice; see
+`README.md`'s "Planned layout" note for the same status on the folder tree.
+
 ## Structure
 
 ```
