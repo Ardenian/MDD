@@ -117,6 +117,11 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
 - Design tokens authored in SCSS (`src/styles/tokens/`), applied at runtime as CSS
   custom properties via `DesignTokenService` (ADR 0007)
 - Responsive layout; WCAG AA, AXE-clean; keyboard and focus management
+- Translations via `@ngx-translate/core`: English (fallback) and German in v1, statically
+  bundled (no HTTP loader). Browser language by default, overridable in Settings,
+  persisted across reloads. Cross-cutting strings load eagerly (`common` namespace);
+  per-feature strings load with that feature's lazy chunk. `uiLocale` lives in the new
+  app-wide `@ngrx/store`, alongside identity — see [ADR 0010](adr/0010-app-wide-state-in-ngrx-store.md)
 
 ---
 
@@ -157,6 +162,10 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
   abstraction (ADR 0009) is deliberately pre-wired for this — v1 ships Offline only, and
   Data Transfer's export/import is the anticipated (manual) migration path until one
   exists.
+- **Translating each feature's own UI strings.** The `@ngx-translate/core` infrastructure
+  (loader, `common` namespace, locale state) is wired and proven on the app shell; each
+  feature migrating its own strings into `features/<feature>/i18n/translations/` happens
+  as that feature is built, not as a bulk pass.
 
 ---
 

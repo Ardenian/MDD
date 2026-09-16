@@ -184,6 +184,16 @@
   }
 </style>
 
+<div class="locale-switcher">
+  <label for="ui-locale-select">{{ 'languageSwitcher.label' | translate }}</label>
+  <select id="ui-locale-select" [value]="uiLocale.uiLocale()" (change)="onLocaleChange($event)">
+    @for (locale of supportedLocales; track locale) {
+      <option [value]="locale">{{ locale }}</option>
+    }
+  </select>
+  <p>{{ 'greeting' | translate: { title: title() } }}</p>
+</div>
+
 <main class="main">
   <div class="content">
     <div class="left-side">

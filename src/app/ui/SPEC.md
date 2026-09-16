@@ -37,6 +37,13 @@ in more than one place.
   custom properties via `provideAppInitializer` (ADR 0007). No public API beyond
   bootstrap in v1; a future theme switch calls a method on it rather than being added
   from scratch.
+- **`UiLocaleService`** — thin facade over the app-wide `@ngrx/store`'s `uiLocale` slice
+  (ADR 0010): exposes `uiLocale`/`isExplicit` as signals and a `selectLanguage()` method
+  that dispatches the change. The only thing presentation code injects for locale —
+  never the raw `Store`. `core/` owns the store's actions/reducer/selectors and the
+  `@ngrx/effects` that persist a change and drive `TranslateService`; this service is
+  purely a read/dispatch facade over that state, the same shape of problem
+  `DesignTokenService` solves for theming.
 
 **Not services**: `Select`/`Multiselect`/`Combobox` (via `@angular/aria`) and the
 Reorderable list / Nested list (via `cdk/drag-drop` / `cdk/tree`) are directive-backed

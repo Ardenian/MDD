@@ -1,0 +1,6 @@
+{
+  "greeting": "Welcome to {{ title }}",
+  "languageSwitcher": {
+    "label": "Language"
+  }
+}

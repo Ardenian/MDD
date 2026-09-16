@@ -24,7 +24,34 @@ the only place that names concrete adapters (ADR 0002).
 ### Identity & Calendar context
 - Provide `ownerId` and `userId`, both hardcoded to `"dev"` in v1, through an
   `IdentityContext` service that adapters read when stamping records (ADR 0003).
+  Internally backed by the app-wide `@ngrx/store` (see below); adapters read
+  `identityContext.ownerId()` / `.userId()` as plain signals and stay unaware of that.
 - Ensure exactly one Calendar record exists on first run (create-if-absent).
+
+### App-wide state (`@ngrx/store`)
+- `@ngrx/store` (not `@ngrx/signals`) holds state that must be reachable across the
+  entire application: `uiLocale` and `IdentityContext`'s `ownerId`/`userId`. Everything
+  ADR 0008 covers (feature/shared facades) stays on `@ngrx/signals` — see
+  [ADR 0010](../../../docs/adr/0010-app-wide-state-in-ngrx-store.md).
+- `core/state/locale/` — `uiLocale` + `isExplicit`. Initial value resolves at store
+  creation: an explicit `localStorage` choice wins, else the browser's language if
+  supported, else English. `@ngrx/effects` persists an explicit change to `localStorage`
+  and calls `TranslateService.use()`; a `provideAppInitializer` applies the resolved
+  initial locale to `TranslateService` once at bootstrap.
+- `core/state/identity/` — static `dev`/`dev` in v1, no actions.
+- `ui/`'s `UiLocaleService` is the only thing presentation code injects to read or
+  change `uiLocale` — never the raw `Store`.
+
+### Translations (`@ngx-translate/core`)
+- `core/i18n/StaticCommonTranslateLoader` statically imports the `common` namespace
+  (`core/i18n/translations/{locale}/common.json`) instead of fetching it over HTTP — this
+  app is offline-first (ADR 0003) with no service-worker asset caching yet, so a loader
+  with zero runtime network dependency is the safer default.
+- Supported locales: `en` (fallback), `de`. A feature that needs its own translated
+  strings adds `features/<feature>/i18n/translations/{locale}/<feature>.json` and
+  provides a child `TranslateService` (`provideChildTranslateService`) scoped to its
+  lazy route, which falls back to the root (`common`) service for any key it doesn't
+  define — no feature has needed this yet.
 
 ### Offline shell
 - Register a **service worker** that caches the app shell (HTML, JS, CSS, fonts, icons)
@@ -63,6 +90,10 @@ Calendar, Owner, User, Storage Profile, Tracker, Entry. See
   adapter set; v1 always resolves to Offline → IndexedDB, and an unset/unknown
   `activeProfileId` falls back to Offline rather than failing bootstrap.
 - `IdentityContext` returns `dev`/`dev`; adapters stamp `ownerId`/`userId` from it.
+- Locale reducer: `resolveInitialLocale` prefers a stored, supported locale over the
+  browser's; among browser languages only a supported primary subtag matches; falls
+  back to English when nothing matches. Dispatching `languageSelected` sets `uiLocale`
+  and marks it explicit.
 - First-run bootstrap creates exactly one Calendar; second run creates none.
 - `ErrorHandler` maps a thrown adapter error to `DataError`, does not rethrow, and
   calls `ToastService` exactly once per error.
