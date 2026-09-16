@@ -88,6 +88,10 @@ This repo is the Diary Calendar app. Before changing anything, read
   - `styles/` — global SCSS: design-token source (`tokens/`), base/reset, utilities.
     Feature-specific styling stays component-colocated, never a separate per-feature
     global stylesheet.
+  - `testing/` — cross-cutting Playwright test support that no single feature or `ui/`
+    component owns (e.g. the IndexedDB-reset fixture). Test-only, excluded from the
+    production build. Page Object Models, Flows, and spec files themselves do NOT live
+    here — see Testing below.
 - A feature MUST NOT import from another feature. `shared/` imports only from `shared/`.
   Cross-feature data flows through `data/`'s shared facades, never a feature reaching
   into another feature's folder.
@@ -159,13 +163,28 @@ This repo is the Diary Calendar app. Before changing anything, read
 
 ### Testing
 
-- Every non-UI unit of logic ships with Vitest tests in the same change. This
-  specifically includes Tracker Draft/commit versioning, Preset staleness, Fadeout
-  resolution, calendar layout, signal extraction, bucketing, correlation statistics,
-  lag scan, and significance correction.
+- Every non-UI unit of logic ships with Vitest tests (`*.spec.ts`, colocated) in the
+  same change. This specifically includes Tracker Draft/commit versioning, Preset
+  staleness, Fadeout resolution, calendar layout, signal extraction, bucketing,
+  correlation statistics, lag scan, and significance correction.
 - Pure logic lives in framework-free modules so it is testable without Angular.
-- UI and interaction coverage is deferred to future integration and e2e suites — do not
-  add component/DOM tests in v1 unless asked.
+- Every v1 feature's user stories and happy paths ship Playwright **e2e** coverage
+  (`*.e2e.ts`, always in `tests/stories/`, never colocated) in the same change —
+  driving the real app against its real adapters (IndexedDB, generated API client).
+  See ADR 0011.
+- UI-only concerns (form validation, keyboard nav, error/empty states) that don't need
+  real persistence to be meaningful ship as Playwright **integration** tests
+  (`*.integration.ts`, colocated next to the component like a Vitest spec) once ADR
+  0014's Angular mount harness exists. Until then, cover the same concern as an e2e
+  test tagged `@integration-candidate` for later migration. See ADR 0011, ADR 0014.
+- Every Playwright test and Flow drives the app exclusively through Page Object Models
+  (`*.pom.ts`, colocated) — never a raw `page.locator`/`getBy*`/`page.evaluate` call in
+  a spec or Flow file. POMs query exclusively by `data-testid`; collisions are resolved
+  by nesting child POMs scoped to a parent's `Locator`, never by namespacing the id.
+  See ADR 0012.
+- A **Flow** (`*.flow.ts`, always in `tests/flows/`, never colocated) is a named,
+  reusable sequence of POM steps (e.g. "create a Tracker"). Flows are the one place
+  test code may compose Page Object Models across feature boundaries. See ADR 0013.
 
 ### Spec-driven development
 

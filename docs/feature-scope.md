@@ -122,6 +122,21 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
   persisted across reloads. Cross-cutting strings load eagerly (`common` namespace);
   per-feature strings load with that feature's lazy chunk. `uiLocale` lives in the new
   app-wide `@ngrx/store`, alongside identity — see [ADR 0010](adr/0010-app-wide-state-in-ngrx-store.md)
+- A Playwright "gallery" component-mount harness for Angular (`window.mount` /
+  `window.unmount`, fake providers per scenario), enabling integration tests without a
+  backend or IndexedDB — in scope for v1, tracked as its own implementation task
+  separate from feature work, picked up alongside the first feature that needs it
+  (ADR 0014)
+
+### Testing — [ADR 0011](adr/0011-e2e-first-testing-integration-deferred-to-mount-harness.md) · [ADR 0012](adr/0012-page-object-models-mandatory.md) · [ADR 0013](adr/0013-flows-compose-page-object-models.md)
+- Every v1 feature's user stories and happy paths get Playwright e2e coverage
+  (`tests/stories/`) against the real app and its real adapters, in the same change
+  that implements the feature
+- UI-only concerns (form validation, keyboard nav, error/empty states) get Playwright
+  integration coverage once the mount harness (ADR 0014) exists; until then, the
+  equivalent e2e test is tagged `@integration-candidate` for later migration
+- Every Playwright test and Flow drives the app exclusively through Page Object Models
+  and Flows (`tests/flows/`) — never a raw DOM query in a spec
 
 ---
 
@@ -144,7 +159,6 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
 - Child-Entry reordering (drag-and-drop) within a "many"-cardinality reference Field
   (v1 keeps creation order; combining reorder with the self-referencing tree display is
   a bigger a11y/interaction problem deferred past v1)
-- Integration and end-to-end test suites for UI and interaction
 - **Tracker Version & merge migration tooling** (one consolidated theme — see
   [ADR 0005](adr/0005-tracker-versioning.md)): a read-only Tracker Version history/diff
   viewer; migrating a Snapshot from an old Tracker Version to a newer one; merging one

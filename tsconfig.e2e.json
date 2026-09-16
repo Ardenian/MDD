@@ -1,0 +1,18 @@
+/* Covers every Playwright-facing file: colocated Page Object Models, integration
+ * tests, and mount-harness scenarios under src/, plus e2e specs and Flows under
+ * tests/. Kept separate from tsconfig.app.json (which excludes all of these so
+ * they never reach the production build) and tsconfig.spec.json (Vitest, which
+ * only picks up *.spec.ts). See ADR 0011, ADR 0012, ADR 0013, ADR 0014. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "@playwright/test"]
+  },
+  "include": [
+    "playwright.config.ts",
+    "src/**/*.integration.ts",
+    "src/**/*.pom.ts",
+    "src/**/*.scenario.ts",
+    "tests/**/*.ts"
+  ]
+}
