@@ -28,6 +28,7 @@
     "@ngrx/signals": "^22.0.1",
     "@ngrx/store": "^22.0.1",
     "@ngx-translate/core": "^18.0.0",
+    "@playwright/mcp": "^0.0.81",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
