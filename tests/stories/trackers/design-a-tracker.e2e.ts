@@ -110,6 +110,7 @@ test.describe('Designing a Tracker', () => {
     await list.open();
 
     await expect(list.list.row(trackerId).self).toHaveCount(0);
+    await list.expandArchived();
     await expect(list.archivedList.row(trackerId).archivedBadge).toBeVisible();
     await expect(list.archivedList.row(trackerId).version).toHaveText(/1/);
   });

@@ -7,11 +7,13 @@ import {
 import type { SettingsRepository } from '../../ports/settings-repository';
 import type { IdbEngine } from './idb-engine';
 import { stampCreate, stampUpdate, type StampContext } from './record-meta';
+import type { WriteQueue } from './write-queue';
 
 export class IndexedDbSettingsRepository implements SettingsRepository {
   constructor(
     private readonly engine: IdbEngine,
     private readonly context: StampContext,
+    private readonly queue: WriteQueue,
   ) {}
 
   /** Never writes: unsaved settings simply read as the documented fallbacks. */
@@ -21,13 +23,15 @@ export class IndexedDbSettingsRepository implements SettingsRepository {
   }
 
   async save(patch: SettingsPatch): Promise<AppSettings> {
-    const stored = await this.engine.get<AppSettings>('settings', SETTINGS_RECORD_ID);
-    const settings =
-      stored === undefined
-        ? { ...this.defaults(), ...patch }
-        : stampUpdate(stored, patch, this.context);
-    await this.engine.put('settings', SETTINGS_RECORD_ID, settings);
-    return settings;
+    return this.queue.run(async () => {
+      const stored = await this.engine.get<AppSettings>('settings', SETTINGS_RECORD_ID);
+      const settings =
+        stored === undefined
+          ? { ...this.defaults(), ...patch }
+          : stampUpdate(stored, patch, this.context);
+      await this.engine.put('settings', SETTINGS_RECORD_ID, settings);
+      return settings;
+    });
   }
 
   private defaults(): AppSettings {

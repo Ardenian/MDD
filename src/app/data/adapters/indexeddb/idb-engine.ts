@@ -2,13 +2,7 @@ import { InjectionToken } from '@angular/core';
 import { DataError } from '../../model/data-error';
 
 export type StoreName =
-  | 'trackers'
-  | 'trackerVersions'
-  | 'entries'
-  | 'presets'
-  | 'tags'
-  | 'settings'
-  | 'calendars';
+  'trackers' | 'trackerVersions' | 'entries' | 'presets' | 'tags' | 'settings' | 'calendars';
 
 export const STORE_NAMES: readonly StoreName[] = [
   'trackers',
@@ -34,7 +28,10 @@ export interface IdbEngine {
   getAll<T>(store: StoreName): Promise<readonly T[]>;
   get<T>(store: StoreName, key: string): Promise<T | undefined>;
   put<T>(store: StoreName, key: string, value: T): Promise<void>;
-  putAll<T>(store: StoreName, records: readonly (readonly [key: string, value: T])[]): Promise<void>;
+  putAll<T>(
+    store: StoreName,
+    records: readonly (readonly [key: string, value: T])[],
+  ): Promise<void>;
   delete(store: StoreName, key: string): Promise<void>;
   clear(store: StoreName): Promise<void>;
 }
@@ -53,7 +50,11 @@ export class BrowserIdbEngine implements IdbEngine {
   }
 
   async get<T>(store: StoreName, key: string): Promise<T | undefined> {
-    return this.run(store, 'readonly', (objectStore) => objectStore.get(key) as IDBRequest<T | undefined>);
+    return this.run(
+      store,
+      'readonly',
+      (objectStore) => objectStore.get(key) as IDBRequest<T | undefined>,
+    );
   }
 
   async put<T>(store: StoreName, key: string, value: T): Promise<void> {
@@ -121,5 +122,7 @@ export class BrowserIdbEngine implements IdbEngine {
 }
 
 function toDataError(cause: DOMException | null): DataError {
-  return new DataError('unavailable', cause?.message ?? 'The local database is unavailable', { cause });
+  return new DataError('unavailable', cause?.message ?? 'The local database is unavailable', {
+    cause,
+  });
 }

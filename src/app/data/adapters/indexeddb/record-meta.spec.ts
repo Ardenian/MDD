@@ -1,4 +1,10 @@
-import { isLive, stampCreate, stampSoftDelete, stampUpdate, type StampContext } from './record-meta';
+import {
+  isLive,
+  stampCreate,
+  stampSoftDelete,
+  stampUpdate,
+  type StampContext,
+} from './record-meta';
 
 function contextAt(instant: string, id = 'generated-uuid'): StampContext {
   return {
@@ -11,7 +17,10 @@ function contextAt(instant: string, id = 'generated-uuid'): StampContext {
 
 describe('stampCreate', () => {
   it('assigns identity, timestamps and revision 1', () => {
-    const record = stampCreate({ name: 'Sleep' }, contextAt('2026-01-01T10:00:00.000Z', 'tracker-1'));
+    const record = stampCreate(
+      { name: 'Sleep' },
+      contextAt('2026-01-01T10:00:00.000Z', 'tracker-1'),
+    );
 
     expect(record).toEqual({
       name: 'Sleep',
@@ -28,7 +37,12 @@ describe('stampCreate', () => {
   it('stamps ownerId and userId from the identity context', () => {
     const record = stampCreate(
       { name: 'Sleep' },
-      { ownerId: 'owner-9', userId: 'user-4', now: () => '2026-01-01T10:00:00.000Z', newId: () => 'x' },
+      {
+        ownerId: 'owner-9',
+        userId: 'user-4',
+        now: () => '2026-01-01T10:00:00.000Z',
+        newId: () => 'x',
+      },
     );
 
     expect(record.ownerId).toBe('owner-9');
@@ -37,10 +51,17 @@ describe('stampCreate', () => {
 });
 
 describe('stampUpdate', () => {
-  const created = stampCreate({ name: 'Sleep' }, contextAt('2026-01-01T10:00:00.000Z', 'tracker-1'));
+  const created = stampCreate(
+    { name: 'Sleep' },
+    contextAt('2026-01-01T10:00:00.000Z', 'tracker-1'),
+  );
 
   it('bumps revision and updatedAt while preserving createdAt and identity', () => {
-    const updated = stampUpdate(created, { name: 'Sleep & Rest' }, contextAt('2026-02-02T08:30:00.000Z'));
+    const updated = stampUpdate(
+      created,
+      { name: 'Sleep & Rest' },
+      contextAt('2026-02-02T08:30:00.000Z'),
+    );
 
     expect(updated).toEqual({
       ...created,
@@ -60,7 +81,9 @@ describe('stampUpdate', () => {
   it('never lets a caller overwrite the record invariants', () => {
     const updated = stampUpdate(
       created,
-      { id: 'hijacked', revision: 99, createdAt: '1999-01-01T00:00:00.000Z' } as Partial<typeof created>,
+      { id: 'hijacked', revision: 99, createdAt: '1999-01-01T00:00:00.000Z' } as Partial<
+        typeof created
+      >,
       contextAt('2026-02-02T08:30:00.000Z'),
     );
 
@@ -71,7 +94,10 @@ describe('stampUpdate', () => {
 });
 
 describe('stampSoftDelete', () => {
-  const created = stampCreate({ name: 'Sleep' }, contextAt('2026-01-01T10:00:00.000Z', 'tracker-1'));
+  const created = stampCreate(
+    { name: 'Sleep' },
+    contextAt('2026-01-01T10:00:00.000Z', 'tracker-1'),
+  );
 
   it('sets deletedAt and bumps the revision', () => {
     const deleted = stampSoftDelete(created, contextAt('2026-03-03T12:00:00.000Z'));

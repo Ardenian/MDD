@@ -30,7 +30,7 @@ export async function createTracker(page: Page, options: CreateTrackerOptions): 
   await list.createTracker(options.name);
 
   const designer = new TrackerDesignerPageObject(page);
-  await designer.nameInput.waitFor();
+  const trackerId = await designer.trackerId();
 
   for (const [index, field] of (options.fields ?? []).entries()) {
     await designer.addField();
@@ -56,5 +56,5 @@ export async function createTracker(page: Page, options: CreateTrackerOptions): 
     await designer.commit();
   }
 
-  return designer.trackerId();
+  return trackerId;
 }

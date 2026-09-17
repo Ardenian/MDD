@@ -5,11 +5,13 @@ import type { TrackerRepository } from '../../ports/tracker-repository';
 import type { IdbEngine } from './idb-engine';
 import { stampCreate, stampUpdate, type StampContext } from './record-meta';
 import { byCreation, liveOnly, requireLive } from './records';
+import type { WriteQueue } from './write-queue';
 
 export class IndexedDbTrackerRepository implements TrackerRepository {
   constructor(
     private readonly engine: IdbEngine,
     private readonly context: StampContext,
+    private readonly queue: WriteQueue,
   ) {}
 
   async list(): Promise<readonly Tracker[]> {
@@ -22,51 +24,61 @@ export class IndexedDbTrackerRepository implements TrackerRepository {
   }
 
   async create(input: TrackerCreateInput): Promise<Tracker> {
-    const fields = input.fields ?? [];
-    const tracker = stampCreate(
-      {
-        name: input.name,
-        defaultTimeMode: input.defaultTimeMode,
-        currentVersion: 0,
-        archived: false,
-        draftFields: fields,
-      },
-      this.context,
-    );
-    await this.engine.put('trackers', tracker.id, tracker);
-    return fields.length === 0 ? tracker : this.mintVersion(tracker, fields);
+    return this.queue.run(async () => {
+      const fields = input.fields ?? [];
+      const tracker = stampCreate(
+        {
+          name: input.name,
+          defaultTimeMode: input.defaultTimeMode,
+          currentVersion: 0,
+          archived: false,
+          draftFields: fields,
+        },
+        this.context,
+      );
+      await this.engine.put('trackers', tracker.id, tracker);
+      return fields.length === 0 ? tracker : this.mintVersion(tracker, fields);
+    });
   }
 
   async saveDraft(id: string, fields: readonly FieldDef[]): Promise<Tracker> {
-    const tracker = await this.require(id);
-    return this.write(stampUpdate(tracker, { draftFields: fields }, this.context));
+    return this.queue.run(async () => {
+      const tracker = await this.require(id);
+      return this.write(stampUpdate(tracker, { draftFields: fields }, this.context));
+    });
   }
 
   async commitDraft(id: string): Promise<Tracker> {
-    const tracker = await this.require(id);
-    const current =
-      tracker.currentVersion > 0
-        ? await this.getVersion(tracker.id, tracker.currentVersion)
-        : undefined;
+    return this.queue.run(async () => {
+      const tracker = await this.require(id);
+      const current =
+        tracker.currentVersion > 0
+          ? await this.getVersion(tracker.id, tracker.currentVersion)
+          : undefined;
 
-    if (current === undefined) {
-      return tracker.draftFields.length === 0 ? tracker : this.mintVersion(tracker, tracker.draftFields);
-    }
-    return fieldsEqual(current.fields, tracker.draftFields)
-      ? tracker
-      : this.mintVersion(tracker, tracker.draftFields);
+      if (current === undefined) {
+        return tracker.draftFields.length === 0
+          ? tracker
+          : this.mintVersion(tracker, tracker.draftFields);
+      }
+      return fieldsEqual(current.fields, tracker.draftFields)
+        ? tracker
+        : this.mintVersion(tracker, tracker.draftFields);
+    });
   }
 
   async updateMeta(id: string, input: TrackerMetaInput): Promise<Tracker> {
-    const tracker = await this.require(id);
-    const changes: { name?: string; defaultTimeMode?: TimeMode } = {};
-    if (input.name !== undefined) {
-      changes.name = input.name;
-    }
-    if (input.defaultTimeMode !== undefined) {
-      changes.defaultTimeMode = input.defaultTimeMode;
-    }
-    return this.write(stampUpdate(tracker, changes, this.context));
+    return this.queue.run(async () => {
+      const tracker = await this.require(id);
+      const changes: { name?: string; defaultTimeMode?: TimeMode } = {};
+      if (input.name !== undefined) {
+        changes.name = input.name;
+      }
+      if (input.defaultTimeMode !== undefined) {
+        changes.defaultTimeMode = input.defaultTimeMode;
+      }
+      return this.write(stampUpdate(tracker, changes, this.context));
+    });
   }
 
   async archive(id: string): Promise<Tracker> {
@@ -78,12 +90,17 @@ export class IndexedDbTrackerRepository implements TrackerRepository {
   }
 
   async getVersion(trackerId: string, version: number): Promise<TrackerVersion | undefined> {
-    return this.engine.get<TrackerVersion>('trackerVersions', trackerVersionKey(trackerId, version));
+    return this.engine.get<TrackerVersion>(
+      'trackerVersions',
+      trackerVersionKey(trackerId, version),
+    );
   }
 
   private async setArchived(id: string, archived: boolean): Promise<Tracker> {
-    const tracker = await this.require(id);
-    return this.write(stampUpdate(tracker, { archived }, this.context));
+    return this.queue.run(async () => {
+      const tracker = await this.require(id);
+      return this.write(stampUpdate(tracker, { archived }, this.context));
+    });
   }
 
   private async mintVersion(tracker: Tracker, fields: readonly FieldDef[]): Promise<Tracker> {

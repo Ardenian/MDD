@@ -7,12 +7,21 @@ export class TrackerDesignerPageObject {
   private readonly root: Locator;
 
   constructor(private readonly page: Page) {
-    this.root = page.getByTestId('main-content');
+    this.root = page.getByTestId('main-content').getByTestId('tracker-designer');
   }
 
-  /** The designer is reached by opening a Tracker, so its id is in the URL. */
-  trackerId(): string {
-    return this.page.url().split('/trackers/')[1] ?? '';
+  /**
+   * Waits for the designer itself before reading the id from the URL — the list page
+   * re-renders with the new row before navigation completes, so reading the URL any
+   * earlier can still see `/trackers`.
+   */
+  async trackerId(): Promise<string> {
+    await this.nameInput.waitFor();
+    const match = /\/trackers\/([^/?#]+)/.exec(this.page.url());
+    if (match?.[1] === undefined) {
+      throw new Error(`Not on a Tracker designer URL: ${this.page.url()}`);
+    }
+    return match[1];
   }
 
   get nameInput(): Locator {

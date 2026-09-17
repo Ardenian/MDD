@@ -7,11 +7,13 @@ import type { EntryRepository } from '../../ports/entry-repository';
 import type { IdbEngine } from './idb-engine';
 import { stampCreate, stampSoftDelete, stampUpdate, type StampContext } from './record-meta';
 import { byCreation, liveOnly, requireLive } from './records';
+import type { WriteQueue } from './write-queue';
 
 export class IndexedDbEntryRepository implements EntryRepository {
   constructor(
     private readonly engine: IdbEngine,
     private readonly context: StampContext,
+    private readonly queue: WriteQueue,
   ) {}
 
   async get(id: string): Promise<Entry | undefined> {
@@ -50,72 +52,82 @@ export class IndexedDbEntryRepository implements EntryRepository {
   }
 
   async create(input: EntryInput): Promise<Entry> {
-    const tracker = await this.requireTracker(input.trackerId);
-    if (tracker.currentVersion === 0) {
-      throw new DataError(
-        'invalid',
-        `Tracker ${tracker.id} has no committed Tracker Version to snapshot against`,
-      );
-    }
-    const placement = await this.resolvePlacement(input);
+    return this.queue.run(async () => {
+      const tracker = await this.requireTracker(input.trackerId);
+      if (tracker.currentVersion === 0) {
+        throw new DataError(
+          'invalid',
+          `Tracker ${tracker.id} has no committed Tracker Version to snapshot against`,
+        );
+      }
+      const placement = await this.resolvePlacement(input);
 
-    const entry = stampCreate(
-      {
-        trackerId: input.trackerId,
-        trackerVersion: tracker.currentVersion,
-        parentEntryId: input.parentEntryId,
-        placement,
-        snapshot: input.snapshot,
-        tags: input.tags,
-      },
-      this.context,
-    );
-    await this.engine.put('entries', entry.id, entry);
-    await this.registerTags(entry.tags);
-    return entry;
+      const entry = stampCreate(
+        {
+          trackerId: input.trackerId,
+          trackerVersion: tracker.currentVersion,
+          parentEntryId: input.parentEntryId,
+          placement,
+          snapshot: input.snapshot,
+          tags: input.tags,
+        },
+        this.context,
+      );
+      await this.engine.put('entries', entry.id, entry);
+      await this.registerTags(entry.tags);
+      return entry;
+    });
   }
 
   async update(id: string, input: EntryInput): Promise<Entry> {
-    const entry = requireLive(await this.get(id), 'Entry', id);
-    if (input.parentEntryId !== entry.parentEntryId) {
-      throw new DataError('invalid', 'An Entry cannot be re-parented');
-    }
-    if (input.trackerId !== entry.trackerId) {
-      throw new DataError('invalid', 'An Entry cannot be moved to another Tracker');
-    }
-    const placement = await this.resolvePlacement(input);
+    return this.queue.run(async () => {
+      const entry = requireLive(await this.get(id), 'Entry', id);
+      if (input.parentEntryId !== entry.parentEntryId) {
+        throw new DataError('invalid', 'An Entry cannot be re-parented');
+      }
+      if (input.trackerId !== entry.trackerId) {
+        throw new DataError('invalid', 'An Entry cannot be moved to another Tracker');
+      }
+      const placement = await this.resolvePlacement(input);
 
-    const updated = stampUpdate(
-      entry,
-      { placement, snapshot: input.snapshot, tags: input.tags },
-      this.context,
-    );
-    await this.engine.put('entries', updated.id, updated);
-    await this.registerTags(updated.tags);
-    return updated;
+      const updated = stampUpdate(
+        entry,
+        { placement, snapshot: input.snapshot, tags: input.tags },
+        this.context,
+      );
+      await this.engine.put('entries', updated.id, updated);
+      await this.registerTags(updated.tags);
+      return updated;
+    });
   }
 
   /** Cascades: a child is only reachable through its parent, so it goes with it. */
   async softDelete(id: string): Promise<void> {
-    const entries = await this.live();
-    const doomed = new Set<string>([id]);
-    let grew = true;
-    while (grew) {
-      grew = false;
-      for (const entry of entries) {
-        if (entry.parentEntryId !== null && doomed.has(entry.parentEntryId) && !doomed.has(entry.id)) {
-          doomed.add(entry.id);
-          grew = true;
+    return this.queue.run(async () => {
+      const entries = await this.live();
+      const doomed = new Set<string>([id]);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (const entry of entries) {
+          if (
+            entry.parentEntryId !== null &&
+            doomed.has(entry.parentEntryId) &&
+            !doomed.has(entry.id)
+          ) {
+            doomed.add(entry.id);
+            grew = true;
+          }
         }
       }
-    }
 
-    await this.engine.putAll(
-      'entries',
-      entries
-        .filter((entry) => doomed.has(entry.id))
-        .map((entry) => [entry.id, stampSoftDelete(entry, this.context)] as const),
-    );
+      await this.engine.putAll(
+        'entries',
+        entries
+          .filter((entry) => doomed.has(entry.id))
+          .map((entry) => [entry.id, stampSoftDelete(entry, this.context)] as const),
+      );
+    });
   }
 
   private async resolvePlacement(input: EntryInput): Promise<Entry['placement']> {

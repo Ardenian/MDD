@@ -13,49 +13,53 @@ import { TrackersDataAccess } from './trackers-data-access';
   selector: 'app-trackers-page',
   imports: [TranslatePipe, TrackerListRows],
   template: `
-    <header class="trackers__header">
-      <h1 data-testid="page-title">{{ 'trackers.list.heading' | translate }}</h1>
+    <section class="trackers" data-testid="trackers-page">
+      <header class="trackers__header">
+        <h1 data-testid="page-title">{{ 'trackers.list.heading' | translate }}</h1>
 
-      <form class="trackers__create" (submit)="create($event)">
-        <label>
-          <span class="visually-hidden">{{ 'trackers.list.namePlaceholder' | translate }}</span>
-          <input
-            type="text"
-            data-testid="new-tracker-name"
-            [value]="newName()"
-            [attr.placeholder]="'trackers.list.namePlaceholder' | translate"
-            (input)="newName.set($any($event.target).value)"
+        <form class="trackers__create" (submit)="create($event)">
+          <label>
+            <span class="visually-hidden">{{ 'trackers.list.namePlaceholder' | translate }}</span>
+            <input
+              type="text"
+              data-testid="new-tracker-name"
+              [value]="newName()"
+              [attr.placeholder]="'trackers.list.namePlaceholder' | translate"
+              (input)="newName.set($any($event.target).value)"
+            />
+          </label>
+          <button type="submit" data-testid="create-tracker" [disabled]="newName().trim() === ''">
+            {{ 'trackers.list.create' | translate }}
+          </button>
+        </form>
+      </header>
+
+      @if (access.active().length === 0 && access.archived().length === 0) {
+        <p data-testid="trackers-empty">{{ 'trackers.list.empty' | translate }}</p>
+      }
+
+      <app-tracker-list-rows
+        testId="tracker-list"
+        [rows]="access.active()"
+        (opened)="open($event)"
+      />
+
+      @if (access.archived().length > 0) {
+        <details class="trackers__archived" data-testid="archived-section">
+          <summary data-testid="archived-summary">
+            {{ 'trackers.list.archivedHeading' | translate }}
+          </summary>
+          <app-tracker-list-rows
+            testId="archived-tracker-list"
+            [rows]="access.archived()"
+            (opened)="open($event)"
           />
-        </label>
-        <button type="submit" data-testid="create-tracker" [disabled]="newName().trim() === ''">
-          {{ 'trackers.list.create' | translate }}
-        </button>
-      </form>
-    </header>
-
-    @if (access.active().length === 0 && access.archived().length === 0) {
-      <p data-testid="trackers-empty">{{ 'trackers.list.empty' | translate }}</p>
-    }
-
-    <app-tracker-list-rows
-      testId="tracker-list"
-      [rows]="access.active()"
-      (opened)="open($event)"
-    />
-
-    @if (access.archived().length > 0) {
-      <details class="trackers__archived" data-testid="archived-section">
-        <summary>{{ 'trackers.list.archivedHeading' | translate }}</summary>
-        <app-tracker-list-rows
-          testId="archived-tracker-list"
-          [rows]="access.archived()"
-          (opened)="open($event)"
-        />
-      </details>
-    }
+        </details>
+      }
+    </section>
   `,
   styles: `
-    :host {
+    .trackers {
       display: flex;
       flex-direction: column;
       gap: var(--space-5);

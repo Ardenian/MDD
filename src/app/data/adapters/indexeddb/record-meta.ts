@@ -10,7 +10,10 @@ export interface StampContext {
 type Payload<T extends AggregateMeta> = Omit<T, keyof AggregateMeta>;
 
 /** Applies the ADR 0003 invariants to a brand-new record. */
-export function stampCreate<T extends object>(payload: T, context: StampContext): T & AggregateMeta {
+export function stampCreate<T extends object>(
+  payload: T,
+  context: StampContext,
+): T & AggregateMeta {
   const timestamp = context.now();
   return {
     ...payload,

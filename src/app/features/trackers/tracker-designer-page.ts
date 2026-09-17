@@ -22,97 +22,109 @@ const TIME_MODES: readonly TimeMode[] = ['point', 'period', 'dayBucketed'];
   selector: 'app-tracker-designer-page',
   imports: [TranslatePipe, RouterLink, Select, ReorderableList, DraftFieldRow],
   template: `
-    <a routerLink="/trackers" data-testid="back-to-trackers">{{
-      'trackers.designer.back' | translate
-    }}</a>
+    <section class="designer" data-testid="tracker-designer">
+      <a routerLink="/trackers" data-testid="back-to-trackers">{{
+        'trackers.designer.back' | translate
+      }}</a>
 
-    @if (view.tracker(); as tracker) {
-      <header class="designer__header">
-        <label class="designer__name">
-          <span>{{ 'trackers.designer.name' | translate }}</span>
-          <input type="text" data-testid="tracker-name" [value]="tracker.name" (change)="rename($event)" />
-        </label>
+      @if (view.tracker(); as tracker) {
+        <header class="designer__header">
+          <label class="designer__name">
+            <span>{{ 'trackers.designer.name' | translate }}</span>
+            <input
+              type="text"
+              data-testid="tracker-name"
+              [value]="tracker.name"
+              (change)="rename($event)"
+            />
+          </label>
 
-        <ui-select
-          data-testid="tracker-time-mode"
-          [label]="'trackers.designer.defaultTimeMode' | translate"
-          [options]="timeModeOptions()"
-          [value]="tracker.defaultTimeMode"
-          (valueChange)="changeTimeMode($event)"
-        />
+          <ui-select
+            data-testid="tracker-time-mode"
+            [label]="'trackers.designer.defaultTimeMode' | translate"
+            [options]="timeModeOptions()"
+            [value]="tracker.defaultTimeMode"
+            (valueChange)="changeTimeMode($event)"
+          />
 
-        <button type="button" data-testid="archive-toggle" (click)="toggleArchived()">
-          {{
-            (tracker.archived ? 'trackers.designer.unarchive' : 'trackers.designer.archive')
-              | translate
-          }}
-        </button>
-      </header>
+          <button type="button" data-testid="archive-toggle" (click)="toggleArchived()">
+            {{
+              (tracker.archived ? 'trackers.designer.unarchive' : 'trackers.designer.archive')
+                | translate
+            }}
+          </button>
+        </header>
 
-      <p class="designer__status" data-testid="draft-status" aria-live="polite">
-        @if (draftDiffers()) {
-          {{ 'trackers.designer.draftDiffers' | translate: { version: tracker.currentVersion } }}
-        } @else if (tracker.currentVersion > 0) {
-          {{ 'trackers.designer.committed' | translate: { version: tracker.currentVersion } }}
-        } @else {
-          {{ 'trackers.designer.noFields' | translate }}
-        }
-      </p>
-
-      <h2>{{ 'trackers.designer.draftHeading' | translate }}</h2>
-
-      @if (draftFields().length === 0) {
-        <p data-testid="no-fields">{{ 'trackers.designer.noFields' | translate }}</p>
-      } @else {
-        <ui-reorderable-list
-          [items]="draftRows()"
-          [idOf]="rowId"
-          [rowTemplate]="fieldRow"
-          [moveUpLabel]="'trackers.designer.moveUp' | translate"
-          [moveDownLabel]="'trackers.designer.moveDown' | translate"
-          (reordered)="reorder($event)"
-        />
-      }
-
-      <ng-template #fieldRow let-row>
-        <app-draft-field-row
-          [field]="row.field"
-          [trackers]="trackerOptions()"
-          [dataTypeLabels]="dataTypeLabels()"
-          [cardinalityLabels]="cardinalityLabels()"
-          (changed)="replaceField(row.index, $event)"
-          (removed)="removeField(row.index)"
-        />
-      </ng-template>
-
-      <div class="designer__actions">
-        <button type="button" data-testid="add-field" (click)="addField()">
-          {{ 'trackers.designer.addField' | translate }}
-        </button>
-        <button
-          type="button"
-          data-testid="commit-draft"
-          [disabled]="!draftDiffers() || problems().length > 0"
-          (click)="commit()"
-        >
-          {{ 'trackers.designer.commit' | translate }}
-        </button>
-        <button type="button" data-testid="discard-draft" [disabled]="!draftDiffers()" (click)="discard()">
-          {{ 'trackers.designer.discard' | translate }}
-        </button>
-      </div>
-
-      @if (problems().length > 0) {
-        <ul class="designer__problems" data-testid="draft-problems" aria-live="polite">
-          @for (problem of problemMessages(); track $index) {
-            <li>{{ problem }}</li>
+        <p class="designer__status" data-testid="draft-status" aria-live="polite">
+          @if (draftDiffers()) {
+            {{ 'trackers.designer.draftDiffers' | translate: { version: tracker.currentVersion } }}
+          } @else if (tracker.currentVersion > 0) {
+            {{ 'trackers.designer.committed' | translate: { version: tracker.currentVersion } }}
+          } @else {
+            {{ 'trackers.designer.noFields' | translate }}
           }
-        </ul>
+        </p>
+
+        <h2>{{ 'trackers.designer.draftHeading' | translate }}</h2>
+
+        @if (draftFields().length === 0) {
+          <p data-testid="no-fields">{{ 'trackers.designer.noFields' | translate }}</p>
+        } @else {
+          <ui-reorderable-list
+            [items]="draftRows()"
+            [idOf]="rowId"
+            [rowTemplate]="fieldRow"
+            [moveUpLabel]="'trackers.designer.moveUp' | translate"
+            [moveDownLabel]="'trackers.designer.moveDown' | translate"
+            (reordered)="reorder($event)"
+          />
+        }
+
+        <ng-template #fieldRow let-row>
+          <app-draft-field-row
+            [field]="row.field"
+            [trackers]="trackerOptions()"
+            [dataTypeLabels]="dataTypeLabels()"
+            [cardinalityLabels]="cardinalityLabels()"
+            (changed)="replaceField(row.index, $event)"
+            (removed)="removeField(row.index)"
+          />
+        </ng-template>
+
+        <div class="designer__actions">
+          <button type="button" data-testid="add-field" (click)="addField()">
+            {{ 'trackers.designer.addField' | translate }}
+          </button>
+          <button
+            type="button"
+            data-testid="commit-draft"
+            [disabled]="!draftDiffers() || problems().length > 0"
+            (click)="commit()"
+          >
+            {{ 'trackers.designer.commit' | translate }}
+          </button>
+          <button
+            type="button"
+            data-testid="discard-draft"
+            [disabled]="!draftDiffers()"
+            (click)="discard()"
+          >
+            {{ 'trackers.designer.discard' | translate }}
+          </button>
+        </div>
+
+        @if (problems().length > 0) {
+          <ul class="designer__problems" data-testid="draft-problems" aria-live="polite">
+            @for (problem of problemMessages(); track $index) {
+              <li>{{ problem }}</li>
+            }
+          </ul>
+        }
       }
-    }
+    </section>
   `,
   styles: `
-    :host {
+    .designer {
       display: flex;
       flex-direction: column;
       gap: var(--space-5);
@@ -293,10 +305,9 @@ export class TrackerDesignerPage {
   protected commit(): void {
     const tracker = this.view.tracker();
     if (tracker !== undefined) {
-      void this.access.commitDraft(tracker.id).then(() => {
-        this.localDraft.set(null);
-        this.view.reload();
-      });
+      // The local Draft is deliberately kept: it already equals what was committed, and
+      // clearing it here would discard any edit made while the commit was in flight.
+      void this.access.commitDraft(tracker.id).then(() => this.view.reload());
     }
   }
 

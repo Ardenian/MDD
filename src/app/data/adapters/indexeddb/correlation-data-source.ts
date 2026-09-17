@@ -18,7 +18,9 @@ export class IndexedDbCorrelationDataSource implements CorrelationDataSource {
   ) {}
 
   async loadEntriesForScope(range: DateRange, scope: SeriesScope): Promise<CorrelationDataset> {
-    const inRange = await this.entries.listByRange(range.start, range.end, { includeChildren: true });
+    const inRange = await this.entries.listByRange(range.start, range.end, {
+      includeChildren: true,
+    });
     const entries = scopeEntries(inRange, scope);
 
     const [trackers, trackerVersions] = await Promise.all([
@@ -62,7 +64,11 @@ function scopeEntries(entries: readonly Entry[], scope: SeriesScope): readonly E
   while (grew) {
     grew = false;
     for (const entry of entries) {
-      if (entry.parentEntryId !== null && included.has(entry.parentEntryId) && !included.has(entry.id)) {
+      if (
+        entry.parentEntryId !== null &&
+        included.has(entry.parentEntryId) &&
+        !included.has(entry.id)
+      ) {
         included.add(entry.id);
         grew = true;
       }

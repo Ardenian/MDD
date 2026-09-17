@@ -5,7 +5,7 @@ export class TrackersPageObject {
   private readonly root: Locator;
 
   constructor(private readonly page: Page) {
-    this.root = page.getByTestId('main-content');
+    this.root = page.getByTestId('main-content').getByTestId('trackers-page');
   }
 
   async open(): Promise<void> {
@@ -30,6 +30,13 @@ export class TrackersPageObject {
 
   get archivedSection(): Locator {
     return this.root.getByTestId('archived-section');
+  }
+
+  /** The archived section is collapsed by design (trackers/SPEC.md), so open it to read it. */
+  async expandArchived(): Promise<void> {
+    if ((await this.archivedSection.getAttribute('open')) === null) {
+      await this.archivedSection.getByTestId('archived-summary').click();
+    }
   }
 
   /** Creating navigates straight into the designer, which is where Fields are authored. */

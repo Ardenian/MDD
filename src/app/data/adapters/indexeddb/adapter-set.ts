@@ -14,6 +14,7 @@ import type { StampContext } from './record-meta';
 import { IndexedDbSettingsRepository } from './settings-repository';
 import { IndexedDbTagRepository } from './tag-repository';
 import { IndexedDbTrackerRepository } from './tracker-repository';
+import { WriteQueue } from './write-queue';
 
 /** One implementation of every port — what a Storage Profile resolves to (ADR 0009). */
 export interface PortSet {
@@ -31,14 +32,17 @@ export interface PortSet {
  * *binds* a concrete adapter to a port token (ADR 0002).
  */
 export function createIndexedDbPortSet(engine: IdbEngine, context: StampContext): PortSet {
-  const entries = new IndexedDbEntryRepository(engine, context);
+  // One queue for the whole set: an Entry write registers Tags and an import rewrites
+  // every store, so per-repository queues would still let those interleave.
+  const queue = new WriteQueue();
+  const entries = new IndexedDbEntryRepository(engine, context, queue);
   return {
-    trackers: new IndexedDbTrackerRepository(engine, context),
+    trackers: new IndexedDbTrackerRepository(engine, context, queue),
     entries,
-    presets: new IndexedDbPresetRepository(engine, context),
+    presets: new IndexedDbPresetRepository(engine, context, queue),
     tags: new IndexedDbTagRepository(engine),
-    settings: new IndexedDbSettingsRepository(engine, context),
+    settings: new IndexedDbSettingsRepository(engine, context, queue),
     correlation: new IndexedDbCorrelationDataSource(engine, entries),
-    maintenance: new IndexedDbMaintenancePort(engine, context),
+    maintenance: new IndexedDbMaintenancePort(engine, context, queue),
   };
 }

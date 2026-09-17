@@ -157,6 +157,36 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
           code: 'not-found',
         });
       });
+
+      it('applies concurrent metadata changes without losing either', async () => {
+        const tracker = await createSleepTracker();
+
+        await Promise.all([
+          layer.trackers.updateMeta(tracker.id, { name: 'Sleep & Rest' }),
+          layer.trackers.updateMeta(tracker.id, { defaultTimeMode: 'point' }),
+        ]);
+
+        await expect(layer.trackers.get(tracker.id)).resolves.toMatchObject({
+          name: 'Sleep & Rest',
+          defaultTimeMode: 'point',
+        });
+      });
+
+      it('keeps a Draft edit made while a commit is in flight', async () => {
+        const tracker = await createSleepTracker();
+        await layer.trackers.saveDraft(tracker.id, [SATISFACTION, ENERGY]);
+        const edited = [SATISFACTION, { ...ENERGY, name: 'EnergyLevel' }];
+
+        await Promise.all([
+          layer.trackers.commitDraft(tracker.id),
+          layer.trackers.saveDraft(tracker.id, edited),
+        ]);
+
+        await expect(layer.trackers.get(tracker.id)).resolves.toMatchObject({
+          currentVersion: 2,
+          draftFields: edited,
+        });
+      });
     });
 
     describe('EntryRepository', () => {
@@ -586,6 +616,21 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
     });
 
     describe('TagRepository', () => {
+      it('registers a Tag once even when two Entries introduce it concurrently', async () => {
+        const tracker = await createSleepTracker();
+        const input = {
+          trackerId: tracker.id,
+          parentEntryId: null,
+          placement: { kind: 'point', at: '2026-03-01T10:01:00.000Z' },
+          snapshot: [],
+          tags: ['dairy'],
+        } as const;
+
+        await Promise.all([layer.entries.create(input), layer.entries.create(input)]);
+
+        await expect(layer.tags.listAll()).resolves.toHaveLength(1);
+      });
+
       async function tagEntries(tags: readonly (readonly string[])[]): Promise<void> {
         const tracker = await createSleepTracker();
         for (const entryTags of tags) {
@@ -660,6 +705,18 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         await layer.settings.save({ activeProfileId: 'offline', expansionDepthCap: 7 });
 
         await expect(layer.settings.get()).resolves.toMatchObject({ expansionDepthCap: 7 });
+      });
+
+      it('applies concurrent patches without losing either', async () => {
+        await Promise.all([
+          layer.settings.save({ expansionDepthCap: 3 }),
+          layer.settings.save({ defaultBucketSize: 'week' }),
+        ]);
+
+        await expect(layer.settings.get()).resolves.toMatchObject({
+          expansionDepthCap: 3,
+          defaultBucketSize: 'week',
+        });
       });
     });
 
@@ -763,6 +820,12 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         const second = await layer.maintenance.ensureCalendar();
 
         expect(second.id).toBe(first.id);
+      });
+
+      it('creates exactly one Calendar when asked concurrently', async () => {
+        await Promise.all([layer.maintenance.ensureCalendar(), layer.maintenance.ensureCalendar()]);
+
+        await expect(layer.calendars()).resolves.toHaveLength(1);
       });
 
       it('counts live rows per aggregate', async () => {

@@ -8,7 +8,9 @@ export function liveOnly<T extends AggregateMeta>(records: readonly T[]): T[] {
 
 /** Creation order, with `id` breaking a same-millisecond tie so reads are stable. */
 export function byCreation<T extends AggregateMeta>(a: T, b: T): number {
-  return a.createdAt === b.createdAt ? a.id.localeCompare(b.id) : a.createdAt.localeCompare(b.createdAt);
+  return a.createdAt === b.createdAt
+    ? a.id.localeCompare(b.id)
+    : a.createdAt.localeCompare(b.createdAt);
 }
 
 export function requireLive<T extends AggregateMeta>(

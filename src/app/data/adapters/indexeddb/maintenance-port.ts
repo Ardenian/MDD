@@ -21,76 +21,89 @@ import type { MaintenancePort } from '../../ports/maintenance-port';
 import { type IdbEngine, STORE_NAMES, type StoreName } from './idb-engine';
 import { stampCreate, type StampContext } from './record-meta';
 import { liveOnly } from './records';
+import type { WriteQueue } from './write-queue';
 
 export class IndexedDbMaintenancePort implements MaintenancePort {
   constructor(
     private readonly engine: IdbEngine,
     private readonly context: StampContext,
+    private readonly queue: WriteQueue,
   ) {}
 
   async clearAll(): Promise<void> {
-    for (const store of STORE_NAMES) {
-      await this.engine.clear(store);
-    }
-    await this.ensureCalendar();
+    return this.queue.run(() => this.clearAndReseed());
   }
 
+  /** Queued so the snapshot never catches a write half-applied. */
   async exportAll(): Promise<ExportBundle> {
-    const [trackers, trackerVersions, entries, presets, tags, settings] = await Promise.all([
-      this.live<Tracker>('trackers'),
-      this.live<TrackerVersion>('trackerVersions'),
-      this.live<Entry>('entries'),
-      this.live<Preset>('presets'),
-      this.live<Tag>('tags'),
-      this.engine.get<AppSettings>('settings', SETTINGS_RECORD_ID),
-    ]);
+    return this.queue.run(async () => {
+      const [trackers, trackerVersions, entries, presets, tags, settings] = await Promise.all([
+        this.live<Tracker>('trackers'),
+        this.live<TrackerVersion>('trackerVersions'),
+        this.live<Entry>('entries'),
+        this.live<Preset>('presets'),
+        this.live<Tag>('tags'),
+        this.engine.get<AppSettings>('settings', SETTINGS_RECORD_ID),
+      ]);
 
-    return {
-      formatVersion: EXPORT_FORMAT_VERSION,
-      exportedAt: this.context.now(),
-      trackers,
-      trackerVersions,
-      entries,
-      presets,
-      tags,
-      settings: portable(settings),
-    };
+      return {
+        formatVersion: EXPORT_FORMAT_VERSION,
+        exportedAt: this.context.now(),
+        trackers,
+        trackerVersions,
+        entries,
+        presets,
+        tags,
+        settings: portable(settings),
+      };
+    });
   }
 
   async importAll(bundle: ExportBundle): Promise<void> {
-    if (bundle.formatVersion !== EXPORT_FORMAT_VERSION) {
-      throw new DataError(
-        'unsupported',
-        `This file was exported in format version ${bundle.formatVersion}; this app reads version ${EXPORT_FORMAT_VERSION}`,
+    return this.queue.run(async () => {
+      if (bundle.formatVersion !== EXPORT_FORMAT_VERSION) {
+        throw new DataError(
+          'unsupported',
+          `This file was exported in format version ${bundle.formatVersion}; this app reads version ${EXPORT_FORMAT_VERSION}`,
+        );
+      }
+
+      // Read before the wipe: the Storage Profile is device-local and never rides along
+      // in a bundle, in either direction (ADR 0009).
+      const stored = await this.engine.get<AppSettings>('settings', SETTINGS_RECORD_ID);
+      const activeProfileId = stored?.activeProfileId ?? DEFAULT_SETTINGS.activeProfileId;
+
+      await this.clearAndReseed();
+
+      await this.engine.putAll(
+        'trackers',
+        bundle.trackers.map((tracker) => [tracker.id, tracker] as const),
       );
-    }
+      await this.engine.putAll(
+        'trackerVersions',
+        bundle.trackerVersions.map(
+          (version) => [trackerVersionKey(version.trackerId, version.version), version] as const,
+        ),
+      );
+      await this.engine.putAll(
+        'entries',
+        bundle.entries.map((entry) => [entry.id, entry] as const),
+      );
+      await this.engine.putAll(
+        'presets',
+        bundle.presets.map((preset) => [preset.id, preset] as const),
+      );
+      await this.engine.putAll(
+        'tags',
+        bundle.tags.map((tag) => [tag.id, tag] as const),
+      );
 
-    // Read before the wipe: the Storage Profile is device-local and never rides along
-    // in a bundle, in either direction (ADR 0009).
-    const stored = await this.engine.get<AppSettings>('settings', SETTINGS_RECORD_ID);
-    const activeProfileId = stored?.activeProfileId ?? DEFAULT_SETTINGS.activeProfileId;
-
-    await this.clearAll();
-
-    await this.engine.putAll(
-      'trackers',
-      bundle.trackers.map((tracker) => [tracker.id, tracker] as const),
-    );
-    await this.engine.putAll(
-      'trackerVersions',
-      bundle.trackerVersions.map(
-        (version) => [trackerVersionKey(version.trackerId, version.version), version] as const,
-      ),
-    );
-    await this.engine.putAll('entries', bundle.entries.map((entry) => [entry.id, entry] as const));
-    await this.engine.putAll('presets', bundle.presets.map((preset) => [preset.id, preset] as const));
-    await this.engine.putAll('tags', bundle.tags.map((tag) => [tag.id, tag] as const));
-
-    const settings: AppSettings = {
-      ...stampCreate({ ...DEFAULT_SETTINGS, ...bundle.settings, activeProfileId }, this.context),
-      id: SETTINGS_RECORD_ID,
-    };
-    await this.engine.put('settings', SETTINGS_RECORD_ID, settings);
+      const settings: AppSettings = {
+        ...stampCreate({ ...DEFAULT_SETTINGS, ...bundle.settings, activeProfileId }, this.context),
+        id: SETTINGS_RECORD_ID,
+      };
+      await this.engine.put('settings', SETTINGS_RECORD_ID, settings);
+    });
   }
 
   async counts(): Promise<RecordCounts> {
@@ -112,6 +125,17 @@ export class IndexedDbMaintenancePort implements MaintenancePort {
   }
 
   async ensureCalendar(): Promise<Calendar> {
+    return this.queue.run(() => this.seedCalendar());
+  }
+
+  private async clearAndReseed(): Promise<void> {
+    for (const store of STORE_NAMES) {
+      await this.engine.clear(store);
+    }
+    await this.seedCalendar();
+  }
+
+  private async seedCalendar(): Promise<Calendar> {
     const existing = liveOnly(await this.engine.getAll<Calendar>('calendars'));
     const first = existing[0];
     if (first !== undefined) {

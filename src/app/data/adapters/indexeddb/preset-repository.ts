@@ -4,11 +4,13 @@ import type { PresetRepository } from '../../ports/preset-repository';
 import type { IdbEngine } from './idb-engine';
 import { stampCreate, stampSoftDelete, stampUpdate, type StampContext } from './record-meta';
 import { byCreation, liveOnly, requireLive } from './records';
+import type { WriteQueue } from './write-queue';
 
 export class IndexedDbPresetRepository implements PresetRepository {
   constructor(
     private readonly engine: IdbEngine,
     private readonly context: StampContext,
+    private readonly queue: WriteQueue,
   ) {}
 
   async listByTracker(trackerId: string): Promise<readonly Preset[]> {
@@ -29,42 +31,48 @@ export class IndexedDbPresetRepository implements PresetRepository {
   }
 
   async create(input: PresetInput): Promise<Preset> {
-    const tracker = await this.requireTracker(input.trackerId);
-    const preset = stampCreate(
-      {
-        trackerId: input.trackerId,
-        trackerVersion: tracker.currentVersion,
-        name: input.name,
-        values: input.values,
-        children: input.children,
-      },
-      this.context,
-    );
-    await this.engine.put('presets', preset.id, preset);
-    return preset;
+    return this.queue.run(async () => {
+      const tracker = await this.requireTracker(input.trackerId);
+      const preset = stampCreate(
+        {
+          trackerId: input.trackerId,
+          trackerVersion: tracker.currentVersion,
+          name: input.name,
+          values: input.values,
+          children: input.children,
+        },
+        this.context,
+      );
+      await this.engine.put('presets', preset.id, preset);
+      return preset;
+    });
   }
 
   /** Saving re-pins to the current Version, which is what clears staleness (ADR 0005). */
   async update(id: string, input: PresetInput): Promise<Preset> {
-    const preset = requireLive(await this.get(id), 'Preset', id);
-    const tracker = await this.requireTracker(input.trackerId);
-    const updated = stampUpdate(
-      preset,
-      {
-        trackerVersion: tracker.currentVersion,
-        name: input.name,
-        values: input.values,
-        children: input.children,
-      },
-      this.context,
-    );
-    await this.engine.put('presets', updated.id, updated);
-    return updated;
+    return this.queue.run(async () => {
+      const preset = requireLive(await this.get(id), 'Preset', id);
+      const tracker = await this.requireTracker(input.trackerId);
+      const updated = stampUpdate(
+        preset,
+        {
+          trackerVersion: tracker.currentVersion,
+          name: input.name,
+          values: input.values,
+          children: input.children,
+        },
+        this.context,
+      );
+      await this.engine.put('presets', updated.id, updated);
+      return updated;
+    });
   }
 
   async delete(id: string): Promise<void> {
-    const preset = requireLive(await this.get(id), 'Preset', id);
-    await this.engine.put('presets', preset.id, stampSoftDelete(preset, this.context));
+    return this.queue.run(async () => {
+      const preset = requireLive(await this.get(id), 'Preset', id);
+      await this.engine.put('presets', preset.id, stampSoftDelete(preset, this.context));
+    });
   }
 
   private async requireTracker(id: string): Promise<Tracker> {
