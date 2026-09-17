@@ -21,9 +21,9 @@ export const localeFeature = createFeature({
   name: 'locale',
   reducer: createReducer(
     readInitialLocaleState(),
-    on(
-      localeActions.languageSelected,
-      (_state, { locale }): LocaleState => ({ uiLocale: locale, isExplicit: true }),
-    ),
+    on(localeActions.languageSelected, (_state, { locale }): LocaleState => ({
+      uiLocale: locale,
+      isExplicit: true,
+    })),
   ),
 });

@@ -29,9 +29,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "src/styles.scss"
-            ]
+            "styles": ["src/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -87,9 +85,7 @@
             "index": "playwright/gallery/index.html",
             "tsConfig": "tsconfig.gallery.json",
             "inlineStyleLanguage": "scss",
-            "styles": [
-              "src/styles.scss"
-            ]
+            "styles": ["src/styles.scss"]
           }
         },
         "serve": {

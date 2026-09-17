@@ -25,11 +25,7 @@ export interface AppSettings extends AggregateMeta {
 export type SettingsPatch = Partial<
   Pick<
     AppSettings,
-    | 'defaultBucketSize'
-    | 'defaultLagRange'
-    | 'guardrails'
-    | 'expansionDepthCap'
-    | 'activeProfileId'
+    'defaultBucketSize' | 'defaultLagRange' | 'guardrails' | 'expansionDepthCap' | 'activeProfileId'
   >
 >;
 

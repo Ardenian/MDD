@@ -9,11 +9,7 @@ export type FieldValue = string | number | boolean | readonly string[] | null;
 export type FieldValues = Readonly<Record<string, FieldValue>>;
 
 export type FieldValueProblem =
-  | 'required'
-  | 'not-an-integer'
-  | 'not-a-number'
-  | 'unknown-option'
-  | 'too-many-children';
+  'required' | 'not-an-integer' | 'not-a-number' | 'unknown-option' | 'too-many-children';
 
 export function emptyValueFor(field: FieldDef): FieldValue {
   switch (field.dataType) {
@@ -44,7 +40,10 @@ export function isEmptyValue(field: FieldDef, value: FieldValue | undefined): bo
   return Array.isArray(value) && value.length === 0;
 }
 
-export function validateValue(field: FieldDef, value: FieldValue | undefined): FieldValueProblem | null {
+export function validateValue(
+  field: FieldDef,
+  value: FieldValue | undefined,
+): FieldValueProblem | null {
   if (isEmptyValue(field, value)) {
     return field.required ? 'required' : null;
   }
@@ -102,6 +101,8 @@ export function coerceValue(field: FieldDef, raw: unknown): FieldValue {
       return typeof raw === 'string' ? raw : null;
     case 'multiSelect':
     case 'reference':
-      return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === 'string') : [];
+      return Array.isArray(raw)
+        ? raw.filter((item): item is string => typeof item === 'string')
+        : [];
   }
 }

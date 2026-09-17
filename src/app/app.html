@@ -1,4 +1,6 @@
-<a class="skip-link" href="#main-content" data-testid="skip-link">{{ 'app.skipToContent' | translate }}</a>
+<a class="skip-link" href="#main-content" data-testid="skip-link">{{
+  'app.skipToContent' | translate
+}}</a>
 
 <header class="app-header">
   <span class="app-header__title" data-testid="app-title">{{ 'app.title' | translate }}</span>
@@ -41,4 +43,8 @@
 
 <router-outlet name="modal" />
 
-<ui-toast-list [toasts]="toasts()" [dismissLabel]="'toast.dismiss' | translate" (dismissed)="dismissToast($event)" />
+<ui-toast-list
+  [toasts]="toasts()"
+  [dismissLabel]="'toast.dismiss' | translate"
+  (dismissed)="dismissToast($event)"
+/>

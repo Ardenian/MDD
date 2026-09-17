@@ -2,15 +2,21 @@
   "image": "mcr.microsoft.com/devcontainers/typescript-node:24",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
   "workspaceFolder": "/workspace",
-  "mounts": [
-    "source=${localWorkspaceFolderBasename}-git,target=/workspace/.git,type=volume"
-  ],
+  "mounts": ["source=${localWorkspaceFolderBasename}-git,target=/workspace/.git,type=volume"],
   "customizations": {
     "vscode": {
       "settings": {
         "git.enabled": false
       },
-      "extensions": ["Angular.ng-template", "dbaeumer.vscode-eslint", "lokalise.i18n-ally", "esbenp.prettier-vscode", "anthropic.claude-code", "typespec.typespec-vscode", "ms-playwright.playwright"]
+      "extensions": [
+        "Angular.ng-template",
+        "dbaeumer.vscode-eslint",
+        "lokalise.i18n-ally",
+        "esbenp.prettier-vscode",
+        "anthropic.claude-code",
+        "typespec.typespec-vscode",
+        "ms-playwright.playwright"
+      ]
     }
   }
 }

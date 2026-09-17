@@ -40,11 +40,7 @@ export interface ReferenceFieldDef extends FieldDefBase {
 
 /** One property in a Tracker Version's schema. */
 export type FieldDef =
-  | TextFieldDef
-  | NumberFieldDef
-  | BooleanFieldDef
-  | SelectFieldDef
-  | ReferenceFieldDef;
+  TextFieldDef | NumberFieldDef | BooleanFieldDef | SelectFieldDef | ReferenceFieldDef;
 
 export function isSelectField(field: FieldDef): field is SelectFieldDef {
   return field.dataType === 'singleSelect' || field.dataType === 'multiSelect';
@@ -63,7 +59,10 @@ function fieldEquals(a: FieldDef, b: FieldDef): boolean {
     return false;
   }
   if (isSelectField(a) && isSelectField(b)) {
-    return a.options.length === b.options.length && a.options.every((option, index) => option === b.options[index]);
+    return (
+      a.options.length === b.options.length &&
+      a.options.every((option, index) => option === b.options[index])
+    );
   }
   if (isReferenceField(a) && isReferenceField(b)) {
     return a.targetTrackerId === b.targetTrackerId && a.cardinality === b.cardinality;
@@ -76,8 +75,11 @@ function fieldEquals(a: FieldDef, b: FieldDef): boolean {
  * new Tracker Version. Decides whether committing a Draft mints anything (ADR 0005).
  */
 export function fieldsEqual(a: readonly FieldDef[], b: readonly FieldDef[]): boolean {
-  return a.length === b.length && a.every((field, index) => {
-    const other = b[index];
-    return other !== undefined && fieldEquals(field, other);
-  });
+  return (
+    a.length === b.length &&
+    a.every((field, index) => {
+      const other = b[index];
+      return other !== undefined && fieldEquals(field, other);
+    })
+  );
 }

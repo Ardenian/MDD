@@ -1,0 +1,20 @@
+# Written by the package manager.
+pnpm-lock.yaml
+
+# Generated and committed, never hand-edited: formatting them here would be an edit that
+# the next `pnpm run api:sync` throws away (ADR 0004). `tokens.generated.ts` is not
+# listed — its generator emits Prettier-clean output, so it stays formatted by itself.
+src/app/data/generated/
+api-spec/dist/
+
+# Build output and tool caches.
+dist/
+.angular/
+playwright-report/
+test-results/
+coverage/
+
+# Prose. Prettier rewrites Markdown emphasis markers (`*scenario*` to `_scenario_`) and
+# inserts blank lines around lists, which would rewrite every ADR and SPEC in the repo
+# for no reading benefit. Run it on a Markdown file deliberately if you want it.
+**/*.md

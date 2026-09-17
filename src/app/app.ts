@@ -1,7 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { isSupportedLocale, SUPPORTED_LOCALES, type SupportedLocale } from './core/i18n/supported-locale';
+import {
+  isSupportedLocale,
+  SUPPORTED_LOCALES,
+  type SupportedLocale,
+} from './core/i18n/supported-locale';
 import { ToastList } from './ui/components/toast-list/toast-list';
 import { ToastService } from './ui/services/toast.service';
 import { UiLocaleService } from './ui/services/ui-locale.service';

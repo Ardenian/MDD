@@ -11,7 +11,11 @@ import type { Toast } from '../../services/toast.service';
   template: `
     <ul class="toasts" data-testid="toast-list">
       @for (toast of toasts(); track toast.id) {
-        <li class="toasts__item" [class.toasts__item--error]="toast.tone === 'error'" [attr.data-testid]="toast.id">
+        <li
+          class="toasts__item"
+          [class.toasts__item--error]="toast.tone === 'error'"
+          [attr.data-testid]="toast.id"
+        >
           <span class="toasts__message" data-testid="toast-message">{{ toast.message }}</span>
           <button
             type="button"

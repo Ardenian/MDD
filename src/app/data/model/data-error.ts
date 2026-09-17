@@ -1,9 +1,4 @@
-export type DataErrorCode =
-  | 'not-found'
-  | 'invalid'
-  | 'conflict'
-  | 'unsupported'
-  | 'unavailable';
+export type DataErrorCode = 'not-found' | 'invalid' | 'conflict' | 'unsupported' | 'unavailable';
 
 /** The normalised error shape every port raises; adapters never leak storage errors. */
 export class DataError extends Error {

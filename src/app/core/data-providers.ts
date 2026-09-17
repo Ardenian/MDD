@@ -1,6 +1,10 @@
 import { inject, type Provider, Service } from '@angular/core';
 import { createIndexedDbPortSet, type PortSet } from '../data/adapters/indexeddb/adapter-set';
-import { BrowserIdbEngine, IDB_ENGINE, type IdbEngine } from '../data/adapters/indexeddb/idb-engine';
+import {
+  BrowserIdbEngine,
+  IDB_ENGINE,
+  type IdbEngine,
+} from '../data/adapters/indexeddb/idb-engine';
 import { browserStampContext } from '../data/adapters/indexeddb/record-meta';
 import { CORRELATION_DATA_SOURCE } from '../data/ports/correlation-data-source';
 import { ENTRY_REPOSITORY } from '../data/ports/entry-repository';

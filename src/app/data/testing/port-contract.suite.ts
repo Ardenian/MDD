@@ -137,8 +137,12 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         const archived = await layer.trackers.archive(tracker.id);
         expect(archived.archived).toBe(true);
 
-        await expect(layer.trackers.getVersion(tracker.id, 1)).resolves.toMatchObject({ revision: 1 });
-        await expect(layer.entries.get(entry.id)).resolves.toMatchObject({ revision: entry.revision });
+        await expect(layer.trackers.getVersion(tracker.id, 1)).resolves.toMatchObject({
+          revision: 1,
+        });
+        await expect(layer.entries.get(entry.id)).resolves.toMatchObject({
+          revision: entry.revision,
+        });
 
         const unarchived = await layer.trackers.unarchive(tracker.id);
         expect(unarchived.archived).toBe(false);
@@ -221,7 +225,11 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         await layer.entries.create({
           trackerId: tracker.id,
           parentEntryId: null,
-          placement: { kind: 'period', start: '2026-03-01T08:00:00.000Z', end: '2026-03-01T09:00:00.000Z' },
+          placement: {
+            kind: 'period',
+            start: '2026-03-01T08:00:00.000Z',
+            end: '2026-03-01T09:00:00.000Z',
+          },
           snapshot: [],
           tags: [],
         });
@@ -287,7 +295,11 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         const parent = await layer.entries.create({
           trackerId: tracker.id,
           parentEntryId: null,
-          placement: { kind: 'period', start: '2026-03-01T08:00:00.000Z', end: '2026-03-01T09:00:00.000Z' },
+          placement: {
+            kind: 'period',
+            start: '2026-03-01T08:00:00.000Z',
+            end: '2026-03-01T09:00:00.000Z',
+          },
           snapshot: [],
           tags: [],
         });
@@ -444,10 +456,16 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         await layer.entries.softDelete(parent.id);
 
         const range = ['2026-03-01T00:00:00.000Z', '2026-03-01T23:59:59.999Z'] as const;
-        await expect(layer.entries.listByRange(...range, { includeChildren: true })).resolves.toEqual([]);
+        await expect(
+          layer.entries.listByRange(...range, { includeChildren: true }),
+        ).resolves.toEqual([]);
         await expect(layer.entries.listChildren(parent.id)).resolves.toEqual([]);
-        await expect(layer.entries.get(parent.id)).resolves.toMatchObject({ deletedAt: expect.any(String) });
-        await expect(layer.entries.get(child.id)).resolves.toMatchObject({ deletedAt: expect.any(String) });
+        await expect(layer.entries.get(parent.id)).resolves.toMatchObject({
+          deletedAt: expect.any(String),
+        });
+        await expect(layer.entries.get(child.id)).resolves.toMatchObject({
+          deletedAt: expect.any(String),
+        });
       });
 
       it('rejects an Entry against a Tracker that does not exist', async () => {
@@ -611,9 +629,7 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         });
         await layer.presets.delete(doomed.id);
 
-        await expect(layer.presets.countsByTracker()).resolves.toEqual(
-          new Map([[tracker.id, 1]]),
-        );
+        await expect(layer.presets.countsByTracker()).resolves.toEqual(new Map([[tracker.id, 1]]));
       });
 
       it('soft-deletes a Preset out of its Tracker listing', async () => {
@@ -699,7 +715,9 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         });
         await layer.entries.softDelete(entry.id);
 
-        await expect(layer.tags.suggest('dai')).resolves.toEqual([{ name: 'dairy', usageCount: 0 }]);
+        await expect(layer.tags.suggest('dai')).resolves.toEqual([
+          { name: 'dairy', usageCount: 0 },
+        ]);
       });
     });
 

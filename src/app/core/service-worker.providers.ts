@@ -1,9 +1,4 @@
-import {
-  type EnvironmentProviders,
-  inject,
-  isDevMode,
-  provideAppInitializer,
-} from '@angular/core';
+import { type EnvironmentProviders, inject, isDevMode, provideAppInitializer } from '@angular/core';
 import { provideServiceWorker, SwUpdate } from '@angular/service-worker';
 import { TranslateService } from '@ngx-translate/core';
 import { ToastService } from '../ui/services/toast.service';

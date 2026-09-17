@@ -1,5 +1,10 @@
 import { LiveAnnouncer } from '@angular/cdk/a11y';
-import { DestroyRef, type EnvironmentProviders, inject, provideAppInitializer } from '@angular/core';
+import {
+  DestroyRef,
+  type EnvironmentProviders,
+  inject,
+  provideAppInitializer,
+} from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslateService } from '@ngx-translate/core';

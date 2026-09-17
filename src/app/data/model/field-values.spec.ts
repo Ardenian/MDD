@@ -1,18 +1,53 @@
 import type { FieldDef } from './field-def';
-import { coerceValue, emptyValueFor, isEmptyValue, validateValue, validateValues } from './field-values';
+import {
+  coerceValue,
+  emptyValueFor,
+  isEmptyValue,
+  validateValue,
+  validateValues,
+} from './field-values';
 
 const text: FieldDef = { name: 'Notes', required: true, dataType: 'text' };
 const integer: FieldDef = { name: 'Satisfaction', required: false, dataType: 'integer' };
 const decimal: FieldDef = { name: 'Grams', required: true, dataType: 'decimal' };
 const flag: FieldDef = { name: 'Rested', required: true, dataType: 'boolean' };
-const single: FieldDef = { name: 'Energy', required: true, dataType: 'singleSelect', options: ['low', 'high'] };
-const multi: FieldDef = { name: 'Moods', required: false, dataType: 'multiSelect', options: ['calm', 'tired'] };
-const refOne: FieldDef = { name: 'Main', required: true, dataType: 'reference', targetTrackerId: 't', cardinality: 'one' };
-const refMany: FieldDef = { name: 'Ingredients', required: false, dataType: 'reference', targetTrackerId: 't', cardinality: 'many' };
+const single: FieldDef = {
+  name: 'Energy',
+  required: true,
+  dataType: 'singleSelect',
+  options: ['low', 'high'],
+};
+const multi: FieldDef = {
+  name: 'Moods',
+  required: false,
+  dataType: 'multiSelect',
+  options: ['calm', 'tired'],
+};
+const refOne: FieldDef = {
+  name: 'Main',
+  required: true,
+  dataType: 'reference',
+  targetTrackerId: 't',
+  cardinality: 'one',
+};
+const refMany: FieldDef = {
+  name: 'Ingredients',
+  required: false,
+  dataType: 'reference',
+  targetTrackerId: 't',
+  cardinality: 'many',
+};
 
 describe('emptyValueFor', () => {
   it('gives each data type its natural empty value', () => {
-    expect([text, integer, flag, single, multi, refMany].map(emptyValueFor)).toEqual(['', null, false, null, [], []]);
+    expect([text, integer, flag, single, multi, refMany].map(emptyValueFor)).toEqual([
+      '',
+      null,
+      false,
+      null,
+      [],
+      [],
+    ]);
   });
 });
 
@@ -52,7 +87,9 @@ describe('validateValue', () => {
 
 describe('validateValues', () => {
   it('reports only the Fields with a problem, keyed by name', () => {
-    expect(validateValues([text, integer], { Notes: '', Satisfaction: 3 })).toEqual({ Notes: 'required' });
+    expect(validateValues([text, integer], { Notes: '', Satisfaction: 3 })).toEqual({
+      Notes: 'required',
+    });
   });
 
   it('treats a Field missing from the values as empty', () => {

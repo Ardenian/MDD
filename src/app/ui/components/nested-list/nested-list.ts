@@ -21,10 +21,16 @@ export interface NestedNodeContext<T> {
   imports: [NgTemplateOutlet],
   template: `
     <ng-template #level let-nodes let-depth="depth">
-      <ul class="nested" [attr.data-testid]="depth === startDepth() ? 'nested-list' : 'nested-children'">
+      <ul
+        class="nested"
+        [attr.data-testid]="depth === startDepth() ? 'nested-list' : 'nested-children'"
+      >
         @for (node of nodes; track idOf()(node)) {
           <li class="nested__item">
-            <ng-container [ngTemplateOutlet]="nodeTemplate()" [ngTemplateOutletContext]="{ $implicit: node, depth }" />
+            <ng-container
+              [ngTemplateOutlet]="nodeTemplate()"
+              [ngTemplateOutletContext]="{ $implicit: node, depth }"
+            />
             @if (childrenOf()(node).length > 0) {
               <ng-container
                 [ngTemplateOutlet]="level"
@@ -36,7 +42,10 @@ export interface NestedNodeContext<T> {
       </ul>
     </ng-template>
 
-    <ng-container [ngTemplateOutlet]="level" [ngTemplateOutletContext]="{ $implicit: nodes(), depth: startDepth() }" />
+    <ng-container
+      [ngTemplateOutlet]="level"
+      [ngTemplateOutletContext]="{ $implicit: nodes(), depth: startDepth() }"
+    />
   `,
   styles: `
     .nested {

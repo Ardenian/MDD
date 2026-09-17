@@ -17,11 +17,9 @@ export type FeatureTranslations = Readonly<Record<SupportedLocale, TranslationOb
  */
 export function provideFeatureTranslations(translations: FeatureTranslations): Provider[] {
   return provideChildTranslateService({
-    loader: provideTranslateLoader(
-      (): TranslateLoader => ({
-        getTranslation: (language: string) =>
-          of(translations[isSupportedLocale(language) ? language : FALLBACK_LOCALE]),
-      }),
-    ),
+    loader: provideTranslateLoader((): TranslateLoader => ({
+      getTranslation: (language: string) =>
+        of(translations[isSupportedLocale(language) ? language : FALLBACK_LOCALE]),
+    })),
   });
 }

@@ -37,7 +37,10 @@ describe('resolveCoveredInterval', () => {
 
   it('does not touch the following day', () => {
     const day = resolveCoveredInterval({ kind: 'dayBucketed', day: '2026-03-01' });
-    const nextDay = { start: new Date(2026, 2, 2).getTime(), end: new Date(2026, 2, 3).getTime() - 1 };
+    const nextDay = {
+      start: new Date(2026, 2, 2).getTime(),
+      end: new Date(2026, 2, 3).getTime() - 1,
+    };
 
     expect(intervalsOverlap(day, nextDay)).toBe(false);
   });

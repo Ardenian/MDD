@@ -19,10 +19,21 @@ export interface ReorderableRowContext<T> {
   selector: 'ui-reorderable-list',
   imports: [CdkDropList, CdkDrag, CdkDragHandle, NgTemplateOutlet],
   template: `
-    <ul class="reorderable" data-testid="reorderable-list" cdkDropList (cdkDropListDropped)="onDrop($event)">
+    <ul
+      class="reorderable"
+      data-testid="reorderable-list"
+      cdkDropList
+      (cdkDropListDropped)="onDrop($event)"
+    >
       @for (item of items(); track idOf()(item); let index = $index) {
         <li class="reorderable__row" cdkDrag [attr.data-testid]="idOf()(item)">
-          <span class="reorderable__handle" cdkDragHandle data-testid="drag-handle" aria-hidden="true">⠿</span>
+          <span
+            class="reorderable__handle"
+            cdkDragHandle
+            data-testid="drag-handle"
+            aria-hidden="true"
+            >⠿</span
+          >
 
           <div class="reorderable__content">
             <ng-container

@@ -16,7 +16,9 @@ if (tokens.length === 0) {
   throw new Error(`No tokens found in ${source}`);
 }
 
-const body = tokens.map(([name, value]) => `  '${name}': '${value.replaceAll("'", "\\'")}',`).join('\n');
+const body = tokens
+  .map(([name, value]) => `  '${name}': '${value.replaceAll("'", "\\'")}',`)
+  .join('\n');
 
 writeFileSync(
   target,
@@ -85,8 +87,14 @@ function toEntry(entry) {
   if (separator === -1) {
     throw new Error(`Malformed token entry: ${entry}`);
   }
-  const name = entry.slice(0, separator).trim().replaceAll(/^['"]|['"]$/g, '');
-  let value = entry.slice(separator + 1).trim().replaceAll(/\s+/g, ' ');
+  const name = entry
+    .slice(0, separator)
+    .trim()
+    .replaceAll(/^['"]|['"]$/g, '');
+  let value = entry
+    .slice(separator + 1)
+    .trim()
+    .replaceAll(/\s+/g, ' ');
 
   // A parenthesised SCSS list (e.g. a font stack) becomes a bare comma-separated
   // CSS value; `rgba(...)`-style function calls are left intact.
