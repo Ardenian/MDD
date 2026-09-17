@@ -1,0 +1,64 @@
+{
+  "correlation": {
+    "caveat": "These are correlations, not causes. Two things moving together can share a cause, or line up by chance.",
+    "progress": "Scanning… {{ completed }} of {{ total }} pairs",
+    "cancelled": "Scan cancelled. These are the pairs it got through.",
+    "empty": "No pair cleared the guardrails. Widen the range, loosen the thresholds, or log a little longer.",
+    "method": {
+      "spearman": "Spearman",
+      "point-biserial": "point-biserial"
+    },
+    "controls": {
+      "from": "From",
+      "to": "To",
+      "bucketSize": "Bucket size",
+      "bucket": {
+        "hour": "Hourly",
+        "day": "Daily",
+        "week": "Weekly",
+        "month": "Monthly"
+      },
+      "scope": "Trackers in scope",
+      "scopeAll": "Every Tracker is in scope.",
+      "scopeSome": "{{ count }} Tracker(s) in scope.",
+      "guardrails": "Guardrails",
+      "lagMin": "Earliest Lag",
+      "lagMax": "Latest Lag",
+      "minSampleSize": "Minimum Buckets",
+      "pThreshold": "p-value threshold",
+      "benjaminiHochberg": "Correct for multiple comparisons (Benjamini–Hochberg)",
+      "showAll": "Show pairs that correction rejected",
+      "find": "Find correlations",
+      "cancel": "Cancel scan"
+    },
+    "results": {
+      "seriesA": "Series A",
+      "seriesB": "Series B",
+      "lag": "Best lag",
+      "coefficient": "Effect size",
+      "n": "Buckets",
+      "significance": "Adjusted p",
+      "bucket": "Bucket",
+      "actions": "Actions",
+      "open": "Open",
+      "pin": "Pin",
+      "unpin": "Unpin"
+    },
+    "directed": {
+      "title": "{{ a }} vs {{ b }}",
+      "close": "Close",
+      "lag": "Lag: {{ lag }} Buckets",
+      "readout": "{{ method }} {{ coefficient }} over {{ n }} Buckets, p {{ p }}",
+      "chartCaption": "Both Series over time, the second shifted to the Lag shown.",
+      "scatterCaption": "One dot per Bucket the two Series share."
+    },
+    "overlay": {
+      "heading": "Series overlay",
+      "hint": "Plot Trackers together to look at them. Nothing here is correlated and no coefficient is computed.",
+      "trackers": "Trackers to plot",
+      "series": "Series shown",
+      "empty": "Those Trackers have no Series in this range yet.",
+      "chartCaption": "The chosen Series over time."
+    }
+  }
+}

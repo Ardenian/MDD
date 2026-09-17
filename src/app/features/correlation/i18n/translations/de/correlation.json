@@ -1,0 +1,64 @@
+{
+  "correlation": {
+    "caveat": "Das sind Korrelationen, keine Ursachen. Zwei Dinge können sich gemeinsam bewegen, weil sie dieselbe Ursache haben — oder rein zufällig.",
+    "progress": "Suche läuft… {{ completed }} von {{ total }} Paaren",
+    "cancelled": "Suche abgebrochen. Das sind die Paare, die sie geschafft hat.",
+    "empty": "Kein Paar hat die Leitplanken passiert. Erweitere den Zeitraum, lockere die Schwellen oder sammle noch etwas länger.",
+    "method": {
+      "spearman": "Spearman",
+      "point-biserial": "punktbiserial"
+    },
+    "controls": {
+      "from": "Von",
+      "to": "Bis",
+      "bucketSize": "Bucket-Größe",
+      "bucket": {
+        "hour": "Stündlich",
+        "day": "Täglich",
+        "week": "Wöchentlich",
+        "month": "Monatlich"
+      },
+      "scope": "Tracker im Umfang",
+      "scopeAll": "Alle Tracker sind im Umfang.",
+      "scopeSome": "{{ count }} Tracker im Umfang.",
+      "guardrails": "Leitplanken",
+      "lagMin": "Frühester Lag",
+      "lagMax": "Spätester Lag",
+      "minSampleSize": "Mindestanzahl Buckets",
+      "pThreshold": "p-Wert-Schwelle",
+      "benjaminiHochberg": "Für multiples Testen korrigieren (Benjamini–Hochberg)",
+      "showAll": "Auch von der Korrektur verworfene Paare zeigen",
+      "find": "Korrelationen finden",
+      "cancel": "Suche abbrechen"
+    },
+    "results": {
+      "seriesA": "Series A",
+      "seriesB": "Series B",
+      "lag": "Bester Lag",
+      "coefficient": "Effektstärke",
+      "n": "Buckets",
+      "significance": "Korrigiertes p",
+      "bucket": "Bucket",
+      "actions": "Aktionen",
+      "open": "Öffnen",
+      "pin": "Anheften",
+      "unpin": "Lösen"
+    },
+    "directed": {
+      "title": "{{ a }} vs. {{ b }}",
+      "close": "Schließen",
+      "lag": "Lag: {{ lag }} Buckets",
+      "readout": "{{ method }} {{ coefficient }} über {{ n }} Buckets, p {{ p }}",
+      "chartCaption": "Beide Series über die Zeit, die zweite um den gezeigten Lag verschoben.",
+      "scatterCaption": "Ein Punkt je Bucket, den beide Series teilen."
+    },
+    "overlay": {
+      "heading": "Series-Overlay",
+      "hint": "Trackers gemeinsam darstellen, um sie anzusehen. Hier wird nichts korreliert und kein Koeffizient berechnet.",
+      "trackers": "Darzustellende Tracker",
+      "series": "Gezeigte Series",
+      "empty": "Diese Tracker haben in diesem Zeitraum noch keine Series.",
+      "chartCaption": "Die ausgewählten Series über die Zeit."
+    }
+  }
+}

@@ -6,6 +6,14 @@ Help the user find time-lagged relationships in their diary: extract **Series** 
 diverse Trackers, align them into **Buckets**, run a client-side **Discovery scan** with
 significance guardrails, and drill into any pair in a **Directed view**.
 
+## Status
+
+Built: the controls bar, Discovery scan with progress and cancel, the results Table with
+sortable columns, the Directed view (shared time axis, scatter, lag slider), the Series
+overlay, pinned pairs; the `bucketing`, `series-extraction`, `correlation-stats`,
+`lag-scan`, `significance`, `discovery`, `chart-geometry`, `results-sort` and
+`correlation-preferences` pure modules; and `CorrelationStore`.
+
 ## User stories / flows
 
 - I open Correlation, keep the default 90-day range and daily Buckets, leave all Trackers
@@ -43,6 +51,20 @@ An Entry contributes to every Bucket its resolved interval (placement + Fadeout)
 Fadeout contributes weighted membership, weight falling off linearly to 0 across the
 Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
 
+**A Point and a Period are weighted differently, because they mean different things.** A
+Point is an *event*: it spends exactly one unit of weight in total, spread across Buckets
+by its Fadeout, so a Point with no Fadeout weighs 1 in one Bucket and widening its Fadeout
+only redistributes that same unit rather than diluting it. A Period and a Day-bucketed
+Entry are *coverage*: each Bucket's weight is the share of that Bucket the Entry occupies,
+so a Period filling half a Bucket weighs 0.5 there and a Day-bucketed Entry fills each of
+its 24 hourly Buckets completely. Without the split, a Point with a one-hour Fadeout would
+weigh a fortieth of a bare Point in the same daily Bucket, which is nonsense. Where a
+Day-bucketed Entry is smaller than the Bucket — a day inside a weekly Bucket — coverage
+gives it that day's share, one seventh.
+
+A numeric Series is a **weighted** mean: an Entry half-present in a Bucket has half a say
+in it.
+
 ## Method
 
 - numeric × numeric → **Spearman** rank correlation
@@ -54,6 +76,17 @@ Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
   input Cramér's V needs. See `feature-scope.md` → Later.
 - **Lag**: for each pair, scan every lag in the user's range (default −3…+3 Buckets),
   report the lag with the largest |effect size| plus the lag-0 result.
+  - A lag leaving fewer overlapping Buckets than the minimum-`n` guardrail is not scanned
+    at all. Shifting a Series far enough always leaves a handful of Buckets that line up,
+    and a handful of points correlate perfectly by chance; without this the widest lag in
+    the range wins on noise.
+  - Where two lags fit equally well, the one resting on more Buckets wins, and a tie there
+    goes to the lag nearest 0 — so the scan stays deterministic rather than reporting
+    whichever lag happened to be tried first.
+- **Pairs sharing a source are never correlated.** The options of one select Field are
+  complements: "Energy = low" and "Energy = high" move against each other by arithmetic,
+  whatever the diary says, and such pairs would otherwise fill the top of every result
+  list.
 
 ## Guardrails (user-configurable, defaults shown)
 
@@ -85,6 +118,14 @@ Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
   Correlation.
 - Progress + cancel for the scan. Charts have text/table alternatives; axes and Series
   labelled; not colour-only; focus order follows the controls→results→chart flow.
+  - Each Series is drawn in its own colour **and** its own dash pattern, and every chart
+    publishes the same numbers as a visually-hidden table.
+  - A gap in a Series breaks its line rather than being bridged: drawing straight through
+    a Bucket with no Entries would invent data that was never recorded.
+  - The Directed view recomputes the coefficient for the lag on show rather than reading
+    the scan's result, which is what lets the slider answer "and one Bucket later?".
+  - The controls edit a form-shaped copy of the scan settings; they reach the Store when a
+    scan starts, so a half-typed number never disturbs a result list already on screen.
 
 ## Data & API contract touched
 
@@ -108,7 +149,17 @@ Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
   - `lag-scan` — pair × lag-range → best lag + lag-0
   - `significance` — Benjamini–Hochberg over a test set
   - `discovery` — orchestrates scope → Series → pairs → lag-scan → guardrails → ranked
-    list (runs off the main thread where possible)
+    list
+  - `chart-geometry` — value/Bucket → pixel scales and SVG paths for both charts
+  - `results-sort` — the Table's column comparators and header-click cycle
+  - `correlation-preferences` — the `localStorage` shape for pinned pairs and overlay
+    toggles
+
+**Deviation — the scan does not run in a Worker.** `discovery` is a generator that yields
+between pairs, and `runDiscoveryAsync` hands the main thread back every 50 pairs, so the
+progress line updates and the cancel button responds while a scan is running. A Worker
+would be better still and nothing here prevents it — every value crossing the seam is
+plain data — but it is not what v1 ships.
 
 ## Test cases (Vitest — logic only)
 
@@ -131,6 +182,10 @@ Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
 - `discovery`: pairs below min-n excluded; ranking by |effect size| after correction;
   scope filter limits the Series set; deterministic output for a fixed dataset;
   cancellation stops further work.
+- `chart-geometry`: a flat Series still gets a band to be drawn in; gaps break the line;
+  the extremes land in opposite corners of a scatter.
+- `results-sort`: effect size ranks by magnitude, since −0.8 and +0.8 are equally strong
+  findings; the sort is stable, so equal rows keep the ranking Discovery gave them.
 
 ## Out of scope
 

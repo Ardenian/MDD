@@ -16,9 +16,8 @@ export const routes: Routes = [
   },
   {
     path: 'correlation',
-    title: 'Correlation',
-    loadComponent: () =>
-      import('./features/correlation/correlation-page').then((m) => m.CorrelationPage),
+    loadChildren: () =>
+      import('./features/correlation/correlation.routes').then((m) => m.correlationRoutes),
   },
   {
     path: 'settings',
