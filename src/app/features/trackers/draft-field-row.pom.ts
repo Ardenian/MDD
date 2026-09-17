@@ -14,8 +14,9 @@ export class DraftFieldRowObject {
     await this.root.getByTestId('field-name').blur();
   }
 
-  async name(): Promise<string> {
-    return this.root.getByTestId('field-name').inputValue();
+  /** A locator, not a read value, so assertions on it retry until the view settles. */
+  get nameInput(): Locator {
+    return this.root.getByTestId('field-name');
   }
 
   get dataType(): SelectObject {

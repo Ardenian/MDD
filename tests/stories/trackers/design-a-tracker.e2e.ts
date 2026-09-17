@@ -181,6 +181,7 @@ test.describe('Draft validation', { tag: '@integration-candidate' }, () => {
     const designer = new TrackerDesignerPageObject(appPage);
     await designer.fields.row('1').moveUp();
 
-    await expect(await designer.field(0).name()).toBe('Energy');
+    await expect(designer.field(0).nameInput).toHaveValue('Energy');
+    await expect(designer.field(1).nameInput).toHaveValue('Satisfaction');
   });
 });
