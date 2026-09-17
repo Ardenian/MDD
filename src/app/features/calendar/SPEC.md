@@ -54,7 +54,9 @@ Calendar, Entry, Tracker, Point, Period, Day-bucketed, Fadeout, Child Entry. See
   plus a derived `isLoading` signal — the only read this feature does) plus
   `TrackerLookup` (`data/`'s shared facade, for the toggle panel) — never the raw ports
   directly, per ADR 0002.
-- No writes here beyond starting an Entry (delegated to the entries feature's Modal).
+- No writes here beyond starting an Entry, delegated to the entries feature by
+  **navigating** into the shell's `modal` outlet — `(modal:entry/new)?trackerId=…&at=…`
+  to start one, `(modal:entry/<entryId>)` to open one — never by importing it.
 - Pure module `calendar-layout` — given resolved covered intervals, compute overlap
   columns and pixel geometry for a viewport; independent of Angular.
 - Local (non-synced) UI state: selected view, visible date, Tracker toggle set,

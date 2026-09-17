@@ -1,0 +1,61 @@
+{
+  "entries": {
+    "form": {
+      "newTitle": "Neuer Eintrag: {{ tracker }}",
+      "editTitle": "Eintrag: {{ tracker }}",
+      "close": "Schließen",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saving": "Speichert…",
+      "delete": "Eintrag löschen",
+      "loading": "Lädt…",
+      "loadFailed": "Dieser Eintrag konnte nicht geöffnet werden.",
+      "saveFailed": "Der Eintrag konnte nicht gespeichert werden.",
+      "saved": "Eintrag gespeichert.",
+      "deleted": "Eintrag gelöscht.",
+      "currentVersion": "Tracker-Version {{ version }} (aktuell)",
+      "pinnedVersion": "Tracker-Version {{ version }}",
+      "pinnedExplanation": "Erfasst mit Version {{ version }}; der Tracker ist inzwischen bei Version {{ current }}.",
+      "preset": "Mit einem Preset beginnen",
+      "presetStale": "{{ name }} (veraltet)",
+      "problemsSummary": "{{ count }} Feld(er) müssen vor dem Speichern korrigiert werden.",
+      "tags": "Tags",
+      "removeTag": "Tag entfernen",
+      "required": "Pflicht",
+      "clear": "Leeren"
+    },
+    "placement": {
+      "mode": "Zeitmodus",
+      "at": "Zeitpunkt",
+      "start": "Beginn",
+      "end": "Ende",
+      "day": "Tag",
+      "fadeoutBefore": "Unschärfe davor (Minuten)",
+      "fadeoutAfter": "Unschärfe danach (Minuten)",
+      "now": "Jetzt",
+      "modes": {
+        "point": "Zeitpunkt",
+        "period": "Zeitraum",
+        "dayBucketed": "Tagesbezogen"
+      }
+    },
+    "node": {
+      "childOf": "{{ field }} · {{ tracker }}",
+      "level": "Ebene {{ depth }} von {{ cap }}",
+      "remove": "Entfernen",
+      "add": "Zu {{ field }} hinzufügen",
+      "capReached": "Die Verschachtelung hat ihr Limit von {{ cap }} Ebenen erreicht."
+    },
+    "problems": {
+      "required": "Dieses Feld ist erforderlich.",
+      "not-an-integer": "Gib eine ganze Zahl ein.",
+      "not-a-number": "Gib eine Zahl ein.",
+      "unknown-option": "Wähle eine der aufgeführten Optionen.",
+      "too-many-children": "Dieses Feld fasst nur ein Kind.",
+      "depth-cap-reached": "Erforderlich, aber in dieser Tiefe ist keine weitere Verschachtelung erlaubt (Limit {{ cap }}). Entferne eine Ebene, um zu speichern.",
+      "invalid-time": "Gib eine gültige Zeit ein.",
+      "period-ends-before-start": "Das Ende darf nicht vor dem Beginn liegen.",
+      "invalid-fadeout": "Die Unschärfe muss eine ganze Zahl von Minuten sein, 0 oder mehr."
+    }
+  }
+}

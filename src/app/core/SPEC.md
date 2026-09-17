@@ -80,6 +80,9 @@ entry points and are filled in by each feature's own phase.
 - Top-level routes, each **lazy-loaded**: `/calendar` (default), `/trackers`,
   `/correlation`, `/settings`, `/data-transfer`.
 - A layout shell (nav, skip-link, live region for route-change announcements).
+- A named **`modal`** outlet beside the primary one, with one lazy route, `entry`, owned
+  by the entries feature. Any feature opens the Entry form by navigating into that
+  outlet, so no feature imports another to reuse it.
 
 ### Error handling
 - A global `ErrorHandler` that logs and calls `ui/`'s `ToastService` to show a

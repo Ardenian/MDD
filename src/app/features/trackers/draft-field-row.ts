@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, model, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
   type FieldDataType,
@@ -46,6 +46,7 @@ const DATA_TYPES: readonly FieldDataType[] = [
         [label]="'trackers.field.dataType' | translate"
         [options]="dataTypeOptions()"
         [value]="field().dataType"
+        [clearable]="false"
         (valueChange)="changeDataType($event)"
       />
 
@@ -94,6 +95,7 @@ const DATA_TYPES: readonly FieldDataType[] = [
             [label]="'trackers.field.referenceTarget' | translate"
             [options]="targetOptions()"
             [value]="reference.targetTrackerId === '' ? null : reference.targetTrackerId"
+            [clearable]="false"
             (valueChange)="changeTarget($event)"
           />
           <ui-select
@@ -101,6 +103,7 @@ const DATA_TYPES: readonly FieldDataType[] = [
             [label]="'trackers.field.cardinality' | translate"
             [options]="cardinalityOptions()"
             [value]="reference.cardinality"
+            [clearable]="false"
             (valueChange)="changeCardinality($event)"
           />
         </div>
@@ -180,7 +183,8 @@ const DATA_TYPES: readonly FieldDataType[] = [
   `,
 })
 export class DraftFieldRow {
-  readonly field = input.required<FieldDef>();
+  /** A model so consecutive edits build on each other, not on a stale input (see `commit`). */
+  readonly field = model.required<FieldDef>();
   readonly trackers = input.required<readonly TrackerSummary[]>();
   readonly dataTypeLabels = input.required<Readonly<Record<FieldDataType, string>>>();
   readonly cardinalityLabels = input.required<Readonly<Record<ReferenceCardinality, string>>>();
@@ -215,24 +219,24 @@ export class DraftFieldRow {
   ]);
 
   protected renameFrom(event: Event): void {
-    this.changed.emit({ ...this.field(), name: (event.target as HTMLInputElement).value });
+    this.commit({ ...this.field(), name: (event.target as HTMLInputElement).value });
   }
 
   protected toggleRequired(event: Event): void {
-    this.changed.emit({ ...this.field(), required: (event.target as HTMLInputElement).checked });
+    this.commit({ ...this.field(), required: (event.target as HTMLInputElement).checked });
   }
 
   protected changeDataType(dataType: string | null): void {
     if (dataType === null) {
       return;
     }
-    this.changed.emit(withDataType(this.field(), dataType as FieldDataType));
+    this.commit(withDataType(this.field(), dataType as FieldDataType));
   }
 
   protected addOption(): void {
     const select = this.selectField();
     if (select !== null) {
-      this.changed.emit({ ...select, options: [...select.options, ''] });
+      this.commit({ ...select, options: [...select.options, ''] });
     }
   }
 
@@ -243,13 +247,13 @@ export class DraftFieldRow {
     }
     const options = [...select.options];
     options[index] = (event.target as HTMLInputElement).value;
-    this.changed.emit({ ...select, options });
+    this.commit({ ...select, options });
   }
 
   protected removeOption(index: number): void {
     const select = this.selectField();
     if (select !== null) {
-      this.changed.emit({
+      this.commit({
         ...select,
         options: select.options.filter((_, position) => position !== index),
       });
@@ -259,15 +263,20 @@ export class DraftFieldRow {
   protected changeTarget(targetTrackerId: string | null): void {
     const reference = this.referenceField();
     if (reference !== null && targetTrackerId !== null) {
-      this.changed.emit({ ...reference, targetTrackerId });
+      this.commit({ ...reference, targetTrackerId });
     }
   }
 
   protected changeCardinality(cardinality: string | null): void {
     const reference = this.referenceField();
     if (reference !== null && cardinality !== null) {
-      this.changed.emit({ ...reference, cardinality: cardinality as ReferenceCardinality });
+      this.commit({ ...reference, cardinality: cardinality as ReferenceCardinality });
     }
+  }
+
+  private commit(next: FieldDef): void {
+    this.field.set(next);
+    this.changed.emit(next);
   }
 }
 

@@ -1,5 +1,5 @@
 import { Listbox, Option } from '@angular/aria/listbox';
-import { Component, computed, input, model } from '@angular/core';
+import { Component, input, linkedSignal, model } from '@angular/core';
 import type { SelectOption } from './select-option';
 
 let nextId = 0;
@@ -20,6 +20,7 @@ let nextId = 0;
 
       <ul
         ngListbox
+        selectionMode="explicit"
         class="select__list"
         data-testid="select"
         [value]="selection()"
@@ -27,6 +28,8 @@ let nextId = 0;
         [disabled]="disabled()"
         [attr.aria-labelledby]="label() === '' ? null : labelId"
         [attr.aria-label]="label() === '' ? ariaLabel() : null"
+        [attr.aria-describedby]="describedBy()"
+        [attr.aria-invalid]="describedBy() === null ? null : true"
       >
         @for (option of options(); track option.value) {
           <li
@@ -95,15 +98,28 @@ export class Select {
   readonly label = input('');
   readonly ariaLabel = input<string | null>(null);
   readonly disabled = input(false);
+  /** Id of an element describing the current validation problem, if there is one. */
+  readonly describedBy = input<string | null>(null);
 
   protected readonly labelId = `ui-select-label-${++nextId}`;
 
-  protected readonly selection = computed(() => {
+  /** When false, clicking the selected option again cannot leave the select empty. */
+  readonly clearable = input(true);
+
+  protected readonly selection = linkedSignal(() => {
     const current = this.value();
     return current === null ? [] : [current];
   });
 
   protected onSelection(values: readonly string[]): void {
-    this.value.set(values[0] ?? null);
+    const next = values[0] ?? null;
+    if (next === null && !this.clearable()) {
+      // Explicit selection toggles, so a click on the chosen option deselects it. A fresh
+      // array — same content, new identity — pushes the current choice back into the listbox.
+      const current = this.value();
+      this.selection.set(current === null ? [] : [current]);
+      return;
+    }
+    this.value.set(next);
   }
 }

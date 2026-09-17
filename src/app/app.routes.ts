@@ -32,5 +32,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/data-transfer/data-transfer-page').then((m) => m.DataTransferPage),
   },
+  {
+    // Feature-neutral dialog outlet: any feature opens the Entry form by URL rather than by
+    // importing the entries feature (see EntryFormRoute).
+    path: 'entry',
+    outlet: 'modal',
+    loadChildren: () => import('./features/entries/entries.routes').then((m) => m.entriesRoutes),
+  },
   { path: '**', redirectTo: 'calendar' },
 ];

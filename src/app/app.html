@@ -39,4 +39,6 @@
   <router-outlet />
 </main>
 
+<router-outlet name="modal" />
+
 <ui-toast-list [toasts]="toasts()" [dismissLabel]="'toast.dismiss' | translate" (dismissed)="dismissToast($event)" />

@@ -31,7 +31,6 @@ export interface Interval {
 }
 
 const MINUTE_MS = 60_000;
-const DAY_MS = 86_400_000;
 
 /**
  * The absolute span a placement covers once its Fadeout is applied — the single
@@ -57,12 +56,27 @@ export function resolveCoveredInterval(placement: Placement): Interval {
       };
     }
     case 'dayBucketed': {
-      const start = Date.parse(`${placement.day}T00:00:00.000Z`);
-      return { start, end: start + DAY_MS };
+      // The user's own calendar day, not UTC's — and via the Date constructor rather than
+      // a fixed 24h, so a daylight-saving day is 23 or 25 hours long, as it really is.
+      // Intervals are boundary-inclusive, so the day ends on its last millisecond rather
+      // than at the next midnight, which would make it touch the following day too.
+      const [year, month, day] = placement.day.split('-').map(Number);
+      return {
+        start: new Date(year ?? 0, (month ?? 1) - 1, day ?? 1).getTime(),
+        end: new Date(year ?? 0, (month ?? 1) - 1, (day ?? 1) + 1).getTime() - 1,
+      };
     }
   }
 }
 
 export function intervalsOverlap(a: Interval, b: Interval): boolean {
   return a.start <= b.end && b.start <= a.end;
+}
+
+/** The local calendar day an instant falls on, as `YYYY-MM-DD`. */
+export function localDayOf(instant: number): string {
+  const date = new Date(instant);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
 }

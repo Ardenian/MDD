@@ -17,6 +17,14 @@ Built: `model/`, `ports/` (all seven), `adapters/indexeddb/` (every port), `test
 (engine double, data-layer factory, shared contract suite), and `facades/tracker-lookup.ts`.
 `adapters/http/` is still the later milestone it always was.
 
+## Shared domain logic in `model/`
+
+Pure, framework-free rules more than one feature applies live beside the types they are
+about, rather than in either feature: `placement.ts` (`resolveCoveredInterval`, the one
+definition of what an Entry covers), `field-def.ts` (`fieldsEqual`, what makes a Draft
+differ from its Version), and `field-values.ts` (what a Field's value may hold and when it
+is valid — used by the Entry form and the Preset editor alike).
+
 ## Structure
 
 ```
@@ -115,7 +123,20 @@ facades do (ADR 0002).
   Trackers are excluded from "creatable"/"reference-target" queries but not from direct
   `get`/`getVersion` lookups.
 - Soft-deleting an Entry cascades to its children: a child is only ever reachable
-  through its parent, so leaving it live would strand it.
+  through its parent, so leaving it live would strand it. Moving an Entry likewise moves
+  every descendant, since a child's placement always mirrors its parent's.
+- **Writes are serialised.** Every mutating port call is a read-then-write across
+  separate IndexedDB transactions, so two calls started back to back (a rename then a
+  Time-mode change; a Draft edit while a commit is in flight) would both read before
+  either writes, and one would silently undo the other. One `WriteQueue` per port set runs
+  every write to completion before the next starts; it is shared across repositories
+  because an Entry write also registers Tags and an import rewrites every store. Reads are
+  not queued. A queued method never calls another queued method on the same set, or it
+  would wait on itself. This covers one tab; concurrent tabs remain an open question for
+  the sync milestone.
+- A Day-bucketed placement covers the user's **local** calendar day, midnight to the
+  day's last millisecond (intervals are boundary-inclusive, so ending at the next
+  midnight would make it touch the following day too).
 - No schema-version migration story needed yet (single app version); the store version
   is bumped only when indices change. (Not to be confused with **Tracker Version** —
   that's an application-level concept stored as ordinary rows, unrelated to the

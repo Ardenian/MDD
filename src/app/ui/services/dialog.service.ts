@@ -1,6 +1,6 @@
 import { Dialog, type DialogConfig, type DialogRef } from '@angular/cdk/dialog';
 import { type ComponentType } from '@angular/cdk/portal';
-import { computed, inject, Service, signal } from '@angular/core';
+import { computed, inject, type Injector, Service, signal } from '@angular/core';
 
 export interface UiDialogConfig<D> {
   /** Inputs set on the opened component — it stays presentation-only, injecting nothing. */
@@ -9,6 +9,11 @@ export interface UiDialogConfig<D> {
   readonly ariaLabel?: string;
   /** Blocks Escape and backdrop dismissal, for a flow that must be answered. */
   readonly disableClose?: boolean;
+  /**
+   * The opener's injector. Without it the component resolves from the root, which cannot
+   * see anything a lazy route provides — a feature's own translations, for one.
+   */
+  readonly injector?: Injector;
 }
 
 export interface UiDialogHandle<C, R> {
@@ -46,6 +51,7 @@ export class DialogService {
       ariaLabel: config.ariaLabel,
       restoreFocus: true,
       autoFocus: 'first-tabbable',
+      injector: config.injector,
     };
     const ref = this.dialog.open<R, D, C>(component, dialogConfig);
 

@@ -25,6 +25,13 @@ describe('routes', () => {
     }
   });
 
+  it('opens the Entry form lazily in the modal outlet', () => {
+    const entry = routes.find((route) => route.path === 'entry');
+
+    expect(entry).toMatchObject({ outlet: 'modal' });
+    expect(entry?.loadChildren).toBeInstanceOf(Function);
+  });
+
   it('sends an unknown path to the Calendar rather than a blank screen', () => {
     expect(routes.at(-1)).toMatchObject({ path: '**', redirectTo: 'calendar' });
   });

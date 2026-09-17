@@ -10,3 +10,4 @@ export * from './settings';
 export * from './tag';
 export * from './tracker';
 export * from './tracker-version';
+export * from './field-values';

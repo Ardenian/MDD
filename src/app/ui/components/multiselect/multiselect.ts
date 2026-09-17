@@ -17,6 +17,7 @@ let nextId = 0;
       <ul
         ngListbox
         multi
+        selectionMode="explicit"
         class="multiselect__list"
         data-testid="multiselect"
         [value]="value()"
@@ -24,6 +25,8 @@ let nextId = 0;
         [disabled]="disabled()"
         [attr.aria-labelledby]="label() === '' ? null : labelId"
         [attr.aria-label]="label() === '' ? ariaLabel() : null"
+        [attr.aria-describedby]="describedBy()"
+        [attr.aria-invalid]="describedBy() === null ? null : true"
       >
         @for (option of options(); track option.value) {
           <li
@@ -92,6 +95,8 @@ export class Multiselect {
   readonly label = input('');
   readonly ariaLabel = input<string | null>(null);
   readonly disabled = input(false);
+  /** Id of an element describing the current validation problem, if there is one. */
+  readonly describedBy = input<string | null>(null);
 
   protected readonly labelId = `ui-multiselect-label-${++nextId}`;
 }

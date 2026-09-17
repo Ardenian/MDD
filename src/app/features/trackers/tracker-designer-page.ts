@@ -22,7 +22,12 @@ const TIME_MODES: readonly TimeMode[] = ['point', 'period', 'dayBucketed'];
   selector: 'app-tracker-designer-page',
   imports: [TranslatePipe, RouterLink, Select, ReorderableList, DraftFieldRow],
   template: `
-    <section class="designer" data-testid="tracker-designer">
+    <section
+      class="designer"
+      data-testid="tracker-designer"
+      [attr.data-current-version]="view.tracker()?.currentVersion"
+      [attr.data-default-time-mode]="view.tracker()?.defaultTimeMode"
+    >
       <a routerLink="/trackers" data-testid="back-to-trackers">{{
         'trackers.designer.back' | translate
       }}</a>
@@ -44,6 +49,7 @@ const TIME_MODES: readonly TimeMode[] = ['point', 'period', 'dayBucketed'];
             [label]="'trackers.designer.defaultTimeMode' | translate"
             [options]="timeModeOptions()"
             [value]="tracker.defaultTimeMode"
+            [clearable]="false"
             (valueChange)="changeTimeMode($event)"
           />
 

@@ -97,6 +97,9 @@ export class IndexedDbEntryRepository implements EntryRepository {
       );
       await this.engine.put('entries', updated.id, updated);
       await this.registerTags(updated.tags);
+      if (!placementsEqual(entry.placement, placement)) {
+        await this.movePlacement(descendantsOf(await this.live(), entry.id), placement);
+      }
       return updated;
     });
   }
@@ -105,22 +108,7 @@ export class IndexedDbEntryRepository implements EntryRepository {
   async softDelete(id: string): Promise<void> {
     return this.queue.run(async () => {
       const entries = await this.live();
-      const doomed = new Set<string>([id]);
-      let grew = true;
-      while (grew) {
-        grew = false;
-        for (const entry of entries) {
-          if (
-            entry.parentEntryId !== null &&
-            doomed.has(entry.parentEntryId) &&
-            !doomed.has(entry.id)
-          ) {
-            doomed.add(entry.id);
-            grew = true;
-          }
-        }
-      }
-
+      const doomed = new Set([id, ...descendantsOf(entries, id).map((entry) => entry.id)]);
       await this.engine.putAll(
         'entries',
         entries
@@ -128,6 +116,17 @@ export class IndexedDbEntryRepository implements EntryRepository {
           .map((entry) => [entry.id, stampSoftDelete(entry, this.context)] as const),
       );
     });
+  }
+
+  /** A child's placement always mirrors its parent's, all the way down (CONTEXT.md). */
+  private async movePlacement(
+    entries: readonly Entry[],
+    placement: Entry['placement'],
+  ): Promise<void> {
+    await this.engine.putAll(
+      'entries',
+      entries.map((entry) => [entry.id, stampUpdate(entry, { placement }, this.context)] as const),
+    );
   }
 
   private async resolvePlacement(input: EntryInput): Promise<Entry['placement']> {
@@ -160,4 +159,23 @@ export class IndexedDbEntryRepository implements EntryRepository {
   private async live(): Promise<Entry[]> {
     return liveOnly(await this.engine.getAll<Entry>('entries'));
   }
+}
+
+function descendantsOf(entries: readonly Entry[], id: string): Entry[] {
+  const found: Entry[] = [];
+  const frontier = [id];
+  while (frontier.length > 0) {
+    const parentId = frontier.pop();
+    for (const entry of entries) {
+      if (entry.parentEntryId === parentId) {
+        found.push(entry);
+        frontier.push(entry.id);
+      }
+    }
+  }
+  return found;
+}
+
+function placementsEqual(a: Entry['placement'], b: Entry['placement']): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
 }

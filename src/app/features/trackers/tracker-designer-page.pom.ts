@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { ReorderableListObject } from '../../ui/components/reorderable-list/reorderable-list.pom';
 import { SelectObject } from '../../ui/components/select/select.pom';
 import { DraftFieldRowObject } from './draft-field-row.pom';
@@ -22,6 +22,18 @@ export class TrackerDesignerPageObject {
       throw new Error(`Not on a Tracker designer URL: ${this.page.url()}`);
     }
     return match[1];
+  }
+
+  /**
+   * Waits until the *persisted* Tracker reaches this Version. Clicking Commit only starts
+   * the write; a full page load before it lands would silently lose it.
+   */
+  async waitForCommittedVersion(version: number): Promise<void> {
+    await expect(this.root).toHaveAttribute('data-current-version', String(version));
+  }
+
+  async waitForDefaultTimeMode(mode: string): Promise<void> {
+    await expect(this.root).toHaveAttribute('data-default-time-mode', mode);
   }
 
   get nameInput(): Locator {

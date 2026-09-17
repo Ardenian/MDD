@@ -7,6 +7,13 @@ embedded **child Entries**, **Tags**, and the pinned-**Snapshot** lifecycle. See
 [ADR 0005](../../../../docs/adr/0005-tracker-versioning.md) — an Entry always snapshots
 the Tracker's current **Tracker Version** at creation and renders from it forever.
 
+## Status
+
+Built: the `fadeout`, `entry-form` and `expansion-depth` pure modules, `EntriesDataAccess`,
+the Entry form dialog with its placement editor and embedded-child editing, and the route
+that opens it. Creating an Entry *from the Calendar* arrives with the Calendar; until then
+the form is reached by URL, which is also how the Calendar will open it (see **UI**).
+
 ## User stories / flows
 
 - From the Calendar I pick a time and Tracker "Sleep" (currently Version 3); a form
@@ -39,18 +46,27 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
 
 ## UI
 
-- **Entry form**: opened as `ui/`'s **Modal** (built on `DialogService`) — this is the
-  literal implementation of "focus moves into the form on open and returns to the
-  trigger on close" below, not a separately hand-built behavior. The component that
-  opens it (from Calendar) is that feature's top-level component, per the DI boundary;
-  the form component itself is where `EntriesDataAccess` is injected.
+- **How the form is opened.** This feature owns a lazy route in the app shell's `modal`
+  router outlet: `/…(modal:entry/new)?trackerId=…&at=…&presetId=…` for a new Entry,
+  `/…(modal:entry/<entryId>)` for a saved one. The Calendar opens the form by
+  *navigating* there, never by importing this feature (which `AGENTS.md` forbids); the
+  primary route stays rendered underneath, and an open form is addressable by URL. The
+  route component (`EntryFormRoute`) is the top-level component that injects
+  `DialogService`/`ToastService`; closing the form closes the outlet.
+- **Entry form**: rendered inside a dialog `DialogService` opens, with `ui/`'s **Modal**
+  as its chrome — focus moving into the form on open and back to the trigger on close
+  comes from `cdk/dialog` underneath, not from hand-built behavior. The form component
+  itself (`EntryFormDialog`) is where `EntriesDataAccess` is injected; the tree being
+  edited is its own working state.
   - header (Tracker name + current Version badge, Preset picker, placement editor)
   - one control per Field of the Tracker's **current** Version (or, for an existing
     Entry being viewed, its **pinned** Version): single/multi-select Fields render as
     `ui/`'s **Select** / **Multiselect** (`@angular/aria`)
   - reference Fields render an embedded child-Entry list via `ui/`'s **Nested list**
-    (`cdk/tree`, fits the self-referencing shape without flattening) with add (schema
-    or Preset) / edit / remove
+    (native nested lists — see `ui/SPEC.md` for why not `cdk/tree`) with add / edit /
+    remove; each child names the reference Field it belongs to, its depth against the
+    cap, and the Tracker Version it pins to
+  - a **Delete Entry** action on a saved Entry (soft delete, cascading to its children)
   - Tag input via `ui/`'s **Combobox** (`@angular/aria`), autocompleting against
     `EntriesDataAccess`'s Tag suggestions — each child Entry gets its own Tag input,
     entered independently and never inherited from or synced with the parent's Tags
@@ -79,6 +95,14 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
 - Reads `TrackerRepository.getVersion(trackerId, version)` to render an Entry's own
   pinned Version, and the Tracker header (`currentVersion`) to render a fresh form.
 - Reads `PresetRepository` for Preset values.
+- **How children are stored.** A reference Field's Snapshot value is the ordered list of
+  its child Entries' ids — that is what says which reference Field a child belongs to when
+  a Tracker has more than one. Saving is one pass over the form's tree: a new child is
+  created under its (by then saved) parent, then the parent's Snapshot is written with its
+  children's ids; a child removed from the form is soft-deleted.
+- The expansion-depth cap is read from `SettingsRepository` **each time a form opens**,
+  not once per app session, so lowering it in Settings applies the next time the user
+  nests.
 - Pure modules:
   - `fadeout` — resolve a placement + Fadeout to an absolute covered interval.
   - `entry-form` — given a `TrackerVersion` and (optionally) a Preset's values, build

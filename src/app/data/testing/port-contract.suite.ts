@@ -352,6 +352,25 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         expect(children.map((entry) => entry.id)).toEqual([first.id, second.id]);
       });
 
+      it('moves every descendant along when a parent Entry is moved', async () => {
+        const tracker = await createSleepTracker();
+        const input = {
+          trackerId: tracker.id,
+          snapshot: [],
+          tags: [],
+          placement: { kind: 'point', at: '2026-03-01T10:01:00.000Z' },
+        } as const;
+        const parent = await layer.entries.create({ ...input, parentEntryId: null });
+        const child = await layer.entries.create({ ...input, parentEntryId: parent.id });
+        const grandchild = await layer.entries.create({ ...input, parentEntryId: child.id });
+        const moved = { kind: 'dayBucketed', day: '2026-04-02' } as const;
+
+        await layer.entries.update(parent.id, { ...input, parentEntryId: null, placement: moved });
+
+        await expect(layer.entries.get(child.id)).resolves.toMatchObject({ placement: moved });
+        await expect(layer.entries.get(grandchild.id)).resolves.toMatchObject({ placement: moved });
+      });
+
       it('refuses to re-parent an Entry', async () => {
         const tracker = await createSleepTracker();
         const parent = await layer.entries.create({

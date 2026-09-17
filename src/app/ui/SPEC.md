@@ -11,17 +11,9 @@ that does.
 ## Status
 
 Built: every service (`UiLocaleService`, `DesignTokenService`, `ToastService`,
-`DialogService`, `OverlayService`, `FocusService`), the design-token pipeline, and the
-components with more than one consumer — **Modal**, **Select**, **Multiselect**,
-**Toast list** — plus the pure modules the remaining components are built on
-(`reorderable-list/reorder.ts`, `nested-list/bounded-children.ts`).
-
-**Combobox**, **Reorderable list** and **Nested list** land with their first consumer
-rather than ahead of one, per the promotion rule below and ADR 0006's "a CDK-backed
-piece with exactly one consumer" reasoning: Reorderable list with the Tracker designer,
-Combobox and Nested list with the Entry form. They still live here, not in those
-features, because this SPEC already establishes them as shared ground. **Table** remains
-unbuilt for the reason its own entry gives.
+`DialogService`, `OverlayService`, `FocusService`), the design-token pipeline, and every
+component below except **Table**, which remains unbuilt for the reason its own entry
+gives.
 
 ## Who may use what
 
@@ -39,7 +31,9 @@ Where a CDK primitive normally demands injection — `DIALOG_DATA`, `DialogRef`,
 `OverlayRef` — the injecting wrapper lives in the consuming feature, and `ui/` supplies
 the DI-free chrome that wrapper renders. `DialogService.open()` and
 `OverlayService.openPopover()` therefore take an `inputs` map and set it on the opened
-component, instead of handing it an injection token to read.
+component, instead of handing it an injection token to read. `DialogService.open()` also
+takes the opener's `injector`: a dialog otherwise resolves from the root injector, which
+cannot see what a lazy feature route provides (that feature's own translations, for one).
 
 ## Services (`ui/services/`) — singleton coordination only
 
@@ -71,10 +65,10 @@ in more than one place.
   purely a read/dispatch facade over that state, the same shape of problem
   `DesignTokenService` solves for theming.
 
-**Not services**: `Select`/`Multiselect`/`Combobox` (via `@angular/aria`) and the
-Reorderable list / Nested list (via `cdk/drag-drop` / `cdk/tree`) are directive-backed
-components with no cross-feature runtime state to coordinate — features import the
-component, there's nothing for a service to own.
+**Not services**: `Select`/`Multiselect`/`Combobox` (via `@angular/aria`), the
+Reorderable list (via `cdk/drag-drop`) and the Nested list are components with no
+cross-feature runtime state to coordinate — features import the component, there's
+nothing for a service to own.
 
 ## Components (`ui/components/`)
 
@@ -96,19 +90,23 @@ component, there's nothing for a service to own.
 - **Select / Multiselect** — `@angular/aria` Listbox/Select/Multiselect directives.
   Backs single-select and multi-select Fields on the Entry form, the reference-target
   and cardinality pickers in the Tracker designer, and Settings' Storage Profile picker.
-- **Combobox** — `@angular/aria` Combobox. Backs the Tag input's autocomplete.
+- **Combobox** — `@angular/aria` Combobox. Backs the Tag input: chosen values render as
+  removable chips, Enter adds the typed text, and suggestions come in as an input so the
+  consumer decides where they are looked up.
 - **Reorderable list** — `cdk/drag-drop` (`CdkDropList`/`CdkDrag`), keyboard-operable
   per the existing a11y requirement. Backs Field reordering in the Tracker designer.
-- **Nested list** — `cdk/tree`, using `childrenAccessor` (fits a self-referencing
-  structure without forcing flattening). Backs embedded child-Entry display
-  (Meal → Ingredients). Note the apparent conflict with `AGENTS.md`'s "`@angular/aria`
-  owns … Tree": that rule is about tree *widgets* — a navigable, roving-focus structure —
-  whereas this is a nest of embedded editable forms whose only tree-shaped requirement is
-  structural. ADR 0006's mandate is explicitly behaviour-scoped, so `cdk/tree`'s
-  structure-without-interaction is the right primitive here.
-  `nested-list/bounded-children.ts` supplies the `childrenAccessor`: it stops at the
+- **Nested list** — **native nested `<ul>`/`<li>` lists, deliberately not `cdk/tree`**
+  (nor `@angular/aria`'s Tree). Backs embedded child-Entry editing (Meal → Ingredients).
+  Both tree primitives impose `tree`/`treeitem` semantics and a roving tabindex: right
+  for a navigable tree *widget*, wrong for a nest of *editable forms*, where it tells a
+  screen reader to use tree navigation over text inputs and pulls each node out of the
+  normal Tab order. Nested lists convey the hierarchy natively and leave every control in
+  document order. ADR 0006's mandate is behaviour-scoped — a primitive is used where its
+  interactive behaviour is wanted — and here it is not. (An earlier revision of this SPEC
+  chose `cdk/tree`; building the Entry form showed why that was wrong.)
+  `nested-list/bounded-children.ts` still decides what renders: it stops at the
   expansion-depth cap and drops a node that is already its own ancestor, so a
-  self-referencing Tracker cannot make it recurse forever.
+  self-referencing Tracker cannot make it render forever.
 - **Table** — `cdk/table`, headless: column definitions, row data, and sort state as
   inputs, sort-change as output; a hand-built clickable-header pattern for sorting
   (stable CDK ships no sort primitive — that's Material-only). Generic and reusable the
@@ -136,8 +134,8 @@ governing `data/`'s shared facades (ADR 0002) and this repo's docs.
 ## Bundle discipline
 
 `drag-drop`, `table`, `tree`, and `scrolling` are imported only inside the lazy-loaded
-feature chunk that uses them (`trackers` for Reorderable list, `entries` for Nested
-list, `correlation` for Table). Only `a11y`, `overlay`, `portal`, and `bidi` — all
+feature chunk that uses them (`trackers` for Reorderable list, `correlation` for
+Table). The Nested list uses no CDK module at all, so it adds nothing to any chunk. Only `a11y`, `overlay`, `portal`, and `bidi` — all
 lightweight — may be used from `core/`/`ui/` eagerly.
 
 ## Test cases (Vitest — logic only)
