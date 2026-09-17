@@ -80,7 +80,11 @@ function sameField(field: FieldDef, other: FieldDef | undefined): boolean {
   if (other === undefined) {
     return false;
   }
-  if (field.name !== other.name || field.required !== other.required || field.dataType !== other.dataType) {
+  if (
+    field.name !== other.name ||
+    field.required !== other.required ||
+    field.dataType !== other.dataType
+  ) {
     return false;
   }
   if (isSelectField(field) && isSelectField(other)) {
@@ -90,7 +94,9 @@ function sameField(field: FieldDef, other: FieldDef | undefined): boolean {
     );
   }
   if (isReferenceField(field) && isReferenceField(other)) {
-    return field.targetTrackerId === other.targetTrackerId && field.cardinality === other.cardinality;
+    return (
+      field.targetTrackerId === other.targetTrackerId && field.cardinality === other.cardinality
+    );
   }
   return true;
 }

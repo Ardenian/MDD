@@ -84,6 +84,12 @@ nothing for a service to own.
   form (entries) and the Preset editor (trackers) can each render it against their own
   feature's data. It lives here rather than in either feature precisely because both need
   it, which is what keeps `trackers` from importing `entries` to reuse the Entry form.
+- **Value node editor** — one node of a value tree: its Schema fields, an add button per
+  reference Field (disabled at the expansion-depth cap or a filled cardinality-one
+  Field), and — for a child — a header naming the Field, Tracker, depth and Version. The
+  root and an embedded child are the same editor in two modes. Shared by the Entry form
+  and the Preset editor; labels come in already translated, and each consumer projects its
+  own extras into a content slot (the Entry form's Tags input).
 - **Toast list** — renders `ToastService`'s queued messages and emits dismissals. The
   announcing is the service's job; this is only the visible surface, so `core/`'s layout
   shell injects the service and feeds this component.

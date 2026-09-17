@@ -10,7 +10,12 @@ import type { TrackerListRow } from './trackers-data-access';
     <ul class="tracker-rows" [attr.data-testid]="testId()">
       @for (row of rows(); track row.id) {
         <li class="tracker-rows__row" [attr.data-testid]="row.id">
-          <button type="button" class="tracker-rows__open" data-testid="open-tracker" (click)="opened.emit(row.id)">
+          <button
+            type="button"
+            class="tracker-rows__open"
+            data-testid="open-tracker"
+            (click)="opened.emit(row.id)"
+          >
             <span class="tracker-rows__name" data-testid="tracker-name">{{ row.name }}</span>
           </button>
 
@@ -25,7 +30,8 @@ import type { TrackerListRow } from './trackers-data-access';
           <span class="tracker-rows__counts" data-testid="tracker-counts">
             {{
               'trackers.list.counts'
-                | translate: { fields: row.fieldCount, entries: row.entryCount, presets: row.presetCount }
+                | translate
+                  : { fields: row.fieldCount, entries: row.entryCount, presets: row.presetCount }
             }}
           </span>
 

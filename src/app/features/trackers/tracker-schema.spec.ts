@@ -65,7 +65,10 @@ describe('findFieldProblems', () => {
   });
 
   it('reports a problem per offending Field', () => {
-    const problems = findFieldProblems([{ ...satisfaction, name: '' }, { ...energy, options: [] }]);
+    const problems = findFieldProblems([
+      { ...satisfaction, name: '' },
+      { ...energy, options: [] },
+    ]);
 
     expect(problems).toEqual([
       { kind: 'empty-name', index: 0 },
@@ -104,9 +107,9 @@ describe('draftDiffersFromVersion', () => {
   });
 
   it('is true when a reference target or cardinality changes', () => {
-    expect(
-      draftDiffersFromVersion([{ ...ingredients, cardinality: 'one' }], [ingredients]),
-    ).toBe(true);
+    expect(draftDiffersFromVersion([{ ...ingredients, cardinality: 'one' }], [ingredients])).toBe(
+      true,
+    );
   });
 
   it('treats a Tracker with no committed Version as changed only if the Draft has Fields', () => {

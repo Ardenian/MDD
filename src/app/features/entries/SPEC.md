@@ -9,7 +9,7 @@ the Tracker's current **Tracker Version** at creation and renders from it foreve
 
 ## Status
 
-Built: the `fadeout`, `entry-form` and `expansion-depth` pure modules, `EntriesDataAccess`,
+Built: the `fadeout` and `entry-form` pure modules, `EntriesDataAccess`,
 the Entry form dialog with its placement editor and embedded-child editing, and the route
 that opens it. Creating an Entry *from the Calendar* arrives with the Calendar; until then
 the form is reached by URL, which is also how the Calendar will open it (see **UI**).
@@ -105,13 +105,21 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
   nests.
 - Pure modules:
   - `fadeout` — resolve a placement + Fadeout to an absolute covered interval.
-  - `entry-form` — given a `TrackerVersion` and (optionally) a Preset's values, build
-    the form model; independent of which Version is current vs. pinned.
-  - `expansion-depth` — given an Entry's in-progress child nesting and the
-    Settings-configured cap, determines whether one more level of required nesting is
-    allowed; treats a self-referencing chain and a chain across distinct Trackers
-    identically (only the actual realized nesting depth matters, not the schema shape).
-    This also gates Preset authoring, since the Preset editor reuses this same form.
+  - `entry-form` — what makes a value-tree node an *Entry* (its saved id and its own
+    Tags), requiring every required Field, and the Snapshot mapping.
+  - The tree itself — building values against a `TrackerVersion` independent of which
+    Version is current vs. pinned, adding/removing children, validation, rebuilding a
+    Preset against the current Version — is shared with the Preset editor, so it lives in
+    `data/model/value-tree.ts`.
+  - `expansion-depth` (also in `data/model/`, for the same reason) — given realised child
+    nesting and the Settings-configured cap, determines whether one more level is allowed;
+    treats a self-referencing chain and a chain across distinct Trackers identically (only
+    the actual realized nesting depth matters, not the schema shape). It gates the Entry
+    form and Preset authoring alike.
+- The node editor (Fields, reference Fields, child header) is `ui/`'s **Value node
+  editor**; the Entry form projects its Tags input into it. Its labels and the value
+  problem messages live in the `common` translation namespace (`valueTree.*`), since both
+  features show them.
 - TypeSpec models: `Entry` (`trackerId`, `trackerVersion`, `parentEntryId`, `placement`,
   `snapshot: SnapshotField[]`, `tags`), `Placement` (discriminated), `Fadeout`,
   `SnapshotField` (`fieldName`, `value` — no `dataType`, per ADR 0005 Q11: schema is

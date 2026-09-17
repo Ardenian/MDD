@@ -3,13 +3,19 @@ import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { TrackerLookup } from '../../data/facades/tracker-lookup';
 import type { FieldDataType, FieldDef, ReferenceCardinality } from '../../data/model/field-def';
+import { addChild, problemCount, type ValueTreeProblems } from '../../data/model/value-tree';
+import type { ValueNodeLabels } from '../../ui/components/value-node-editor/value-node-editor';
 import type { TimeMode } from '../../data/model/tracker';
 import { ReorderableList } from '../../ui/components/reorderable-list/reorderable-list';
 import { Select } from '../../ui/components/select/select';
 import type { SelectOption } from '../../ui/components/select/select-option';
 import { DraftFieldRow } from './draft-field-row';
-import { draftDiffersFromVersion, findFieldProblems } from './tracker-schema';
-import { TrackersDataAccess } from './trackers-data-access';
+import { type PresetChildRequest, PresetEditor } from './preset-editor';
+import type { PresetFormNode } from './preset-form';
+import { validatePreset } from './preset-form';
+import { PresetList, type PresetRow } from './preset-list';
+import { draftDiffersFromVersion, findFieldProblems, isPresetStale } from './tracker-schema';
+import { type PresetDraft, TrackersDataAccess } from './trackers-data-access';
 
 const TIME_MODES: readonly TimeMode[] = ['point', 'period', 'dayBucketed'];
 
@@ -20,7 +26,15 @@ const TIME_MODES: readonly TimeMode[] = ['point', 'period', 'dayBucketed'];
  */
 @Component({
   selector: 'app-tracker-designer-page',
-  imports: [TranslatePipe, RouterLink, Select, ReorderableList, DraftFieldRow],
+  imports: [
+    TranslatePipe,
+    RouterLink,
+    Select,
+    ReorderableList,
+    DraftFieldRow,
+    PresetList,
+    PresetEditor,
+  ],
   template: `
     <section
       class="designer"
@@ -126,6 +140,46 @@ const TIME_MODES: readonly TimeMode[] = ['point', 'period', 'dayBucketed'];
             }
           </ul>
         }
+
+        <section class="designer__presets" data-testid="presets" aria-labelledby="presets-heading">
+          <div class="designer__presets-header">
+            <h2 id="presets-heading">{{ 'trackers.presets.heading' | translate }}</h2>
+            @if (tracker.currentVersion > 0 && presetDraft() === null) {
+              <button type="button" data-testid="new-preset" (click)="openPreset(null)">
+                {{ 'trackers.presets.create' | translate }}
+              </button>
+            }
+          </div>
+
+          @if (tracker.currentVersion === 0) {
+            <p data-testid="presets-unavailable">{{ 'trackers.presets.noVersion' | translate }}</p>
+          } @else {
+            <app-preset-list
+              [rows]="presetRows()"
+              [currentVersion]="tracker.currentVersion"
+              (edited)="openPreset($event)"
+              (deleted)="deletePreset($event)"
+            />
+          }
+
+          @if (presetDraft(); as draft) {
+            <app-preset-editor
+              [(root)]="presetRoot"
+              [(name)]="presetName"
+              [cap]="draft.expansionDepthCap"
+              [labels]="presetLabels()"
+              [trackerNames]="trackerNames()"
+              [messages]="presetMessages()"
+              [nameMissing]="presetProblems().nameMissing"
+              [problemCount]="presetProblemCount()"
+              [isNew]="draft.presetId === null"
+              [saving]="presetSaving()"
+              (childRequested)="addPresetChild($event)"
+              (saved)="savePreset()"
+              (cancelled)="closePreset()"
+            />
+          }
+        </section>
       }
     </section>
   `,
@@ -184,6 +238,34 @@ const TIME_MODES: readonly TimeMode[] = ['point', 'period', 'dayBucketed'];
       color: var(--color-ink-muted);
       cursor: not-allowed;
       opacity: 0.6;
+    }
+
+    .designer__presets {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      padding-top: var(--space-5);
+      border-top: 1px solid var(--color-border);
+    }
+
+    .designer__presets-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+
+    .designer__presets-header h2 {
+      margin: 0;
+    }
+
+    .designer__presets-header button {
+      padding: var(--space-2) var(--space-4);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      color: var(--color-ink);
+      cursor: pointer;
     }
 
     .designer__problems {
@@ -262,11 +344,61 @@ export class TrackerDesignerPage {
 
   protected readonly rowId = (row: { field: FieldDef; index: number }) => String(row.index);
 
+  protected readonly presetDraft = signal<PresetDraft | null>(null);
+  protected readonly presetRoot = signal<PresetFormNode>(EMPTY_PRESET_ROOT);
+  protected readonly presetName = signal('');
+  protected readonly presetSaving = signal(false);
+
+  protected readonly presetRows = computed<readonly PresetRow[]>(() => {
+    const current = this.view.tracker()?.currentVersion ?? 0;
+    return this.view.presets().map((preset) => ({
+      id: preset.id,
+      name: preset.name,
+      trackerVersion: preset.trackerVersion,
+      stale: isPresetStale(preset.trackerVersion, current),
+    }));
+  });
+
+  protected readonly trackerNames = computed(
+    () => new Map(this.lookup.list().map((tracker) => [tracker.id, tracker.name])),
+  );
+
+  protected readonly presetProblems = computed(() =>
+    validatePreset(
+      this.presetName(),
+      this.presetRoot(),
+      this.presetDraft()?.expansionDepthCap ?? 1,
+    ),
+  );
+
+  protected readonly presetProblemCount = computed(() => problemCount(this.presetProblems().tree));
+
+  protected readonly presetMessages = computed(() =>
+    translateProblems(
+      this.presetProblems().tree,
+      this.translate,
+      this.presetDraft()?.expansionDepthCap ?? 1,
+    ),
+  );
+
+  protected readonly presetLabels = computed<ValueNodeLabels>(() => ({
+    required: this.translate.instant('valueTree.required'),
+    clear: this.translate.instant('valueTree.clear'),
+    remove: this.translate.instant('valueTree.node.remove'),
+    childOf: (field, tracker) =>
+      this.translate.instant('valueTree.node.childOf', { field, tracker }),
+    level: (depth, cap) => this.translate.instant('valueTree.node.level', { depth, cap }),
+    version: (version) => this.translate.instant('valueTree.version', { version }),
+    addTo: (field) => this.translate.instant('valueTree.node.add', { field }),
+    capReached: (cap) => this.translate.instant('valueTree.node.capReached', { cap }),
+  }));
+
   constructor() {
     // A different Tracker means a different Draft; local edits must not leak across.
     effect(() => {
       this.trackerId();
       this.localDraft.set(null);
+      this.presetDraft.set(null);
     });
   }
 
@@ -325,6 +457,63 @@ export class TrackerDesignerPage {
     }
   }
 
+  /** Opens the editor for a new Preset (`null`) or a saved one, always at the current Version. */
+  protected async openPreset(presetId: string | null): Promise<void> {
+    const tracker = this.view.tracker();
+    if (tracker === undefined) {
+      return;
+    }
+    const draft = await this.access.openPreset(tracker.id, presetId);
+    this.presetRoot.set(draft.root);
+    this.presetName.set(draft.name);
+    this.presetDraft.set(draft);
+  }
+
+  protected async addPresetChild(request: PresetChildRequest): Promise<void> {
+    const draft = this.presetDraft();
+    if (draft === null) {
+      return;
+    }
+    const child = await this.access.newPresetChild(
+      request.field,
+      request.parentDepth,
+      draft.expansionDepthCap,
+    );
+    this.presetRoot.update((root) => addChild(root, request.parentKey, child));
+  }
+
+  /** Saving is what re-pins a stale Preset to the current Version (ADR 0005). */
+  protected async savePreset(): Promise<void> {
+    const draft = this.presetDraft();
+    if (draft === null) {
+      return;
+    }
+    this.presetSaving.set(true);
+    try {
+      await this.access.savePresetDraft({
+        ...draft,
+        name: this.presetName(),
+        root: this.presetRoot(),
+      });
+      this.closePreset();
+      this.view.reload();
+    } finally {
+      this.presetSaving.set(false);
+    }
+  }
+
+  protected closePreset(): void {
+    this.presetDraft.set(null);
+  }
+
+  protected async deletePreset(presetId: string): Promise<void> {
+    await this.access.deletePreset(presetId);
+    if (this.presetDraft()?.presetId === presetId) {
+      this.closePreset();
+    }
+    this.view.reload();
+  }
+
   private async persistDraft(fields: readonly FieldDef[]): Promise<void> {
     this.localDraft.set(fields);
     const tracker = this.view.tracker();
@@ -341,4 +530,31 @@ export class TrackerDesignerPage {
       this.view.reload();
     }
   }
+}
+
+const EMPTY_PRESET_ROOT: PresetFormNode = {
+  key: 'none',
+  trackerId: '',
+  trackerVersion: 0,
+  fieldName: null,
+  fields: [],
+  values: {},
+  children: [],
+};
+
+function translateProblems(
+  problems: ValueTreeProblems,
+  translate: TranslateService,
+  cap: number,
+): Partial<Record<string, Record<string, string>>> {
+  const messages: Partial<Record<string, Record<string, string>>> = {};
+  for (const [key, fields] of Object.entries(problems)) {
+    messages[key] = Object.fromEntries(
+      Object.entries(fields ?? {}).map(([field, problem]) => [
+        field,
+        translate.instant(`valueTree.problems.${problem}`, { cap }),
+      ]),
+    );
+  }
+  return messages;
 }

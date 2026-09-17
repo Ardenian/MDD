@@ -4,7 +4,7 @@ import type { Entry } from '../../data/model/entry';
 import { type FieldDef, isReferenceField } from '../../data/model/field-def';
 import { coerceValue } from '../../data/model/field-values';
 import type { Placement } from '../../data/model/placement';
-import type { Preset, PresetChild } from '../../data/model/preset';
+import type { Preset } from '../../data/model/preset';
 import { DEFAULT_SETTINGS } from '../../data/model/settings';
 import type { Tracker } from '../../data/model/tracker';
 import { ENTRY_REPOSITORY } from '../../data/ports/entry-repository';
@@ -13,7 +13,8 @@ import { SETTINGS_REPOSITORY } from '../../data/ports/settings-repository';
 import { TAG_REPOSITORY } from '../../data/ports/tag-repository';
 import { TRACKER_REPOSITORY } from '../../data/ports/tracker-repository';
 import { createNode, type EntryFormNode, persistedIds, toSnapshot } from './entry-form';
-import { canAddChild, ROOT_DEPTH } from './expansion-depth';
+import { canAddChild } from '../../data/model/expansion-depth';
+import { type CurrentSchema, treeFromStored } from '../../data/model/value-tree';
 import { withTimeMode } from './fadeout';
 
 export interface EntryFormRequest {
@@ -143,13 +144,11 @@ export class EntriesDataAccess {
     if (preset === undefined || preset.deletedAt !== null) {
       throw new DataError('not-found', `Preset ${presetId} does not exist`);
     }
-    return this.nodeFromValues(
-      preset.trackerId,
-      null,
-      preset.values,
-      preset.children,
-      ROOT_DEPTH,
+    return treeFromStored<EntryFormNode>(
+      preset,
       cap,
+      (trackerId) => this.currentSchema(trackerId),
+      (parts) => createNode({ key: crypto.randomUUID(), ...parts }),
     );
   }
 
@@ -243,60 +242,18 @@ export class EntriesDataAccess {
   }
 
   private async newNode(trackerId: string, fieldName: string | null): Promise<EntryFormNode> {
-    const { tracker, fields } = await this.currentSchema(trackerId);
-    return createNode({
-      key: crypto.randomUUID(),
-      trackerId: tracker.id,
-      trackerVersion: tracker.currentVersion,
-      fields,
-      fieldName,
-    });
+    const schema = await this.currentSchema(trackerId);
+    return createNode({ key: crypto.randomUUID(), ...schema, fieldName });
   }
 
-  private async nodeFromValues(
-    trackerId: string,
-    fieldName: string | null,
-    values: readonly { fieldName: string; value: unknown }[],
-    presetChildren: readonly PresetChild[],
-    depth: number,
-    cap: number,
-  ): Promise<EntryFormNode> {
-    const { tracker, fields } = await this.currentSchema(trackerId);
-    const children: EntryFormNode[] = [];
-    if (canAddChild(depth, cap)) {
-      for (const presetChild of presetChildren) {
-        const field = fields.find((candidate) => candidate.name === presetChild.fieldName);
-        if (field !== undefined && isReferenceField(field)) {
-          children.push(
-            await this.nodeFromValues(
-              field.targetTrackerId,
-              field.name,
-              presetChild.values,
-              presetChild.children,
-              depth + 1,
-              cap,
-            ),
-          );
-        }
-      }
-    }
-    return createNode({
-      key: crypto.randomUUID(),
-      trackerId: tracker.id,
-      trackerVersion: tracker.currentVersion,
-      fields,
-      fieldName,
-      stored: values,
-      children,
-    });
-  }
-
-  private async currentSchema(
-    trackerId: string,
-  ): Promise<{ tracker: Tracker; fields: readonly FieldDef[] }> {
+  private async currentSchema(trackerId: string): Promise<CurrentSchema> {
     const tracker = await this.requireCommittedTracker(trackerId);
     const version = await this.trackers.getVersion(tracker.id, tracker.currentVersion);
-    return { tracker, fields: version?.fields ?? [] };
+    return {
+      trackerId: tracker.id,
+      trackerVersion: tracker.currentVersion,
+      fields: version?.fields ?? [],
+    };
   }
 
   private async readExpansionDepthCap(): Promise<number> {

@@ -20,9 +20,7 @@
       "presetStale": "{{ name }} (stale)",
       "problemsSummary": "{{ count }} Field(s) need attention before saving.",
       "tags": "Tags",
-      "removeTag": "Remove Tag",
-      "required": "required",
-      "clear": "Clear"
+      "removeTag": "Remove Tag"
     },
     "placement": {
       "mode": "Time mode",
@@ -39,20 +37,7 @@
         "dayBucketed": "Day-bucketed"
       }
     },
-    "node": {
-      "childOf": "{{ field }} · {{ tracker }}",
-      "level": "Level {{ depth }} of {{ cap }}",
-      "remove": "Remove",
-      "add": "Add to {{ field }}",
-      "capReached": "Nesting is at its limit of {{ cap }} levels."
-    },
     "problems": {
-      "required": "This Field is required.",
-      "not-an-integer": "Enter a whole number.",
-      "not-a-number": "Enter a number.",
-      "unknown-option": "Choose one of the listed options.",
-      "too-many-children": "This Field holds only one child.",
-      "depth-cap-reached": "Required, but no further nesting is allowed at this depth (limit {{ cap }}). Remove a level to save.",
       "invalid-time": "Enter a valid time.",
       "period-ends-before-start": "The end must not be before the start.",
       "invalid-fadeout": "Fadeout must be a whole number of minutes, 0 or more."

@@ -8,7 +8,7 @@ import { TAG_REPOSITORY } from '../../data/ports/tag-repository';
 import { TRACKER_REPOSITORY } from '../../data/ports/tracker-repository';
 import { createInMemoryDataLayer, type DataLayer } from '../../data/testing/in-memory-data-layer';
 import { EntriesDataAccess } from './entries-data-access';
-import { addChild, removeNode, updateNode } from './entry-form';
+import { addChild, removeNode, updateNode } from '../../data/model/value-tree';
 
 const grams: FieldDef = { name: 'grams', required: false, dataType: 'decimal' };
 const energy: FieldDef = {

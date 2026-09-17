@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { TrackerLookup } from '../../data/facades/tracker-lookup';
-import type { FieldDef } from '../../data/model/field-def';
+import type { ReferenceFieldDef } from '../../data/model/field-def';
 import type { FieldValues } from '../../data/model/field-values';
 import type { Placement } from '../../data/model/placement';
 import { Modal } from '../../ui/components/modal/modal';
@@ -20,15 +20,19 @@ import type { SelectOption } from '../../ui/components/select/select-option';
 import { EntriesDataAccess, type EntryForm, type EntryFormRequest } from './entries-data-access';
 import {
   addChild,
-  type EntryFormNode,
-  type EntryFormProblems,
   findNode,
   hasProblems,
+  problemCount,
   removeNode,
   updateNode,
-  validateForm,
-} from './entry-form';
-import { EntryNodeEditor } from './entry-node-editor';
+  type ValueTreeProblems,
+} from '../../data/model/value-tree';
+import { Combobox } from '../../ui/components/combobox/combobox';
+import {
+  ValueNodeEditor,
+  type ValueNodeLabels,
+} from '../../ui/components/value-node-editor/value-node-editor';
+import { type EntryFormNode, validateForm } from './entry-form';
 import { PlacementEditor } from './placement-editor';
 import { movedTo, validatePlacement } from './fadeout';
 
@@ -41,7 +45,7 @@ export type EntryFormOutcome = 'saved' | 'deleted' | 'cancelled';
  */
 @Component({
   selector: 'app-entry-form-dialog',
-  imports: [TranslatePipe, Modal, Select, NestedList, EntryNodeEditor, PlacementEditor],
+  imports: [TranslatePipe, Modal, Select, NestedList, ValueNodeEditor, Combobox, PlacementEditor],
   template: `
     <ui-modal
       [title]="title()"
@@ -91,19 +95,27 @@ export type EntryFormOutcome = 'saved' | 'deleted' | 'cancelled';
             (nowRequested)="placement.set(moveToNow(placement()))"
           />
 
-          <app-entry-node-editor
+          <ui-value-node-editor
             data-testid="entry-root"
             [node]="root()"
             [depth]="1"
             [cap]="loaded.expansionDepthCap"
             [isRoot]="true"
+            [labels]="nodeLabels()"
             [problems]="messagesFor(root().key)"
-            [tagSuggestions]="tagSuggestions()"
             (valuesChange)="setValues(root().key, $event)"
-            (tagsChange)="setTags(root().key, $event)"
-            (tagQuery)="tagQuery.set($event)"
             (addChild)="addChildTo(root().key, $event)"
-          />
+          >
+            <ui-combobox
+              data-testid="tags"
+              [label]="'entries.form.tags' | translate"
+              [removeLabel]="'entries.form.removeTag' | translate"
+              [values]="root().tags"
+              (valuesChange)="setTags(root().key, $event)"
+              [suggestions]="tagSuggestions()"
+              (queryChange)="tagQuery.set($event)"
+            />
+          </ui-value-node-editor>
 
           @if (root().children.length > 0) {
             <div data-testid="children">
@@ -119,20 +131,28 @@ export type EntryFormOutcome = 'saved' | 'deleted' | 'cancelled';
           }
 
           <ng-template #child let-node let-depth="depth">
-            <app-entry-node-editor
+            <ui-value-node-editor
               data-testid="entry-node"
               [node]="node"
               [depth]="depth"
               [cap]="loaded.expansionDepthCap"
+              [labels]="nodeLabels()"
               [trackerName]="trackerNames().get(node.trackerId) ?? ''"
               [problems]="messagesFor(node.key)"
-              [tagSuggestions]="tagSuggestions()"
               (valuesChange)="setValues(node.key, $event)"
-              (tagsChange)="setTags(node.key, $event)"
-              (tagQuery)="tagQuery.set($event)"
               (addChild)="addChildTo(node.key, $event)"
               (removed)="remove(node.key)"
-            />
+            >
+              <ui-combobox
+                data-testid="tags"
+                [label]="'entries.form.tags' | translate"
+                [removeLabel]="'entries.form.removeTag' | translate"
+                [values]="node.tags"
+                (valuesChange)="setTags(node.key, $event)"
+                [suggestions]="tagSuggestions()"
+                (queryChange)="tagQuery.set($event)"
+              />
+            </ui-value-node-editor>
           </ng-template>
 
           @if (invalidCount() > 0) {
@@ -276,7 +296,7 @@ export class EntryFormDialog {
     }));
   });
 
-  private readonly problems = computed<EntryFormProblems>(() =>
+  private readonly problems = computed<ValueTreeProblems>(() =>
     validateForm(this.root(), this.form()?.expansionDepthCap ?? 1),
   );
 
@@ -290,9 +310,9 @@ export class EntryFormDialog {
     const translated: Partial<Record<string, Record<string, string>>> = {};
     for (const [key, fields] of Object.entries(this.problems())) {
       translated[key] = Object.fromEntries(
-        Object.entries(fields).map(([field, problem]) => [
+        Object.entries(fields ?? {}).map(([field, problem]) => [
           field,
-          this.translate.instant(`entries.problems.${problem}`, { cap }),
+          this.translate.instant(`valueTree.problems.${problem}`, { cap }),
         ]),
       );
     }
@@ -305,12 +325,19 @@ export class EntryFormDialog {
   }
 
   protected readonly invalidCount = computed(
-    () =>
-      Object.values(this.problems()).reduce(
-        (count, fields) => count + Object.keys(fields).length,
-        0,
-      ) + (this.placementProblem() === null ? 0 : 1),
+    () => problemCount(this.problems()) + (this.placementProblem() === null ? 0 : 1),
   );
+
+  protected readonly nodeLabels = computed<ValueNodeLabels>(() => ({
+    required: this.translate.instant('valueTree.required'),
+    clear: this.translate.instant('valueTree.clear'),
+    remove: this.translate.instant('valueTree.node.remove'),
+    childOf: (field, tracker) => this.translate.instant('valueTree.node.childOf', { field, tracker }),
+    level: (depth, cap) => this.translate.instant('valueTree.node.level', { depth, cap }),
+    version: (version) => this.translate.instant('valueTree.version', { version }),
+    addTo: (field) => this.translate.instant('valueTree.node.add', { field }),
+    capReached: (cap) => this.translate.instant('valueTree.node.capReached', { cap }),
+  }));
 
   protected readonly canSave = computed(
     () =>
@@ -342,7 +369,7 @@ export class EntryFormDialog {
     this.root.update((root) => updateNode(root, key, (node) => ({ ...node, tags })));
   }
 
-  protected async addChildTo(parentKey: string, field: FieldDef): Promise<void> {
+  protected async addChildTo(parentKey: string, field: ReferenceFieldDef): Promise<void> {
     const form = this.form();
     const parent = findNode(this.root(), parentKey);
     if (form === null || parent === undefined) {

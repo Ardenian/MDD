@@ -2,6 +2,8 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { ReorderableListObject } from '../../ui/components/reorderable-list/reorderable-list.pom';
 import { SelectObject } from '../../ui/components/select/select.pom';
 import { DraftFieldRowObject } from './draft-field-row.pom';
+import { PresetEditorObject } from './preset-editor.pom';
+import { PresetListObject } from './preset-list.pom';
 
 export class TrackerDesignerPageObject {
   private readonly root: Locator;
@@ -90,5 +92,30 @@ export class TrackerDesignerPageObject {
 
   async backToTrackers(): Promise<void> {
     await this.root.getByTestId('back-to-trackers').click();
+  }
+
+  get presets(): PresetsSectionObject {
+    return new PresetsSectionObject(this.root.getByTestId('presets'));
+  }
+}
+
+export class PresetsSectionObject {
+  constructor(private readonly root: Locator) {}
+
+  get list(): PresetListObject {
+    return new PresetListObject(this.root);
+  }
+
+  get editor(): PresetEditorObject {
+    return new PresetEditorObject(this.root.getByTestId('preset-editor'));
+  }
+
+  get unavailable(): Locator {
+    return this.root.getByTestId('presets-unavailable');
+  }
+
+  async newPreset(): Promise<void> {
+    await this.root.getByTestId('new-preset').click();
+    await this.editor.self.waitFor();
   }
 }

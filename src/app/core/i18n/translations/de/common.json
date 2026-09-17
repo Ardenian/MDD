@@ -28,5 +28,25 @@
   },
   "serviceWorker": {
     "updateAvailable": "Eine neue Version ist bereit. Zum Aktualisieren neu laden."
+  },
+  "valueTree": {
+    "required": "Pflicht",
+    "clear": "Leeren",
+    "version": "Tracker-Version {{ version }}",
+    "node": {
+      "childOf": "{{ field }} · {{ tracker }}",
+      "level": "Ebene {{ depth }} von {{ cap }}",
+      "remove": "Entfernen",
+      "add": "Zu {{ field }} hinzufügen",
+      "capReached": "Die Verschachtelung hat ihr Limit von {{ cap }} Ebenen erreicht."
+    },
+    "problems": {
+      "required": "Dieses Feld ist erforderlich.",
+      "not-an-integer": "Gib eine ganze Zahl ein.",
+      "not-a-number": "Gib eine Zahl ein.",
+      "unknown-option": "Wähle eine der aufgeführten Optionen.",
+      "too-many-children": "Dieses Feld fasst nur ein Kind.",
+      "depth-cap-reached": "Erforderlich, aber in dieser Tiefe ist keine weitere Verschachtelung erlaubt (Limit {{ cap }}). Entferne eine Ebene, um fortzufahren."
+    }
   }
 }

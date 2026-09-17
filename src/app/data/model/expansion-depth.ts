@@ -4,8 +4,8 @@ export const ROOT_DEPTH = 1;
 /**
  * Only realised nesting depth matters — a self-referencing chain and a chain across
  * distinct Trackers are the same to this check, because the schema shape is never
- * consulted (entries/SPEC.md). This is the only place the cap applies; the Tracker
- * designer never checks it.
+ * consulted. It gates nesting child Entries in the Entry form and filled children in the
+ * Preset editor alike; the Tracker designer never checks it (entries/SPEC.md).
  */
 export function canAddChild(parentDepth: number, cap: number): boolean {
   return parentDepth + 1 <= cap;

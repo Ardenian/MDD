@@ -18,8 +18,7 @@ export const trackersRoutes: Routes = [
       {
         path: ':trackerId',
         title: 'Tracker designer',
-        loadComponent: () =>
-          import('./tracker-designer-page').then((m) => m.TrackerDesignerPage),
+        loadComponent: () => import('./tracker-designer-page').then((m) => m.TrackerDesignerPage),
       },
     ],
   },

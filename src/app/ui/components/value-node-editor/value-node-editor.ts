@@ -1,44 +1,56 @@
 import { Component, computed, input, output } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
-import type { FieldDef, ReferenceFieldDef } from '../../data/model/field-def';
-import type { FieldValues } from '../../data/model/field-values';
-import { Combobox } from '../../ui/components/combobox/combobox';
-import { SchemaFields } from '../../ui/components/schema-fields/schema-fields';
-import { childrenOf, type EntryFormNode, referenceFields } from './entry-form';
-import { canAddChild } from './expansion-depth';
+import { canAddChild } from '../../../data/model/expansion-depth';
+import type { FieldDef, ReferenceFieldDef } from '../../../data/model/field-def';
+import type { FieldValues } from '../../../data/model/field-values';
+import { childrenOf, referenceFields, type ValueNode } from '../../../data/model/value-tree';
+import { SchemaFields } from '../schema-fields/schema-fields';
+
+/** Any value-tree node — an Entry, a Preset, or whatever else pairs values with a schema. */
+export interface AnyValueNode extends ValueNode<AnyValueNode> {}
+
+/** Already translated by the consumer; `ui/` components inject nothing, a translator included. */
+export interface ValueNodeLabels {
+  readonly required: string;
+  readonly clear: string;
+  readonly remove: string;
+  readonly childOf: (fieldName: string, trackerName: string) => string;
+  readonly level: (depth: number, cap: number) => string;
+  readonly version: (version: number) => string;
+  readonly addTo: (fieldName: string) => string;
+  readonly capReached: (cap: number) => string;
+}
 
 /**
- * One Entry's Fields, Tags and reference Fields — the root Entry or an embedded child,
- * which are the same form in two modes. Presentation-only: it injects nothing and emits
- * every change to the dialog that owns the tree (ADR 0002). Its own children are rendered
- * by the surrounding Nested list, not by this component.
+ * One node of a value tree: its Fields, its reference Fields' add buttons, and — for a
+ * child — a header naming where it sits. The root and an embedded child are the same
+ * editor in two modes. Shared by the Entry form and the Preset editor, so it lives here
+ * rather than in either feature; each feature projects its own extras (the Entry form's
+ * Tags input) into the slot after the Fields. A node's own children are rendered by the
+ * surrounding Nested list, not by this component.
  */
 @Component({
-  selector: 'app-entry-node-editor',
-  imports: [TranslatePipe, SchemaFields, Combobox],
+  selector: 'ui-value-node-editor',
+  imports: [SchemaFields],
   template: `
     <section class="node" [class.node--child]="!isRoot()">
       @if (!isRoot()) {
         <header class="node__header">
           <h3 class="node__title" data-testid="node-title">
-            {{
-              'entries.node.childOf'
-                | translate: { field: node().fieldName, tracker: trackerName() }
-            }}
+            {{ labels().childOf(node().fieldName ?? '', trackerName()) }}
           </h3>
-          <span class="node__meta" data-testid="node-level">
-            {{ 'entries.node.level' | translate: { depth: depth(), cap: cap() } }}
-          </span>
-          <span class="node__meta" data-testid="node-version">
-            {{ 'entries.form.pinnedVersion' | translate: { version: node().trackerVersion } }}
-          </span>
+          <span class="node__meta" data-testid="node-level">{{
+            labels().level(depth(), cap())
+          }}</span>
+          <span class="node__meta" data-testid="node-version">{{
+            labels().version(node().trackerVersion)
+          }}</span>
           <button
             type="button"
             class="node__remove"
             data-testid="remove-child"
             (click)="removed.emit()"
           >
-            {{ 'entries.node.remove' | translate }}
+            {{ labels().remove }}
           </button>
         </header>
       }
@@ -49,51 +61,33 @@ import { canAddChild } from './expansion-depth';
         [values]="node().values"
         (valuesChange)="valuesChange.emit($event)"
         [problems]="problems()"
-        [labels]="{
-          required: 'entries.form.required' | translate,
-          clear: 'entries.form.clear' | translate,
-        }"
+        [labels]="{ required: labels().required, clear: labels().clear }"
         [idPrefix]="node().key"
       />
 
-      <ui-combobox
-        data-testid="tags"
-        [label]="'entries.form.tags' | translate"
-        [removeLabel]="'entries.form.removeTag' | translate"
-        [values]="node().tags"
-        (valuesChange)="tagsChange.emit($event)"
-        [suggestions]="tagSuggestions()"
-        (queryChange)="tagQuery.emit($event)"
-      />
+      <ng-content />
 
       @for (field of references(); track field.name) {
         @let problem = problems()[field.name];
+        @let errorId = node().key + '-' + field.name + '-error';
         <div class="node__reference" [attr.data-testid]="field.name">
           <span class="node__reference-name">{{ field.name }} ({{ countOf(field) }})</span>
           <button
             type="button"
             data-testid="add-child"
             [disabled]="!canNest() || (field.cardinality === 'one' && countOf(field) > 0)"
-            [attr.aria-describedby]="
-              problem === undefined ? null : node().key + '-' + field.name + '-error'
-            "
+            [attr.aria-describedby]="problem === undefined ? null : errorId"
             (click)="addChild.emit(field)"
           >
-            {{ 'entries.node.add' | translate: { field: field.name } }}
+            {{ labels().addTo(field.name) }}
           </button>
           @if (!canNest()) {
             <span class="node__meta" data-testid="cap-reached">{{
-              'entries.node.capReached' | translate: { cap: cap() }
+              labels().capReached(cap())
             }}</span>
           }
           @if (problem !== undefined) {
-            <p
-              class="node__error"
-              data-testid="error"
-              [id]="node().key + '-' + field.name + '-error'"
-            >
-              {{ problem }}
-            </p>
+            <p class="node__error" data-testid="error" [id]="errorId">{{ problem }}</p>
           }
         </div>
       }
@@ -171,25 +165,21 @@ import { canAddChild } from './expansion-depth';
     }
   `,
 })
-export class EntryNodeEditor {
-  readonly node = input.required<EntryFormNode>();
+export class ValueNodeEditor {
+  readonly node = input.required<AnyValueNode>();
   readonly depth = input.required<number>();
   readonly cap = input.required<number>();
+  readonly labels = input.required<ValueNodeLabels>();
   readonly isRoot = input(false);
   readonly trackerName = input('');
   /** Already-translated messages keyed by Field name, for this node only. */
   readonly problems = input<Readonly<Record<string, string>>>({});
-  readonly tagSuggestions = input<readonly string[]>([]);
 
   readonly valuesChange = output<FieldValues>();
-  readonly tagsChange = output<readonly string[]>();
-  readonly tagQuery = output<string>();
-  readonly addChild = output<FieldDef>();
+  readonly addChild = output<ReferenceFieldDef>();
   readonly removed = output<void>();
 
-  protected readonly references = computed<readonly ReferenceFieldDef[]>(() =>
-    referenceFields(this.node().fields),
-  );
+  protected readonly references = computed(() => referenceFields(this.node().fields));
   protected readonly canNest = computed(() => canAddChild(this.depth(), this.cap()));
 
   protected countOf(field: FieldDef): number {

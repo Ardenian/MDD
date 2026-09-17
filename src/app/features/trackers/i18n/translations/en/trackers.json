@@ -65,6 +65,25 @@
       "empty-option-set": "Field {{ index }}: add at least one option.",
       "duplicate-option": "Field {{ index }}: \"{{ option }}\" is listed twice.",
       "missing-reference-target": "Field {{ index }}: choose a target Tracker."
+    },
+    "presets": {
+      "heading": "Presets",
+      "create": "New Preset",
+      "empty": "No Presets yet.",
+      "noVersion": "Commit this Tracker's first Version before authoring Presets.",
+      "pinned": "Pinned to Version {{ version }}",
+      "stale": "Stale",
+      "staleSummary": "{{ count }} Preset(s) are stale — this Tracker is now at Version {{ current }}. Re-save a Preset to update it.",
+      "edit": "Edit",
+      "delete": "Delete",
+      "editorNew": "New Preset",
+      "editorEdit": "Edit Preset",
+      "name": "Preset name",
+      "nameRequired": "Give the Preset a name.",
+      "save": "Save Preset",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "problemsSummary": "{{ count }} value(s) need attention before saving."
     }
   }
 }

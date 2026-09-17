@@ -22,8 +22,12 @@ Built: `model/`, `ports/` (all seven), `adapters/indexeddb/` (every port), `test
 Pure, framework-free rules more than one feature applies live beside the types they are
 about, rather than in either feature: `placement.ts` (`resolveCoveredInterval`, the one
 definition of what an Entry covers), `field-def.ts` (`fieldsEqual`, what makes a Draft
-differ from its Version), and `field-values.ts` (what a Field's value may hold and when it
-is valid — used by the Entry form and the Preset editor alike).
+differ from its Version), `field-values.ts` (what a Field's value may hold and when it
+is valid), `value-tree.ts` (values against a schema whose reference Fields hold further
+nodes — an Entry with its children, a Preset with its filled children — with the tree
+operations, validation, and rebuilding a stored tree against current Versions), and
+`expansion-depth.ts` (the nesting cap). The last three are used by the Entry form and the
+Preset editor alike.
 
 ## Structure
 

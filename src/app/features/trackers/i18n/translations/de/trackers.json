@@ -65,6 +65,25 @@
       "empty-option-set": "Feld {{ index }}: Füge mindestens eine Option hinzu.",
       "duplicate-option": "Feld {{ index }}: „{{ option }}“ ist doppelt vorhanden.",
       "missing-reference-target": "Feld {{ index }}: Wähle einen Ziel-Tracker."
+    },
+    "presets": {
+      "heading": "Presets",
+      "create": "Neues Preset",
+      "empty": "Noch keine Presets.",
+      "noVersion": "Schreibe die erste Version dieses Trackers fest, bevor du Presets anlegst.",
+      "pinned": "Festgelegt auf Version {{ version }}",
+      "stale": "Veraltet",
+      "staleSummary": "{{ count }} Preset(s) sind veraltet — dieser Tracker ist jetzt bei Version {{ current }}. Speichere ein Preset erneut, um es zu aktualisieren.",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "editorNew": "Neues Preset",
+      "editorEdit": "Preset bearbeiten",
+      "name": "Preset-Name",
+      "nameRequired": "Gib dem Preset einen Namen.",
+      "save": "Preset speichern",
+      "saving": "Speichert…",
+      "cancel": "Abbrechen",
+      "problemsSummary": "{{ count }} Wert(e) müssen vor dem Speichern korrigiert werden."
     }
   }
 }

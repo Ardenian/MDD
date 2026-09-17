@@ -43,9 +43,9 @@ Preset, Snapshot, Time mode, expansion depth. See [`CONTEXT.md`](../../../../CON
 ## Status
 
 Built: the Tracker list, the Tracker editor (Draft editing, reorder, commit/discard,
-rename, default Time mode, archive/unarchive), the `tracker-schema` pure module, and
-`TrackersDataAccess`. The **Preset panel** lands with the Entry form it reuses — see
-`ui/SPEC.md`'s Schema fields component and the note under **Preset panel** below.
+rename, default Time mode, archive/unarchive), the Preset panel (list, stale badges,
+editor with filled children, delete), the `tracker-schema` and `preset-form` pure
+modules, and `TrackersDataAccess`.
 
 ## UI
 
@@ -76,12 +76,26 @@ selected Tracker arrives as a route-bound `input()`, which is what keeps
     reverts to the current Version
   - **Archive** / **Unarchive** action (no confirmation flow needed — reversible, no
     data at risk)
-- **Preset panel** within the Tracker editor: list of Presets, each showing its pinned
-  Version and a **stale** badge when behind current; saving a stale Preset re-pins it to
-  the Tracker's current Version and clears the badge. The Preset editor renders `ui/`'s
-  **Schema fields** component in "no placement" mode — the *same component* the Entry
-  form renders, rather than importing the entries feature, which `AGENTS.md` forbids.
-  That component is DI-free, so each feature feeds it from its own facade.
+- **Preset panel** within the Tracker editor, offered once the Tracker has a committed
+  Version: list of Presets, each showing its pinned Version and a **stale** badge when
+  behind current; saving a stale Preset re-pins it to the Tracker's current Version and
+  clears the badge. A visually hidden live region announces how many Presets are stale,
+  since the badge alone is only visual.
+- **Preset editor** — inline in the panel, not a dialog, so the Tracker editor stays this
+  feature's only injection point (ADR 0002) and the editor itself is presentation-only.
+  It is the Entry form in "no placement" mode, built from the same shared pieces rather
+  than by importing the entries feature (which `AGENTS.md` forbids): `ui/`'s **Value node
+  editor** and **Nested list** over `data/model/value-tree.ts`. A Preset always opens
+  against the Tracker's **current** Version — a stale Preset's values carry over by Field
+  name, a value whose Field no longer exists is dropped, and saving is what re-pins it.
+  - **Validation is shape-only.** A Preset is a partial pre-fill, so no Field is required;
+    what *is* filled must still be the right shape (a whole number for an integer, a
+    listed option for a select). The Preset needs a name. Nesting filled children honours
+    the Settings expansion-depth cap, read fresh when the editor opens, because those
+    children become real child Entries when the Preset is used.
+  - Only covered values are stored — a value left empty is simply not part of the Preset,
+    which is what makes a used Preset leave that Field empty (ADR 0005). Each filled child
+    records the Version of its own Tracker it was authored against.
 - All controls keyboard reachable; Field reordering and Draft/Commit operable without a
   pointer; the stale badge and Draft indicator are announced via `aria-live`.
 
@@ -102,10 +116,13 @@ selected Tracker arrives as a route-bound `input()`, which is what keeps
   `TrackerVersion` (immutable: trackerId, version, fields), `FieldDef` (discriminated by
   `dataType`), `Preset`, `PresetFieldValue`. All carry the ADR 0003 fields.
 - Pure module `tracker-schema`: Field validity, option-set validity, Draft-vs-current-
-  Version diff (to decide whether a commit is a no-op), Preset staleness check.
-  Expansion-depth computation lives in `entries/SPEC.md`'s pure modules instead — the
-  Tracker designer never checks depth, so this feature has no need for it, and a
-  feature must not import another feature's module.
+  Version diff (to decide whether a commit is a no-op), Preset staleness check. The
+  Tracker *designer* never checks expansion depth.
+- Pure module `preset-form`: Preset validation (shape-only plus a name) and the mapping
+  from an edited Preset tree to `PresetInput`. The tree operations and the expansion-depth
+  rule it builds on are shared, in `data/model/` (`value-tree.ts`, `expansion-depth.ts`).
+- `TrackersDataAccess` also injects `SettingsRepository`, for the expansion-depth cap the
+  Preset editor honours (settings/SPEC.md: features read their own defaults).
 
 ## Test cases (Vitest — logic only)
 

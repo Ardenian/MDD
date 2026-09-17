@@ -28,5 +28,25 @@
   },
   "serviceWorker": {
     "updateAvailable": "A new version is ready. Reload to update."
+  },
+  "valueTree": {
+    "required": "required",
+    "clear": "Clear",
+    "version": "Tracker Version {{ version }}",
+    "node": {
+      "childOf": "{{ field }} · {{ tracker }}",
+      "level": "Level {{ depth }} of {{ cap }}",
+      "remove": "Remove",
+      "add": "Add to {{ field }}",
+      "capReached": "Nesting is at its limit of {{ cap }} levels."
+    },
+    "problems": {
+      "required": "This Field is required.",
+      "not-an-integer": "Enter a whole number.",
+      "not-a-number": "Enter a number.",
+      "unknown-option": "Choose one of the listed options.",
+      "too-many-children": "This Field holds only one child.",
+      "depth-cap-reached": "Required, but no further nesting is allowed at this depth (limit {{ cap }}). Remove a level to continue."
+    }
   }
 }
