@@ -10,6 +10,8 @@ export class TrackersPageObject {
 
   async open(): Promise<void> {
     await this.page.getByTestId('app-nav').getByTestId('/trackers').click();
+    // Fail here, on the navigation itself, rather than later on whatever was expected.
+    await this.root.waitFor();
   }
 
   get heading(): Locator {

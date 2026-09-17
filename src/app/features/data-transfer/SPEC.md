@@ -8,6 +8,12 @@ backend, no automatic backup — see [ADR 0009](../../../../docs/adr/0009-storag
 and the anticipated path for moving data between Storage Profiles once a second one
 exists.
 
+## Status
+
+Built: the export download, the file picker with rejection at selection time, the
+confirm-by-typing import guard, the `import-bundle` pure module, and
+`DataTransferDataAccess`.
+
 ## User stories / flows
 
 - I open Data Transfer and click **Export** — the browser downloads one JSON file
@@ -34,10 +40,16 @@ Storage Profile, Tracker, Tracker Version, Entry, Preset, Tag. See
   here allowed to inject a facade or a `ui/` service.
 - **Export**: a single button; triggers a browser download of the JSON bundle, named
   with the export date.
-- **Import**: a file picker, then `ui/`'s **Modal** with a confirm-by-typing guard
-  (mirrors Settings' "Clear local data") showing current record counts per aggregate
-  before the replace is applied. A format-version mismatch is surfaced as an inline
-  error at file-selection time, before the confirmation step is ever reached.
+- **Import**: a file picker, then `ui/`'s **Confirm dialog** — literally the same
+  component Settings' "Clear local data" uses, promoted to `ui/` on this second use —
+  showing current record counts per aggregate before the replace is applied. A
+  format-version mismatch is surfaced as an inline error at file-selection time, before
+  the confirmation step is ever reached.
+- A rejected file leaves nothing selected: the Import button stays disabled, so the
+  confirmation cannot be reached at all rather than being reached and then refused.
+- Three rejections are distinguished, because they call for different actions: the file
+  is not readable JSON, it is JSON but not an export bundle, and it is an export bundle
+  from another format version — which names the version it found.
 - Both actions are labelled form controls; the destructive import action is not
   focus-first, matching Settings' existing destructive-action pattern.
 
@@ -66,6 +78,13 @@ Storage Profile, Tracker, Tracker Version, Entry, Preset, Tag. See
   the export bundle is an internal format versioned independently of the API contract,
   never exposed over the future HTTP adapter.
 
+- The import reloads the app once the replace lands. The whole dataset was swapped, so
+  every cached read in the running app — the shared `TrackerLookup` among them — now
+  describes records that are gone; a fresh start is cheaper and more honest than
+  invalidating each one. Settings' "Clear local data" reloads for the same reason.
+- The export is written through a Blob and an object URL rather than a data URL, so a
+  large dataset never has to be encoded into a string the browser has to parse as a URL.
+
 ## Test cases (Vitest — logic only)
 
 - `exportAll()`: includes every live row of every aggregate and all Settings; excludes
@@ -78,6 +97,13 @@ Storage Profile, Tracker, Tracker Version, Entry, Preset, Tag. See
   between) is a no-op on every aggregate's live rows.
 - Record-count read for the confirmation display matches what `importAll()` is about to
   discard.
+
+The `exportAll()` / `importAll()` cases are covered by `data/`'s shared port-contract
+suite, which runs against the real repositories. What this feature adds on top is
+`import-bundle.spec.ts`: a selected file is refused before anything is touched, the
+format version is checked *before* the shape (a bundle from another format is entitled to
+look nothing like this one, and "exported by a different version" is the useful thing to
+say about it), and the export file is named after the local day it was made on.
 
 ## Out of scope
 

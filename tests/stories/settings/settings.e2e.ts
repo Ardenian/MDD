@@ -18,7 +18,10 @@ test.describe('Settings', () => {
 
     await settings.reload();
 
-    expect(await settings.correlation.bucketSize.isSelected('week')).toBe(true);
+    await expect(settings.correlation.bucketSize.option('week')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await expect(settings.correlation.lagMin).toHaveValue('-7');
     await expect(settings.correlation.lagMax).toHaveValue('7');
     await expect(settings.correlation.minSampleSize).toHaveValue('25');
@@ -91,7 +94,10 @@ test.describe('Settings', () => {
     const settings = new SettingsPageObject(appPage);
     await settings.open();
 
-    expect(await settings.storageProfile.isSelected('offline')).toBe(true);
+    await expect(settings.storageProfile.option('offline')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   test('clearing local data empties the app after a confirmation', async ({ appPage }) => {
@@ -104,14 +110,15 @@ test.describe('Settings', () => {
     await settings.open();
     const dialog = await settings.clearLocalData();
 
-    await expect(dialog.count('trackers')).toHaveText('1');
-    await expect(dialog.count('trackerVersions')).toHaveText('1');
+    await expect(dialog.detail('trackers')).toHaveText('1');
+    await expect(dialog.detail('trackerVersions')).toHaveText('1');
     // The phrase has to be typed out before the button does anything.
     await expect(dialog.confirmButton).toBeDisabled();
 
     await dialog.type('clear');
     await expect(dialog.confirmButton).toBeEnabled();
-    await dialog.confirm();
+    // Clearing reloads the app; the next navigation must not race it.
+    await Promise.all([appPage.waitForEvent('load'), dialog.confirm()]);
 
     const trackers = new TrackersPageObject(appPage);
     await trackers.open();

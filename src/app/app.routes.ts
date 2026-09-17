@@ -26,9 +26,8 @@ export const routes: Routes = [
   },
   {
     path: 'data-transfer',
-    title: 'Data Transfer',
-    loadComponent: () =>
-      import('./features/data-transfer/data-transfer-page').then((m) => m.DataTransferPage),
+    loadChildren: () =>
+      import('./features/data-transfer/data-transfer.routes').then((m) => m.dataTransferRoutes),
   },
   {
     // Feature-neutral dialog outlet: any feature opens the Entry form by URL rather than by

@@ -16,16 +16,17 @@ export class SelectObject {
     return this.root;
   }
 
+  /**
+   * Assert selection through this Locator with a web-first assertion —
+   * `await expect(select.option('week')).toHaveAttribute('aria-selected', 'true')`.
+   * A one-shot boolean read cannot retry, so it races anything that renders a default
+   * first and the persisted value a moment later.
+   */
   option(value: string): Locator {
     return this.root.getByTestId(value);
   }
 
   async choose(value: string): Promise<void> {
     await this.option(value).click();
-  }
-
-  /** Reads the option's own ARIA state — the locator stays `data-testid`-only. */
-  async isSelected(value: string): Promise<boolean> {
-    return (await this.option(value).getAttribute('aria-selected')) === 'true';
   }
 }

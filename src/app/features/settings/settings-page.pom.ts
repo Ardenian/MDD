@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { SelectObject } from '../../ui/components/select/select.pom';
-import { ClearDataDialogObject } from './clear-data-dialog.pom';
+import { ConfirmDialogObject } from '../../ui/components/confirm-dialog/confirm-dialog.pom';
 
 /** The Correlation defaults section, scoped to its own fieldset. */
 export class CorrelationDefaultsObject {
@@ -100,9 +100,20 @@ export class SettingsPageObject {
     await expect(this.root).toHaveAttribute('data-saved-bucket-size', size);
   }
 
-  async clearLocalData(): Promise<ClearDataDialogObject> {
+  /**
+   * Clearing reloads the app, so the reload has to be awaited before the test moves on —
+   * see `DataTransferPageObject.completeImport`.
+   */
+  async clearLocalDataAndConfirm(phrase: string): Promise<void> {
+    const dialog = await this.clearLocalData();
+    await dialog.type(phrase);
+    await Promise.all([this.page.waitForEvent('load'), dialog.confirm()]);
+    await this.root.waitFor();
+  }
+
+  async clearLocalData(): Promise<ConfirmDialogObject> {
     await this.root.getByTestId('data-settings').getByTestId('clear-local-data').click();
-    const dialog = new ClearDataDialogObject(this.page);
+    const dialog = new ConfirmDialogObject(this.page);
     await dialog.self.waitFor();
     return dialog;
   }

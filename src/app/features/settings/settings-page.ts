@@ -1,13 +1,17 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, Injector, linkedSignal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import type { RecordCounts } from '../../data/model/export-bundle';
 import type { BucketSize } from '../../data/model/settings';
 import { STORAGE_PROFILES } from '../../core/storage-profile';
 import { Select } from '../../ui/components/select/select';
 import type { SelectOption } from '../../ui/components/select/select-option';
+import {
+  ConfirmDialog,
+  type ConfirmDetail,
+} from '../../ui/components/confirm-dialog/confirm-dialog';
 import { DialogService } from '../../ui/services/dialog.service';
 import { ToastService } from '../../ui/services/toast.service';
-import { ClearDataDialog } from './clear-data-dialog';
 import { CorrelationDefaultsEditor } from './correlation-defaults-editor';
 import { SettingsDataAccess } from './settings-data-access';
 import { draftFrom, patchFrom, problemFor, validateSettings } from './settings-form';
@@ -220,10 +224,19 @@ export class SettingsPage {
   }
 
   protected async confirmClear(): Promise<void> {
-    const counts = await this.access.counts();
-    const handle = this.dialogs.open<ClearDataDialog, void>(ClearDataDialog, {
-      inputs: { counts, phrase: this.translate.instant('settings.data.confirm.phrase') },
-      ariaLabel: this.translate.instant('settings.data.confirm.title'),
+    const title = this.translate.instant('settings.data.confirm.title');
+    const phrase = this.translate.instant('settings.data.confirm.phrase');
+    const handle = this.dialogs.open<ConfirmDialog, void>(ConfirmDialog, {
+      inputs: {
+        title,
+        body: this.translate.instant('settings.data.confirm.body'),
+        phrase,
+        prompt: this.translate.instant('settings.data.confirm.prompt', { phrase }),
+        confirmLabel: this.translate.instant('settings.data.confirm.submit'),
+        cancelLabel: this.translate.instant('settings.data.confirm.cancel'),
+        details: this.countDetails(await this.access.counts()),
+      },
+      ariaLabel: title,
       injector: this.injector,
     });
     if (handle === null) {
@@ -240,6 +253,15 @@ export class SettingsPage {
         this.reload();
       });
     });
+  }
+
+  /** What the confirmation shows is about to be lost, one row per aggregate. */
+  private countDetails(counts: RecordCounts): readonly ConfirmDetail[] {
+    return (Object.keys(counts) as (keyof RecordCounts)[]).map((key) => ({
+      key,
+      label: this.translate.instant(`settings.data.counts.${key}`),
+      value: String(counts[key]),
+    }));
   }
 
   private reload(): void {

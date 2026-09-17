@@ -40,7 +40,10 @@ Bucket, Lag, expansion depth, Tracker, Entry, Storage Profile. See
   one option, "Offline", so the control is present but has nothing meaningful to switch
   to yet. Selecting a different Profile (once one exists) triggers an app reload — see
   [ADR 0009](../../../../docs/adr/0009-storage-profile-and-data-transfer.md).
-- **Data**: "Clear local data" opens `ui/`'s **Modal** with a confirm-by-typing guard;
+- **Data**: "Clear local data" opens `ui/`'s **Confirm dialog** — the shared
+  confirm-by-typing guard, promoted to `ui/` once Data Transfer's import needed the same
+  one; the counts arrive as already-translated detail rows, so `ui/` learns no domain
+  vocabulary. It
   shows current record counts per aggregate. Exporting/importing the whole dataset is a
   separate feature — see `data-transfer/SPEC.md`.
 - All settings are labelled form controls; the destructive action requires the Modal
@@ -48,8 +51,9 @@ Bucket, Lag, expansion depth, Tracker, Entry, Storage Profile. See
 - Validation is live and blocking: **Save** is disabled while any value is invalid, and
   each problem is announced through `aria-describedby` on the control it belongs to.
   Nothing partially valid is written, so a half-typed number can never reach storage.
-- The confirm phrase is matched trimmed and case-insensitively — the guard exists to make
-  the action deliberate, not to test typing accuracy.
+- The confirm phrase is matched trimmed and case-insensitively (`ui/`'s
+  `confirm-phrase.ts`) — the guard exists to make the action deliberate, not to test
+  typing accuracy.
 - The page reflects the persisted `expansionDepthCap` and `defaultBucketSize` as
   `data-*` attributes. They exist so a Playwright test can wait for a save to reach
   storage instead of racing it (the same device as the Tracker editor's committed

@@ -80,6 +80,14 @@ nothing for a service to own.
   v1 dialog-shaped flow renders this chrome rather than styling a bare dialog: the Entry
   create/edit form, Settings' "Clear local data" confirmation, and Data Transfer's import
   confirm-by-typing guard.
+- **Confirm dialog** — the standard guard in front of an irreversible action: what will
+  happen, optional detail rows naming what it costs, and a phrase that has to be typed
+  out before the confirm button does anything. Promoted here on its second use (ADR 0002's
+  promote-on-second-use rule): Settings' "Clear local data" and Data Transfer's import
+  are the same guard over different data. It carries no domain vocabulary — every string
+  arrives translated and the detail rows are `{key, label, value}`, so `ui/` never learns
+  what a Tracker is. Matching is trimmed and case-insensitive (`confirm-phrase.ts`): the
+  guard exists to make an action deliberate, not to test typing accuracy.
 - **Schema fields** — renders one control per `FieldDef` of a Tracker Version against a
   set of values, and emits value changes. DI-free like every component here, so the Entry
   form (entries) and the Preset editor (trackers) can each render it against their own

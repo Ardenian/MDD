@@ -1,0 +1,37 @@
+{
+  "dataTransfer": {
+    "export": {
+      "heading": "Export",
+      "body": "Lade alle Tracker, Tracker Versions, Entries, Presets und Tags samt deinen Einstellungen als eine JSON-Datei herunter. Das ist die einzige Sicherung, die diese App hat.",
+      "action": "Daten exportieren",
+      "done": "Export heruntergeladen."
+    },
+    "import": {
+      "heading": "Import",
+      "body": "Ersetzt alles auf diesem Gerät durch den Inhalt einer Exportdatei. Es wird nichts zusammengeführt, und es lässt sich nicht rückgängig machen.",
+      "choose": "Exportdatei",
+      "action": "Daten importieren",
+      "done": "Daten importiert.",
+      "confirm": {
+        "title": "Alle lokalen Daten ersetzen?",
+        "body": "Beim Import wird alles unten verworfen und durch den Inhalt der Datei ersetzt.",
+        "phrase": "ersetzen",
+        "prompt": "Tippe {{ phrase }} zur Bestätigung",
+        "submit": "Alles ersetzen",
+        "cancel": "Abbrechen"
+      }
+    },
+    "counts": {
+      "trackers": "Tracker",
+      "trackerVersions": "Tracker Versions",
+      "entries": "Entries",
+      "presets": "Presets",
+      "tags": "Tags"
+    },
+    "problems": {
+      "not-json": "Diese Datei ist kein lesbares JSON.",
+      "not-a-bundle": "Diese Datei ist kein Diary-Calendar-Export.",
+      "format-version": "Diese Datei stammt aus einer anderen Version dieser App (Format {{ version }}) und kann nicht importiert werden."
+    }
+  }
+}
