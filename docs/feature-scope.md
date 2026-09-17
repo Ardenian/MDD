@@ -77,7 +77,7 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
 - Methods by pairing: Spearman (numeric×numeric), point-biserial (numeric×binary);
   effect size + n + p-value
 - User-set Lag range with a recommended default; best-Lag result reported with zero-Lag
-- Discovery ranked list + Directed view (shared zoomable time axis + scatter)
+- Discovery ranked list + Directed view (shared time axis + scatter)
 - Series overlay: pick one or more Trackers, toggle their Series (default: all on),
   view them together on the shared time axis with no correlation math — the only way to
   inspect Series outside a Discovery-scan row
@@ -153,6 +153,10 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
 - Richer per-Field value visualisations (rating stars, gauges, etc.)
 - Deeper correlation: automatic lag recommendation from data, partial correlation,
   controlling for confounders
+- **Zoom and pan on the correlation time axis.** v1 draws the Directed view and Series
+  overlay over the whole scanned range at once, with no way to zoom into part of it.
+  Descoped during the v1 build rather than built and rushed; the charts read their
+  geometry from `chart-geometry.ts`, so a viewport is the thing to add, not a rewrite.
 - Cramér's V / categorical×categorical correlation — no v1 Series kind produces the
   multi-category input it needs (every kind reduces to a numeric mean or a [0,1]
   fraction per Bucket); revisit once one does — see `correlation/SPEC.md` → Out of scope

@@ -27,36 +27,6 @@ test.describe('Settings', () => {
     await expect(settings.correlation.minSampleSize).toHaveValue('25');
   });
 
-  test('@integration-candidate an inverted Lag range blocks saving until it is fixed', async ({
-    appPage,
-  }) => {
-    const settings = new SettingsPageObject(appPage);
-    await settings.open();
-
-    await settings.correlation.lagMin.fill('4');
-    await settings.correlation.lagMax.fill('1');
-
-    await expect(settings.correlation.lagRangeError).toBeVisible();
-    await expect(settings.saveButton).toBeDisabled();
-    await expect(settings.blocked).toBeVisible();
-
-    await settings.correlation.lagMax.fill('4');
-
-    // A zero-width range is legitimate: it scans Lag 0 only.
-    await expect(settings.correlation.lagRangeError).toHaveCount(0);
-    await expect(settings.saveButton).toBeEnabled();
-  });
-
-  test('@integration-candidate an expansion-depth cap below 1 is rejected', async ({ appPage }) => {
-    const settings = new SettingsPageObject(appPage);
-    await settings.open();
-
-    await settings.expansionDepthCap.fill('0');
-
-    await expect(settings.expansionDepthCapError).toBeVisible();
-    await expect(settings.saveButton).toBeDisabled();
-  });
-
   test('lowering the expansion-depth cap stops the Entry form nesting deeper', async ({
     appPage,
   }) => {

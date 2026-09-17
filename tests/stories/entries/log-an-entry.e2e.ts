@@ -1,8 +1,8 @@
+import { CalendarPageObject } from '../../../src/app/features/calendar/calendar-page.pom';
 import { EntryFormDialogObject } from '../../../src/app/features/entries/entry-form-dialog.pom';
 import { TrackerDesignerPageObject } from '../../../src/app/features/trackers/tracker-designer-page.pom';
 import { TrackersPageObject } from '../../../src/app/features/trackers/trackers-page.pom';
 import { expect, test } from '../../../src/app/testing/support/app-fixture';
-import { readEntries, readLiveEntries } from '../../../src/app/testing/support/local-database';
 import { createTracker, type TrackerFieldSpec } from '../../flows/create-tracker.flow';
 import { logEntry } from '../../flows/log-entry.flow';
 
@@ -24,19 +24,19 @@ test.describe('Logging an Entry', () => {
     await form.entry.field('Energy').select.choose('high');
     await form.save();
 
-    await expect
-      .poll(() => readLiveEntries(appPage))
-      .toEqual([
-        expect.objectContaining({
-          trackerId: sleepId,
-          trackerVersion: 1,
-          parentEntryId: null,
-          snapshot: [
-            { fieldName: 'Satisfaction', value: 4 },
-            { fieldName: 'Energy', value: 'high' },
-          ],
-        }),
-      ]);
+    // Reopened from the Calendar, the saved Entry reads back what was entered, against
+    // the Version it pinned to.
+    const calendar = new CalendarPageObject(appPage);
+    await calendar.open();
+    await calendar.today();
+    await calendar.dayOf(new Date()).openEntry();
+
+    await expect(form.versionLabel).toContainText('1');
+    await expect(form.entry.field('Satisfaction').control).toHaveValue('4');
+    await expect(form.entry.field('Energy').select.option('high')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   test('an optional select the user never touches is saved empty, not as its first option', async ({
@@ -53,9 +53,19 @@ test.describe('Logging an Entry', () => {
     await form.entry.field('Satisfaction').fill('4');
     await form.save();
 
-    await expect
-      .poll(async () => (await readLiveEntries(appPage))[0]?.snapshot)
-      .toContainEqual({ fieldName: 'Energy', value: null });
+    const calendar = new CalendarPageObject(appPage);
+    await calendar.open();
+    await calendar.dayOf(new Date()).openEntry();
+
+    // Saved empty, not as whichever option happened to be listed first.
+    await expect(form.entry.field('Energy').select.option('low')).not.toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(form.entry.field('Energy').select.option('high')).not.toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   test('placement starts in the Tracker’s default Time mode and can be overridden with a Fadeout', async ({
@@ -74,13 +84,13 @@ test.describe('Logging an Entry', () => {
     await form.placement.setFadeout(0, 60);
     await form.save();
 
-    await expect
-      .poll(async () => (await readLiveEntries(appPage))[0]?.placement)
-      .toEqual({
-        kind: 'point',
-        at: '2026-03-01T10:01:00.000Z',
-        fadeout: { beforeMinutes: 0, afterMinutes: 60 },
-      });
+    const calendar = new CalendarPageObject(appPage);
+    await calendar.openDay('2026-03-01');
+    await calendar.day('2026-03-01').openEntry();
+
+    await expect(form.placement.mode.option('point')).toHaveAttribute('aria-selected', 'true');
+    await expect(form.placement.fadeoutAfter).toHaveValue('60');
+    await expect(form.placement.fadeoutBefore).toHaveValue('0');
   });
 
   test('an old Entry still renders against the Version it was logged under', async ({
@@ -91,7 +101,6 @@ test.describe('Logging an Entry', () => {
       fields: [{ name: 'Energy', dataType: 'singleSelect', options: ['low', 'high'] }],
     });
     await logEntry(appPage, { trackerId: sleepId, values: [{ field: 'Energy', choose: 'high' }] });
-    const [entry] = await readLiveEntries(appPage);
 
     const list = new TrackersPageObject(appPage);
     await list.open();
@@ -101,8 +110,10 @@ test.describe('Logging an Entry', () => {
     await designer.commit();
     await designer.waitForCommittedVersion(2);
 
+    const calendar = new CalendarPageObject(appPage);
+    await calendar.open();
+    await calendar.dayOf(new Date()).openEntry();
     const form = new EntryFormDialogObject(appPage);
-    await form.openSaved(entry!.id);
 
     await expect(form.entry.field('Energy').select.option('high')).toHaveAttribute(
       'aria-selected',
@@ -141,29 +152,27 @@ test.describe('Logging an Entry', () => {
     await form.child(1).field('grams').fill('30');
     await form.save();
 
-    await expect.poll(async () => (await readLiveEntries(appPage)).length).toBe(3);
-    const saved = await readLiveEntries(appPage);
-    const meal = saved.find((entry) => entry.parentEntryId === null)!;
-    const butter = saved.find((entry) => entry.snapshot[0]?.value === 120)!;
-    const toast = saved.find((entry) => entry.snapshot[0]?.value === 30)!;
-    expect(meal.tags).toEqual([]);
-    expect(butter).toMatchObject({
-      parentEntryId: meal.id,
-      tags: ['dairy'],
-      placement: meal.placement,
-    });
+    // Three Entries in all: the Meal and its two children, the children drawn at the
+    // Meal's own placement.
+    const calendar = new CalendarPageObject(appPage);
+    await calendar.open();
+    const today = calendar.dayOf(new Date());
+    await calendar.toggles.showChildren(true);
+    await expect(today.entries).toHaveCount(3);
 
-    await form.openSaved(meal.id);
+    await today.openEntry(0);
     await expect(form.children).toHaveCount(2);
+    await expect(form.child(0).field('grams').control).toHaveValue('120');
+    await expect(form.child(0).tags.chip('dairy')).toBeVisible();
+    await expect(form.entry.tags.chips).toHaveCount(0);
+
     await form.child(1).remove();
     await form.save();
 
-    await expect
-      .poll(
-        async () => (await readEntries(appPage)).find((entry) => entry.id === toast.id)?.deletedAt,
-      )
-      .not.toBeNull();
-    await expect.poll(async () => (await readLiveEntries(appPage)).length).toBe(2);
+    // The removed child is gone from the Calendar too, not merely from the form.
+    await expect(today.entries).toHaveCount(2);
+    await today.openEntry(0);
+    await expect(form.children).toHaveCount(1);
   });
 
   test('a required self-reference cannot be satisfied past the expansion-depth cap', async ({
@@ -212,13 +221,15 @@ test.describe('Logging an Entry', () => {
   test('a saved Entry can be deleted', async ({ appPage }) => {
     const sleepId = await createTracker(appPage, { name: 'Sleep', fields: SLEEP_FIELDS });
     await logEntry(appPage, { trackerId: sleepId, values: [{ field: 'Satisfaction', fill: '3' }] });
-    const [entry] = await readLiveEntries(appPage);
-    const form = new EntryFormDialogObject(appPage);
+    const calendar = new CalendarPageObject(appPage);
+    await calendar.open();
+    const today = calendar.dayOf(new Date());
+    await expect(today.entries).toHaveCount(1);
 
-    await form.openSaved(entry!.id);
-    await form.delete();
+    await today.openEntry();
+    await new EntryFormDialogObject(appPage).delete();
 
-    await expect.poll(() => readLiveEntries(appPage)).toEqual([]);
+    await expect(today.entries).toHaveCount(0);
   });
 });
 
@@ -277,6 +288,8 @@ test.describe('Entry form validation', { tag: '@integration-candidate' }, () => 
     await form.entry.field('Satisfaction').fill('4');
     await form.cancel();
 
-    expect(await readEntries(appPage)).toEqual([]);
+    const calendar = new CalendarPageObject(appPage);
+    await calendar.open();
+    await expect(calendar.dayOf(new Date()).entries).toHaveCount(0);
   });
 });

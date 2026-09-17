@@ -32,6 +32,13 @@ export enum FieldDataType {
   Reference = "reference",
 }
 
+export enum BucketSize {
+  Hour = "hour",
+  Day = "day",
+  Week = "week",
+  Month = "month",
+}
+
 /** Fields carried by every persisted aggregate. See ADR 0003. */
 export interface AggregateMeta {
   /** Client-generated UUID. */
@@ -113,6 +120,24 @@ export interface EntryInput {
   tags: string[];
 }
 
+/**
+ * The export file's shape. Versioned independently of this API: an import whose
+ * `formatVersion` differs is rejected outright, with no partial restore (ADR 0009).
+ */
+export interface ExportBundle {
+  /** @format int32 */
+  formatVersion: number;
+  /** @format date-time */
+  exportedAt: string;
+  trackers: Tracker[];
+  trackerVersions: TrackerVersion[];
+  entries: Entry[];
+  presets: Preset[];
+  tags: Tag[];
+  /** The portable subset of Settings — everything but the device-local Profile. */
+  settings: PortableSettings;
+}
+
 export interface Fadeout {
   /** @format int32 */
   beforeMinutes: number;
@@ -132,6 +157,22 @@ export type FieldDef =
   | BooleanFieldDef
   | SelectFieldDef
   | ReferenceFieldDef;
+
+export interface Guardrails {
+  /** @format int32 */
+  minSampleSize: number;
+  /** @format double */
+  pThreshold: number;
+  benjaminiHochberg: boolean;
+}
+
+/** Bucket offsets, so the range is inclusive at both ends and may be zero-width. */
+export interface LagRange {
+  /** @format int32 */
+  min: number;
+  /** @format int32 */
+  max: number;
+}
 
 export type NumberFieldDef = FieldBase & {
   dataType: "integer" | "decimal";
@@ -153,6 +194,16 @@ export interface PointPlacement {
   /** @format date-time */
   at: string;
   fadeout?: Fadeout;
+}
+
+/** The portable subset of Settings — everything but the device-local Profile. */
+export interface PortableSettings {
+  defaultBucketSize?: BucketSize;
+  /** Bucket offsets, so the range is inclusive at both ends and may be zero-width. */
+  defaultLagRange?: LagRange;
+  guardrails?: Guardrails;
+  /** @format int32 */
+  expansionDepthCap?: number;
 }
 
 export interface Preset {
@@ -201,6 +252,19 @@ export interface PresetFieldValue {
   value: any;
 }
 
+export interface RecordCounts {
+  /** @format int32 */
+  trackers: number;
+  /** @format int32 */
+  trackerVersions: number;
+  /** @format int32 */
+  entries: number;
+  /** @format int32 */
+  presets: number;
+  /** @format int32 */
+  tags: number;
+}
+
 export type ReferenceFieldDef = FieldBase & {
   dataType: "reference";
   targetTrackerId: string;
@@ -212,6 +276,49 @@ export type SelectFieldDef = FieldBase & {
   options: string[];
 };
 
+export interface Settings {
+  /** Client-generated UUID. */
+  id: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+  /**
+   * Set when soft-deleted; default reads exclude these rows.
+   * @format date-time
+   */
+  deletedAt: string | null;
+  /**
+   * Monotonic per-record counter for conflict detection.
+   * @format int32
+   */
+  revision: number;
+  ownerId: string;
+  userId: string;
+  defaultBucketSize: BucketSize;
+  /** Bucket offsets, so the range is inclusive at both ends and may be zero-width. */
+  defaultLagRange: LagRange;
+  guardrails: Guardrails;
+  /** @format int32 */
+  expansionDepthCap: number;
+  /**
+   * Names the active Storage Profile. Device-local: it is never part of an export and
+   * an import never touches it (ADR 0009).
+   */
+  activeProfileId: string;
+}
+
+/** Every field optional: a save is a patch of whatever the user changed. */
+export interface SettingsPatch {
+  defaultBucketSize?: BucketSize;
+  /** Bucket offsets, so the range is inclusive at both ends and may be zero-width. */
+  defaultLagRange?: LagRange;
+  guardrails?: Guardrails;
+  /** @format int32 */
+  expansionDepthCap?: number;
+  activeProfileId?: string;
+}
+
 /**
  * A Field value frozen onto an Entry. No dataType or schema copy — that's looked up
  * from the Entry's pinned `(trackerId, trackerVersion)` TrackerVersion. See ADR 0005.
@@ -219,6 +326,35 @@ export type SelectFieldDef = FieldBase & {
 export interface SnapshotField {
   fieldName: string;
   value: any;
+}
+
+/** A free-text label; the aggregate row is what autocomplete suggests from. */
+export interface Tag {
+  /** Client-generated UUID. */
+  id: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+  /**
+   * Set when soft-deleted; default reads exclude these rows.
+   * @format date-time
+   */
+  deletedAt: string | null;
+  /**
+   * Monotonic per-record counter for conflict detection.
+   * @format int32
+   */
+  revision: number;
+  ownerId: string;
+  userId: string;
+  name: string;
+}
+
+export interface TagSuggestion {
+  name: string;
+  /** @format int32 */
+  usageCount: number;
 }
 
 export type TextFieldDef = FieldBase & {
@@ -658,6 +794,63 @@ export class Api<
         ...params,
       }),
   };
+  maintenance = {
+    /**
+     * @description Empties every store and re-seeds the single implicit Calendar.
+     *
+     * @name MaintenanceClearAll
+     * @request POST:/maintenance/clear
+     */
+    maintenanceClearAll: (params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/maintenance/clear`,
+        method: "POST",
+        ...params,
+      }),
+
+    /**
+     * @description Backs the confirm-before-destroy displays in Settings and Data Transfer.
+     *
+     * @name MaintenanceCounts
+     * @request GET:/maintenance/counts
+     */
+    maintenanceCounts: (params: RequestParams = {}) =>
+      this.request<RecordCounts, any>({
+        path: `/maintenance/counts`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name MaintenanceExportAll
+     * @request GET:/maintenance/export
+     */
+    maintenanceExportAll: (params: RequestParams = {}) =>
+      this.request<ExportBundle, any>({
+        path: `/maintenance/export`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Full replace; a format-version mismatch is rejected and nothing is touched.
+     *
+     * @name MaintenanceImportAll
+     * @request POST:/maintenance/import
+     */
+    maintenanceImportAll: (data: ExportBundle, params: RequestParams = {}) =>
+      this.request<void, ApiError>({
+        path: `/maintenance/import`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        ...params,
+      }),
+  };
   presets = {
     /**
      * No description
@@ -724,6 +917,37 @@ export class Api<
         ...params,
       }),
   };
+  settings = {
+    /**
+     * @description Returns the documented fallback values when nothing has been saved yet.
+     *
+     * @name SettingsRoutesRead
+     * @request GET:/settings
+     */
+    settingsRoutesRead: (params: RequestParams = {}) =>
+      this.request<Settings, any>({
+        path: `/settings`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name SettingsRoutesSave
+     * @request PATCH:/settings
+     */
+    settingsRoutesSave: (data: SettingsPatch, params: RequestParams = {}) =>
+      this.request<Settings, ApiError>({
+        path: `/settings`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+  };
   tags = {
     /**
      * No description
@@ -731,14 +955,28 @@ export class Api<
      * @name TagsList
      * @request GET:/tags
      */
-    tagsList: (
-      query?: {
-        prefix?: string;
+    tagsList: (params: RequestParams = {}) =>
+      this.request<Tag[], any>({
+        path: `/tags`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Case-insensitive prefix match, ranked by usage frequency then alphabetically.
+     *
+     * @name TagsSuggest
+     * @request GET:/tags/suggestions
+     */
+    tagsSuggest: (
+      query: {
+        prefix: string;
       },
       params: RequestParams = {},
     ) =>
-      this.request<string[], any>({
-        path: `/tags`,
+      this.request<TagSuggestion[], any>({
+        path: `/tags/suggestions`,
         method: "GET",
         query: query,
         format: "json",

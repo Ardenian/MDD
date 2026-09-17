@@ -112,23 +112,6 @@ test.describe('Correlation', () => {
     await expect(correlation.firstRow().pinButton).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('@integration-candidate the results table sorts by a clicked column', async ({
-    appPage,
-  }) => {
-    await twoRelatedTrackers(appPage);
-
-    const correlation = new CorrelationPageObject(appPage);
-    await correlation.open();
-    await correlation.controls.minSampleSize.fill('4');
-    await correlation.controls.pThreshold.fill('0.5');
-    await correlation.findCorrelations();
-
-    await correlation.sortBy('n');
-
-    await expect(correlation.table.getByTestId('sort-n')).toBeVisible();
-    await expect(correlation.rows.first()).toBeVisible();
-  });
-
   test('the Series overlay plots Trackers without correlating them', async ({ appPage }) => {
     const { causeId } = await twoRelatedTrackers(appPage);
 

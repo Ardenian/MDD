@@ -133,7 +133,7 @@ let nextId = 0;
                 ></button>
               }
 
-              <div class="day__layer">
+              <div class="day__layer" data-testid="timed-layer">
                 @for (entry of day.timed; track entry.id) {
                   <div
                     class="timed"

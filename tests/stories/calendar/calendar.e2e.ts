@@ -1,7 +1,6 @@
 import { CalendarPageObject } from '../../../src/app/features/calendar/calendar-page.pom';
 import { EntryFormDialogObject } from '../../../src/app/features/entries/entry-form-dialog.pom';
 import { expect, test } from '../../../src/app/testing/support/app-fixture';
-import { readLiveEntries } from '../../../src/app/testing/support/local-database';
 import { createTracker } from '../../flows/create-tracker.flow';
 import { logEntry } from '../../flows/log-entry.flow';
 
@@ -20,16 +19,14 @@ test.describe('Calendar', () => {
     });
     await logEntry(appPage, { trackerId: sleepId, at: local(9) });
     await logEntry(appPage, { trackerId: sleepId, at: local(9), mode: 'dayBucketed' });
-    const entries = await readLiveEntries(appPage);
-    const period = entries.find((entry) => entry.placement.kind === 'period')!;
-    const wholeDay = entries.find((entry) => entry.placement.kind === 'dayBucketed')!;
     const calendar = new CalendarPageObject(appPage);
 
     await calendar.openDay(DAY);
 
-    await expect(calendar.day(DAY).entry(period.id).button).toBeVisible();
-    await expect(calendar.day(DAY).stripEntry(period.id).button).toHaveCount(0);
-    await expect(calendar.day(DAY).stripEntry(wholeDay.id).button).toBeVisible();
+    // A Period is drawn to scale on the time grid; a Day-bucketed Entry has no time of
+    // day to be drawn at, so it belongs in the strip above it.
+    await expect(calendar.day(DAY).timedEntries).toHaveCount(1);
+    await expect(calendar.day(DAY).stripEntries).toHaveCount(1);
   });
 
   test('a trailing Fadeout draws a falloff band after the block', async ({ appPage }) => {
@@ -42,13 +39,12 @@ test.describe('Calendar', () => {
     await form.openNew({ trackerId: sleepId, at: local(9) });
     await form.placement.setFadeout(0, 30);
     await form.save();
-    const [entry] = await readLiveEntries(appPage);
     const calendar = new CalendarPageObject(appPage);
 
     await calendar.openDay(DAY);
 
-    await expect(calendar.day(DAY).entry(entry!.id).fadeAfter).toBeVisible();
-    await expect(calendar.day(DAY).entry(entry!.id).fadeBefore).toHaveCount(0);
+    await expect(calendar.day(DAY).fadeAfter).toBeVisible();
+    await expect(calendar.day(DAY).fadeBefore).toHaveCount(0);
   });
 
   test('clicking an empty slot starts an Entry there, in the Tracker’s default Time mode', async ({
@@ -70,8 +66,7 @@ test.describe('Calendar', () => {
     await expect(form.placement.start).toHaveValue(`${DAY}T14:30`);
     await form.save();
 
-    const [entry] = await readLiveEntries(appPage);
-    await expect(calendar.day(DAY).entry(entry!.id).button).toBeVisible();
+    await expect(calendar.day(DAY).timedEntries).toHaveCount(1);
   });
 
   test('Now starts a Point Entry at the current time', async ({ appPage }) => {
@@ -99,7 +94,6 @@ test.describe('Calendar', () => {
       fields: [{ name: 'Satisfaction', dataType: 'integer' }],
     });
     await logEntry(appPage, { trackerId: sleepId, at: local(9) });
-    const [entry] = await readLiveEntries(appPage);
     const calendar = new CalendarPageObject(appPage);
     await calendar.openDay(DAY);
 
@@ -108,7 +102,7 @@ test.describe('Calendar', () => {
     await calendar.reload();
     await expect(calendar.dayLabels).toHaveCount(7);
 
-    await calendar.day(DAY).entry(entry!.id).open();
+    await calendar.day(DAY).openEntry();
 
     await expect(new EntryFormDialogObject(appPage).form).toBeVisible();
   });
@@ -124,21 +118,20 @@ test.describe('Calendar', () => {
     });
     await logEntry(appPage, { trackerId: sleepId, at: local(7) });
     await logEntry(appPage, { trackerId: workoutId, at: local(18) });
-    const entries = await readLiveEntries(appPage);
-    const sleep = entries.find((entry) => entry.trackerId === sleepId)!;
-    const workout = entries.find((entry) => entry.trackerId === workoutId)!;
     const calendar = new CalendarPageObject(appPage);
     await calendar.openDay(DAY);
+    await expect(calendar.day(DAY).entries).toHaveCount(2);
 
     await calendar.toggles.setVisible(workoutId, false);
-    await expect(calendar.day(DAY).entry(workout.id).button).toHaveCount(0);
-    await expect(calendar.day(DAY).entry(sleep.id).button).toBeVisible();
+    // The Entry left behind is the Sleep one: every Entry is labelled by its Tracker.
+    await expect(calendar.day(DAY).entries).toHaveCount(1);
+    await expect(calendar.day(DAY).entries.first()).toHaveAccessibleName(/Sleep/);
 
     await calendar.reload();
-    await expect(calendar.day(DAY).entry(workout.id).button).toHaveCount(0);
+    await expect(calendar.day(DAY).entries).toHaveCount(1);
 
     await calendar.toggles.showAll();
-    await expect(calendar.day(DAY).entry(workout.id).button).toBeVisible();
+    await expect(calendar.day(DAY).entries).toHaveCount(2);
   });
 
   test('child Entries appear at their parent only when asked for, and open the parent', async ({
@@ -164,18 +157,21 @@ test.describe('Calendar', () => {
     await form.entry.reference('Ingredients').addChild();
     await form.child(0).field('grams').fill('40');
     await form.save();
-    const child = (await readLiveEntries(appPage)).find((entry) => entry.parentEntryId !== null)!;
     const calendar = new CalendarPageObject(appPage);
     await calendar.openDay(DAY);
 
-    await expect(calendar.day(DAY).entry(child.id).button).toHaveCount(0);
+    // Only the Meal: its child is hidden until asked for.
+    await expect(calendar.day(DAY).entries).toHaveCount(1);
 
     await calendar.toggles.showChildren(true);
-    const childOnCalendar = calendar.day(DAY).entry(child.id);
-    await expect(childOnCalendar.button).toBeVisible();
-    await expect(childOnCalendar.button).toHaveAttribute('aria-label', /Meal/);
+    await expect(calendar.day(DAY).entries).toHaveCount(2);
+    // Both sit at the Meal's placement and both name it — the parent as itself, the
+    // child as the Entry it is part of — so neither depends on which is drawn first.
+    await expect(calendar.day(DAY).entries.nth(0)).toHaveAccessibleName(/Meal/);
+    await expect(calendar.day(DAY).entries.nth(1)).toHaveAccessibleName(/Meal/);
 
-    await childOnCalendar.open();
+    // Opening a child opens the parent it belongs to.
+    await calendar.day(DAY).openEntry(1);
     await expect(form.children).toHaveCount(1);
   });
 });

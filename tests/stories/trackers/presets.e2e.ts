@@ -1,8 +1,8 @@
 import { EntryFormDialogObject } from '../../../src/app/features/entries/entry-form-dialog.pom';
 import { TrackerDesignerPageObject } from '../../../src/app/features/trackers/tracker-designer-page.pom';
 import { TrackersPageObject } from '../../../src/app/features/trackers/trackers-page.pom';
+import { CalendarPageObject } from '../../../src/app/features/calendar/calendar-page.pom';
 import { expect, test } from '../../../src/app/testing/support/app-fixture';
-import { readLiveEntries } from '../../../src/app/testing/support/local-database';
 import { createTracker } from '../../flows/create-tracker.flow';
 
 test.describe('Presets', () => {
@@ -75,7 +75,13 @@ test.describe('Presets', () => {
       'true',
     );
     await form.save();
-    await expect.poll(async () => (await readLiveEntries(appPage))[0]?.trackerVersion).toBe(2);
+
+    // The Entry pinned to the Tracker's current Version, not the Preset's stale one.
+    const calendar = new CalendarPageObject(appPage);
+    await calendar.open();
+    await calendar.dayOf(new Date()).openEntry();
+    await expect(form.versionLabel).toContainText('2');
+    await form.cancel();
 
     const list = new TrackersPageObject(appPage);
     await list.open();

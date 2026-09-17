@@ -32,7 +32,13 @@ const COLUMNS: readonly ResultColumn[] = [
     <table cdk-table [dataSource]="rows()" class="results" data-testid="results-table">
       @for (column of columns; track column) {
         <ng-container [cdkColumnDef]="column">
-          <th cdk-header-cell *cdkHeaderCellDef scope="col" [attr.aria-sort]="ariaSort(column)">
+          <th
+            cdk-header-cell
+            *cdkHeaderCellDef
+            scope="col"
+            [attr.data-testid]="'header-' + column"
+            [attr.aria-sort]="ariaSort(column)"
+          >
             <button
               type="button"
               class="results__sort"

@@ -126,10 +126,13 @@ model Tracker {
   ...AggregateMeta;
   name: string;
   defaultTimeMode: TimeMode;
+
   /** The highest committed TrackerVersion.version. 0 until the first commit. */
   currentVersion: int32;
+
   /** Hidden from "create new" / reference-target pickers; never migrated, never deleted. */
   archived: boolean;
+
   /** Uncommitted working schema; equals the current Version's fields right after a commit. */
   draftFields: FieldDef[];
 }
@@ -137,6 +140,7 @@ model Tracker {
 model TrackerCreateInput {
   name: string;
   defaultTimeMode: TimeMode;
+
   /** Committed immediately as Version 1. */
   fields: FieldDef[];
 }
@@ -153,8 +157,10 @@ model TrackerMetaInput {
 model TrackerVersion {
   ...AggregateMeta;
   trackerId: Uuid;
+
   /** Sequential per Tracker, starting at 1. */
   version: int32;
+
   fields: FieldDef[];
 }
 
@@ -164,6 +170,7 @@ model TrackerVersion {
 
 model PresetFieldValue {
   fieldName: string;
+
   /** Shape depends on the Field's data type. */
   value: unknown;
 }
@@ -171,10 +178,13 @@ model PresetFieldValue {
 model Preset {
   ...AggregateMeta;
   trackerId: Uuid;
+
   /** The Tracker Version this Preset's values were authored against. */
   trackerVersion: int32;
+
   name: string;
   values: PresetFieldValue[];
+
   /** Filled child Entries for reference Fields, resolved depth-first. */
   children: PresetChild[];
 }
@@ -232,10 +242,13 @@ model SnapshotField {
 model Entry {
   ...AggregateMeta;
   trackerId: Uuid;
+
   /** The Tracker Version current when this Entry was created. Immutable thereafter. */
   trackerVersion: int32;
+
   /** Zero or one parent; a child's placement always mirrors its parent's. */
   parentEntryId: Uuid | null;
+
   placement: Placement;
   snapshot: SnapshotField[];
   tags: string[];
@@ -251,6 +264,94 @@ model EntryInput {
   placement: Placement;
   snapshot: SnapshotField[];
   tags: string[];
+}
+
+// ---------------------------------------------------------------------------
+// Tags, Settings and maintenance
+// ---------------------------------------------------------------------------
+
+/** A free-text label; the aggregate row is what autocomplete suggests from. */
+model Tag {
+  ...AggregateMeta;
+  name: string;
+}
+
+model TagSuggestion {
+  name: string;
+  usageCount: int32;
+}
+
+enum BucketSize {
+  hour,
+  day,
+  week,
+  month,
+}
+
+/** Bucket offsets, so the range is inclusive at both ends and may be zero-width. */
+model LagRange {
+  min: int32;
+  max: int32;
+}
+
+model Guardrails {
+  minSampleSize: int32;
+  pThreshold: float64;
+  benjaminiHochberg: boolean;
+}
+
+model Settings {
+  ...AggregateMeta;
+  defaultBucketSize: BucketSize;
+  defaultLagRange: LagRange;
+  guardrails: Guardrails;
+  expansionDepthCap: int32;
+
+  /**
+   * Names the active Storage Profile. Device-local: it is never part of an export and
+   * an import never touches it (ADR 0009).
+   */
+  activeProfileId: string;
+}
+
+/** Every field optional: a save is a patch of whatever the user changed. */
+model SettingsPatch {
+  defaultBucketSize?: BucketSize;
+  defaultLagRange?: LagRange;
+  guardrails?: Guardrails;
+  expansionDepthCap?: int32;
+  activeProfileId?: string;
+}
+
+/** The portable subset of Settings — everything but the device-local Profile. */
+model PortableSettings {
+  defaultBucketSize?: BucketSize;
+  defaultLagRange?: LagRange;
+  guardrails?: Guardrails;
+  expansionDepthCap?: int32;
+}
+
+model RecordCounts {
+  trackers: int32;
+  trackerVersions: int32;
+  entries: int32;
+  presets: int32;
+  tags: int32;
+}
+
+/**
+ * The export file's shape. Versioned independently of this API: an import whose
+ * `formatVersion` differs is rejected outright, with no partial restore (ADR 0009).
+ */
+model ExportBundle {
+  formatVersion: int32;
+  exportedAt: Timestamp;
+  trackers: Tracker[];
+  trackerVersions: TrackerVersion[];
+  entries: Entry[];
+  presets: Preset[];
+  tags: Tag[];
+  settings: PortableSettings;
 }
 
 // ---------------------------------------------------------------------------
@@ -286,7 +387,11 @@ namespace Trackers {
 
 @route("/entries")
 namespace Entries {
-  @get op list(@query from: Timestamp, @query to: Timestamp, @query includeChildren?: boolean): Entry[];
+  @get op list(
+    @query from: Timestamp,
+    @query to: Timestamp,
+    @query includeChildren?: boolean,
+  ): Entry[];
   @get op read(@path id: Uuid): Entry | ApiError;
   @post op create(@body input: EntryInput): Entry;
   @patch op update(@path id: Uuid, @body input: EntryInput): Entry | ApiError;
@@ -303,5 +408,39 @@ namespace Presets {
 
 @route("/tags")
 namespace Tags {
-  @get op list(@query prefix?: string): string[];
+  @get op list(): Tag[];
+  /** Case-insensitive prefix match, ranked by usage frequency then alphabetically. */
+  @get
+  @route("/suggestions")
+  op suggest(@query prefix: string): TagSuggestion[];
+}
+
+@route("/settings")
+namespace SettingsRoutes {
+  /** Returns the documented fallback values when nothing has been saved yet. */
+  @get op read(): Settings;
+  @patch op save(@body patch: SettingsPatch): Settings | ApiError;
+}
+
+/**
+ * Whole-dataset operations. They exist per Storage Profile and are what Settings'
+ * "Clear local data" and the Data Transfer feature call (ADR 0009).
+ */
+@route("/maintenance")
+namespace Maintenance {
+  /** Backs the confirm-before-destroy displays in Settings and Data Transfer. */
+  @get
+  @route("/counts")
+  op counts(): RecordCounts;
+  /** Empties every store and re-seeds the single implicit Calendar. */
+  @post
+  @route("/clear")
+  op clearAll(): void;
+  @get
+  @route("/export")
+  op exportAll(): ExportBundle;
+  /** Full replace; a format-version mismatch is rejected and nothing is touched. */
+  @post
+  @route("/import")
+  op importAll(@body bundle: ExportBundle): void | ApiError;
 }

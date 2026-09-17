@@ -20,8 +20,8 @@ overlay, pinned pairs; the `bucketing`, `series-extraction`, `correlation-stats`
   in scope, and press **Find correlations**. After a progress bar I get a ranked list:
   "Meal → Ingredient=Dairy  vs  Symptom=Bloating · lag +1d · point-biserial r 0.42 · n 63
   · significant".
-- I open that row → Directed view: two Series on a shared zoomable time axis, plus
-  a scatter; I change the lag slider and watch the coefficient update.
+- I open that row → Directed view: two Series on a shared time axis, plus a scatter; I
+  change the lag slider and watch the coefficient update.
 - I narrow scope to just "Sleep" and "Workout", switch Buckets to weekly, and rescan.
 - I tighten guardrails (min n 20 → 40, p 0.05 → 0.01, BH correction on) in the panel;
   the list shrinks.
@@ -109,11 +109,11 @@ in it.
   no sort primitive — see ADR 0006). This is v1's only Table consumer; it stays here
   rather than in `ui/` until a second feature needs one (`ui/SPEC.md`'s promotion rule).
   Row → Directed view.
-- **Directed view**: shared zoomable time-axis chart (two Series), scatter plot, lag
-  slider, method + n + p-value readout, "add to pinned" .
+- **Directed view**: shared time-axis chart (two Series), scatter plot, lag slider,
+  method + n + p-value readout, "add to pinned".
 - **Series overlay**: pick one or more Trackers via `TrackerLookup`, then toggle which of
   each Tracker's Series are active (default: all on); plotted together on the shared
-  zoomable time axis — no scatter, no coefficient, no lag, no significance. This is the
+  time axis — no scatter, no coefficient, no lag, no significance. This is the
   only way to view Series outside a Discovery-scan row; it does not compute a
   Correlation.
 - Progress + cancel for the scan. Charts have text/table alternatives; axes and Series
@@ -154,6 +154,12 @@ in it.
   - `results-sort` — the Table's column comparators and header-click cycle
   - `correlation-preferences` — the `localStorage` shape for pinned pairs and overlay
     toggles
+
+**Deferred — the time axis does not zoom.** Both charts draw the whole scanned range at
+once; there is no way to zoom or pan into part of it. This was descoped during the v1
+build rather than built in a hurry, and `feature-scope.md` records it under *Later*. The
+charts take their geometry from `chart-geometry.ts`, so adding a viewport is a change to
+the scales, not a rewrite of the views.
 
 **Deviation — the scan does not run in a Worker.** `discovery` is a generator that yields
 between pairs, and `runDiscoveryAsync` hands the main thread back every 50 pairs, so the

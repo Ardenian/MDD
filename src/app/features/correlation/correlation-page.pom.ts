@@ -102,6 +102,44 @@ export class ResultRowObject {
   }
 }
 
+/**
+ * The ranked results. Scoped to the table itself so it can be driven either inside the
+ * page or mounted on its own in the ADR 0014 gallery.
+ */
+export class ResultsTableObject {
+  constructor(private readonly root: Locator) {}
+
+  static on(page: Page): ResultsTableObject {
+    return new ResultsTableObject(page.getByTestId('results-table'));
+  }
+
+  get self(): Locator {
+    return this.root;
+  }
+
+  get rows(): Locator {
+    return this.root.locator('tbody tr');
+  }
+
+  row(pairId: string): ResultRowObject {
+    return new ResultRowObject(this.root.getByTestId(pairId));
+  }
+
+  /** The strongest finding, which is where the table opens. */
+  firstRow(): ResultRowObject {
+    return new ResultRowObject(this.rows.first());
+  }
+
+  /** The column header cell, which is what carries `aria-sort`. */
+  header(column: string): Locator {
+    return this.root.getByTestId(`header-${column}`);
+  }
+
+  async sortBy(column: string): Promise<void> {
+    await this.root.getByTestId(`sort-${column}`).click();
+  }
+}
+
 export class DirectedViewObject {
   constructor(private readonly root: Locator) {}
 
@@ -197,8 +235,12 @@ export class CorrelationPageObject {
     return new CorrelationControlsObject(this.root.getByTestId('correlation-controls'));
   }
 
+  get results(): ResultsTableObject {
+    return new ResultsTableObject(this.root.getByTestId('results-table'));
+  }
+
   get table(): Locator {
-    return this.root.getByTestId('results-table');
+    return this.results.self;
   }
 
   get emptyMessage(): Locator {
@@ -206,20 +248,19 @@ export class CorrelationPageObject {
   }
 
   get rows(): Locator {
-    return this.table.locator('tbody tr');
+    return this.results.rows;
   }
 
   row(pairId: string): ResultRowObject {
-    return new ResultRowObject(this.table.getByTestId(pairId));
+    return this.results.row(pairId);
   }
 
-  /** The strongest finding, which is where the table opens. */
   firstRow(): ResultRowObject {
-    return new ResultRowObject(this.rows.first());
+    return this.results.firstRow();
   }
 
   async sortBy(column: string): Promise<void> {
-    await this.table.getByTestId(`sort-${column}`).click();
+    await this.results.sortBy(column);
   }
 
   get directed(): DirectedViewObject {

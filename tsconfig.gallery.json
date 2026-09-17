@@ -1,0 +1,11 @@
+/* The ADR 0014 mount harness: the gallery page, the scenarios it renders, and the app
+ * code they pull in. Kept out of tsconfig.app.json so none of it can reach the
+ * production bundle. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client"]
+  },
+  "include": ["playwright/gallery/**/*.ts", "src/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.suite.ts", "src/**/*.integration.ts", "src/**/*.pom.ts"]
+}

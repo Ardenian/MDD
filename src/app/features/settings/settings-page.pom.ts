@@ -43,6 +43,8 @@ export class SettingsPageObject {
   private readonly root: Locator;
 
   constructor(private readonly page: Page) {
+    // Not scoped to the app shell, so the same object drives the page mounted alone in
+    // the ADR 0014 gallery as well as inside the running app.
     this.root = page.getByTestId('settings-page');
   }
 

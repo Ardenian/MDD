@@ -74,6 +74,32 @@
           "builder": "@angular/build:unit-test"
         }
       }
+    },
+    "gallery": {
+      "projectType": "application",
+      "root": "playwright/gallery",
+      "sourceRoot": "playwright/gallery",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "playwright/gallery/main.ts",
+            "index": "playwright/gallery/index.html",
+            "tsConfig": "tsconfig.gallery.json",
+            "inlineStyleLanguage": "scss",
+            "styles": [
+              "src/styles.scss"
+            ]
+          }
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "buildTarget": "gallery:build",
+            "port": 4201
+          }
+        }
+      }
     }
   }
 }

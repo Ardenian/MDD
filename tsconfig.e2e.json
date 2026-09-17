@@ -6,10 +6,13 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["node", "@playwright/test"]
+    /* `vite/client` types `import.meta.glob`, which is how the ADR 0014 gallery finds
+     * its scenarios. */
+    "types": ["node", "@playwright/test", "vite/client"]
   },
   "include": [
     "playwright.config.ts",
+    "playwright/gallery/**/*.ts",
     "src/**/*.integration.ts",
     "src/**/*.pom.ts",
     "src/**/*.scenario.ts",

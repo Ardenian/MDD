@@ -7,6 +7,11 @@ export class ComboboxObject {
     return this.root.getByTestId('input');
   }
 
+  /** Every chosen value, for asserting that nothing was chosen at all. */
+  get chips(): Locator {
+    return this.root.getByTestId('chips').locator('> *');
+  }
+
   chip(value: string): Locator {
     return this.root.getByTestId('chips').getByTestId(value);
   }

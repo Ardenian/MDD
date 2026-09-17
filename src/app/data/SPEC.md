@@ -17,6 +17,12 @@ Built: `model/`, `ports/` (all seven), `adapters/indexeddb/` (every port), `test
 (engine double, data-layer factory, shared contract suite), and `facades/tracker-lookup.ts`.
 `adapters/http/` is still the later milestone it always was.
 
+`generated/` now mirrors the whole port surface: `api-spec/main.tsp` grew Tags, Settings
+and the maintenance operations (counts, clear, export, import) to match the ports the
+features actually use, and the committed client was regenerated from it (ADR 0004). The
+export bundle is versioned separately from the API on purpose — it is an internal file
+format, not part of the HTTP contract.
+
 ## Shared domain logic in `model/`
 
 Pure, framework-free rules more than one feature applies live beside the types they are

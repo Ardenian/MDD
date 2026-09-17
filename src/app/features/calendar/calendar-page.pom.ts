@@ -48,6 +48,36 @@ export class CalendarDayObject {
   get nowLine(): Locator {
     return this.root.getByTestId('now-line');
   }
+
+  /** Every Entry drawn in this day, on the grid and in the strip alike. */
+  get entries(): Locator {
+    return this.root.getByTestId('entry-button');
+  }
+
+  get timedEntries(): Locator {
+    return this.root.getByTestId('timed-layer').getByTestId('entry-button');
+  }
+
+  get stripEntries(): Locator {
+    return this.root.getByTestId('strip').getByTestId('entry-button');
+  }
+
+  /**
+   * The Fadeout bands in this day. Scoped to the day rather than to one Entry, so a test
+   * can assert on them without having to know the Entry's id first.
+   */
+  get fadeBefore(): Locator {
+    return this.root.getByTestId('fade-before');
+  }
+
+  get fadeAfter(): Locator {
+    return this.root.getByTestId('fade-after');
+  }
+
+  /** Opens an Entry by position, for tests that never learn its id. */
+  async openEntry(index = 0): Promise<void> {
+    await this.entries.nth(index).click();
+  }
 }
 
 export class CalendarPageObject {
@@ -111,6 +141,13 @@ export class CalendarPageObject {
 
   async now(): Promise<void> {
     await this.toolbar.getByTestId('now').click();
+  }
+
+  /** The day a Date falls on, for Entries logged "now" rather than at a fixed instant. */
+  dayOf(date: Date): CalendarDayObject {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return this.day(`${date.getFullYear()}-${month}-${day}`);
   }
 
   day(key: string): CalendarDayObject {

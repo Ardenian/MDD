@@ -12,12 +12,11 @@ import { defineConfig, devices } from '@playwright/test';
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: './tests',
-  /* e2e specs live in tests/stories/ (ADR 0011); tests/example.spec.ts is the starter
-   * template kept only until the first real e2e test proves this config works, then
-   * deleted (tests/flows/ holds Flow helpers, not spec files, so it's intentionally
-   * not matched here). */
-  testMatch: ['*.spec.ts', 'stories/**/*.e2e.ts'],
+  /* Two suites (ADR 0011): e2e stories under tests/stories/ drive the real app, and
+   * colocated *.integration.ts specs mount one component in the ADR 0014 gallery. Each
+   * has its own project below, with its own server and its own testDir; tests/flows/
+   * holds Flow helpers, not specs, so nothing matches it. */
+  testDir: '.',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Stories build their Trackers through the UI against the unoptimised dev server, so
@@ -40,29 +39,52 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
 
-  /* Boots the real app via the Angular CLI dev server before running e2e tests
-   * (ADR 0011 — e2e drives the real app, not a mock). */
-  webServer: {
-    command: 'pnpm start',
-    url: 'http://localhost:4200',
-    reuseExistingServer: !process.env['CI'],
-  },
+  /* The real app for the stories (ADR 0011 — e2e drives the real app, not a mock), and
+   * the component gallery for the integration specs (ADR 0014). */
+  webServer: [
+    {
+      command: 'pnpm start',
+      url: 'http://localhost:4200',
+      reuseExistingServer: !process.env['CI'],
+    },
+    {
+      command: 'pnpm run gallery',
+      url: 'http://localhost:4201',
+      reuseExistingServer: !process.env['CI'],
+    },
+  ],
 
   /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
+      testDir: './tests',
+      testMatch: 'stories/**/*.e2e.ts',
       use: { ...devices['Desktop Chrome'] },
     },
 
     {
       name: 'firefox',
+      testDir: './tests',
+      testMatch: 'stories/**/*.e2e.ts',
       use: { ...devices['Desktop Firefox'] },
     },
 
     {
       name: 'webkit',
+      testDir: './tests',
+      testMatch: 'stories/**/*.e2e.ts',
       use: { ...devices['Desktop Safari'] },
+    },
+
+    {
+      /* One component at a time, against the gallery — no app boot, no IndexedDB, so
+       * these are fast and run in one browser only. */
+      name: 'integration',
+      testDir: './src',
+      testMatch: '**/*.integration.ts',
+      timeout: 30_000,
+      use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:4201' },
     },
 
     /* Test against mobile viewports. */

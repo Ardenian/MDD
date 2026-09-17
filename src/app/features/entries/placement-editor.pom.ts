@@ -43,6 +43,10 @@ export class PlacementEditorObject {
     return this.root.getByTestId('fadeout-before');
   }
 
+  get fadeoutAfter(): Locator {
+    return this.root.getByTestId('fadeout-after');
+  }
+
   get problem(): Locator {
     return this.root.getByTestId('placement-problem');
   }
