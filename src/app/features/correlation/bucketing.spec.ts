@@ -42,10 +42,17 @@ describe('createBucketAxis', () => {
     const axis = axisOf('month', at(2026, 1, 15), at(2026, 3, 15));
 
     expect(axis.count).toBe(3);
-    const lengths = [0, 1, 2].map(
-      (index) => (axis.boundaries[index + 1] - axis.boundaries[index]) / 86_400_000,
-    );
-    expect(lengths).toEqual([31, 28, 31]);
+    // Every Bucket opens on the first of its own month, so each one is as long as that
+    // month actually is.
+    expect(axis.boundaries.map((boundary) => new Date(boundary).getDate())).toEqual([1, 1, 1, 1]);
+    expect(axis.boundaries.map((boundary) => new Date(boundary).getMonth())).toEqual([0, 1, 2, 3]);
+
+    // January is exactly three days longer than February — neither is a fixed 30-day
+    // step. Measured between months that no daylight-saving change falls in, since an
+    // hour lost to one would make the elapsed time disagree with the calendar.
+    const elapsedDays = (index: number) =>
+      (axis.boundaries[index + 1] - axis.boundaries[index]) / 86_400_000;
+    expect(elapsedDays(0) - elapsedDays(1)).toBeCloseTo(3, 6);
   });
 
   it('keeps a daily Bucket a real day across a daylight-saving change', () => {
