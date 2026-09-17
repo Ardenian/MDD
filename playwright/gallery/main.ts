@@ -12,6 +12,7 @@ import { FALLBACK_LOCALE } from '../../src/app/core/i18n/supported-locale';
 import { StaticCommonTranslateLoader } from '../../src/app/core/i18n/static-translate-loader';
 import { DesignTokenService } from '../../src/app/ui/services/design-token.service';
 import type { Scenario } from './scenario';
+import { SCENARIO_MODULES } from './scenarios.generated';
 
 /** What a test asks the page to render. */
 interface MountRequest {
@@ -26,37 +27,35 @@ declare global {
     mount(request: MountRequest): Promise<void>;
     unmount(): Promise<void>;
     /** Every scenario the harness can render, for diagnosing a bad id. */
-    scenarioIds(): Promise<readonly string[]>;
+    scenarioIds(): readonly string[];
   }
 }
 
 /**
- * Vite discovers every scenario in the repo — the same mechanism Playwright's own
- * React and Vue gallery examples use (ADR 0014).
+ * Every scenario in the repo, from the generated registry.
+ *
+ * ADR 0014 calls for Vite's `import.meta.glob` here. It does not work under this
+ * toolchain: the Angular builder bundles with esbuild and never applies Vite's glob
+ * transform, so the call reaches the browser unexpanded and matches nothing.
+ * `scripts/generate-scenarios.mjs` writes the same mapping from the files on disk, and
+ * `pnpm run gallery` runs it before serving, so scenarios are still discovered rather
+ * than listed by hand.
  */
-const modules = import.meta.glob<Record<string, unknown>>('../../src/**/*.scenario.ts');
+const modules = SCENARIO_MODULES;
 
-async function scenarioIds(): Promise<readonly string[]> {
-  const ids: string[] = [];
-  for (const [path, load] of Object.entries(modules)) {
-    const module = await load();
-    for (const name of Object.keys(module)) {
-      ids.push(`${path}#${name}`);
-    }
-  }
-  return ids.sort();
+function scenarioIds(): readonly string[] {
+  return Object.entries(modules)
+    .flatMap(([path, module]) => Object.keys(module).map((name) => `${path}#${name}`))
+    .sort();
 }
 
-async function resolve(id: string): Promise<Scenario> {
+function resolve(id: string): Scenario {
   const [path, exportName] = id.split('#');
   const entry = Object.entries(modules).find(([candidate]) => candidate.endsWith(path));
   if (entry === undefined) {
-    throw new Error(
-      `No scenario module matching "${path}". Known: ${(await scenarioIds()).join(', ')}`,
-    );
+    throw new Error(`No scenario module matching "${path}". Known: ${scenarioIds().join(', ')}`);
   }
-  const module = await entry[1]();
-  const found = module[exportName];
+  const found = entry[1][exportName];
   if (found === undefined) {
     throw new Error(`Scenario module "${path}" has no export "${exportName}".`);
   }
@@ -87,7 +86,7 @@ async function bootstrap(): Promise<void> {
 
   window.mount = async ({ scenario: id, inputs }: MountRequest) => {
     await window.unmount();
-    const definition = await resolve(id);
+    const definition = resolve(id);
 
     // A fresh injector per scenario, so one scenario's fakes never leak into the next.
     scenarioInjector = createEnvironmentInjector(
