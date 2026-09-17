@@ -20,6 +20,9 @@ export default defineConfig({
   testMatch: ['*.spec.ts', 'stories/**/*.e2e.ts'],
   /* Run tests in files in parallel */
   fullyParallel: true,
+  /* Stories build their Trackers through the UI against the unoptimised dev server, so
+   * a single story legitimately runs far longer than the 30s default. */
+  timeout: 60_000,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env['CI'],
   /* Retry on CI only */
