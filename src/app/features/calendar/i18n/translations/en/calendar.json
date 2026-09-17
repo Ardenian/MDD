@@ -1,0 +1,34 @@
+{
+  "calendar": {
+    "view": { "label": "View", "day": "Day", "week": "Week" },
+    "previous": "Previous",
+    "next": "Next",
+    "today": "Today",
+    "goToDate": "Go to date",
+    "now": "Now",
+    "trackers": {
+      "legend": "Trackers",
+      "all": "All",
+      "none": "None",
+      "archived": "archived",
+      "showChildren": "Show child entries"
+    },
+    "grid": {
+      "hint": "Use the arrow keys to move between time slots, and Enter to log an Entry at the focused slot.",
+      "slot": "{{ day }}, {{ time }}"
+    },
+    "entry": {
+      "label": "{{ tracker }}, {{ time }}",
+      "fadeout": "{{ label }}, uncertain from {{ from }} to {{ to }}",
+      "child": "{{ label }}, part of a {{ parent }} Entry",
+      "dayBucketed": "whole day"
+    },
+    "quickCreate": {
+      "heading": "Log at {{ time }}",
+      "headingNow": "Log now",
+      "label": "Choose a Tracker",
+      "noTrackers": "No Tracker is ready yet. Create one and commit its first Version.",
+      "cancel": "Cancel"
+    }
+  }
+}

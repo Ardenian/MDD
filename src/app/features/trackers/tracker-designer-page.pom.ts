@@ -86,8 +86,11 @@ export class TrackerDesignerPageObject {
     return this.root.getByTestId('commit-draft');
   }
 
+  /** Waits until the *persisted* archived state has flipped, not just until the click lands. */
   async toggleArchived(): Promise<void> {
+    const archived = (await this.root.getAttribute('data-archived')) === 'true';
     await this.root.getByTestId('archive-toggle').click();
+    await expect(this.root).toHaveAttribute('data-archived', String(!archived));
   }
 
   async backToTrackers(): Promise<void> {

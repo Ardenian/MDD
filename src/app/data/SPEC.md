@@ -57,10 +57,12 @@ src/app/data/
 
 ## Shared facades (v1 surface)
 
-- **`TrackerLookup`** (DataAccess): `list(): { id, name, archived }[]`, plus a derived
+- **`TrackerLookup`** (DataAccess): `list(): { id, name, archived, hasVersion }[]`, plus a derived
   `isLoading` signal. Wraps `TrackerRepository` via `resource()`, stripped to the shape
   every consumer actually needs — a name and archived-state per Tracker, nothing about
-  Fields or Versions. Consumed directly by Trackers' own list view, Calendar's
+  its Fields. `hasVersion` (a committed Version exists) was added for the Calendar's
+  quick-create picker: a Tracker with no Version has no schema to log against, so a
+  picker that starts an Entry must not offer it. Consumed directly by Trackers' own list view, Calendar's
   per-Tracker toggle panel, and Correlation's Signal-scope picker; none of those three
   own it, so it lives here rather than in any one `features/` folder.
 

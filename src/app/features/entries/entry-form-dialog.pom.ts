@@ -9,6 +9,7 @@ export interface NewEntryOptions {
   readonly presetId?: string;
   /** ISO instant the new Entry starts at. */
   readonly at?: string;
+  readonly mode?: 'point' | 'period' | 'dayBucketed';
 }
 
 export class EntryFormDialogObject {
@@ -26,6 +27,7 @@ export class EntryFormDialogObject {
     const query = new URLSearchParams({ trackerId: options.trackerId });
     if (options.presetId !== undefined) query.set('presetId', options.presetId);
     if (options.at !== undefined) query.set('at', options.at);
+    if (options.mode !== undefined) query.set('mode', options.mode);
     await this.page.goto(`/calendar(modal:entry/new)?${query.toString()}`);
     await this.form.waitFor();
   }

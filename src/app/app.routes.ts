@@ -8,8 +8,7 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'calendar' },
   {
     path: 'calendar',
-    title: 'Calendar',
-    loadComponent: () => import('./features/calendar/calendar-page').then((m) => m.CalendarPage),
+    loadChildren: () => import('./features/calendar/calendar.routes').then((m) => m.calendarRoutes),
   },
   {
     path: 'trackers',

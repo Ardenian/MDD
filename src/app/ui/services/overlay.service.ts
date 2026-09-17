@@ -8,6 +8,11 @@ export interface PopoverConfig {
   /** Inputs set on the opened component — it stays presentation-only, injecting nothing. */
   readonly inputs?: Readonly<Record<string, unknown>>;
   readonly ariaLabel?: string;
+  /**
+   * The opener's injector. Without it the component resolves from the root, which cannot
+   * see anything a lazy route provides — a feature's own translations, for one.
+   */
+  readonly injector?: Injector;
 }
 
 export interface PopoverHandle<C> {
@@ -43,7 +48,9 @@ export class OverlayService {
         ]),
     });
 
-    const componentRef = overlayRef.attach(new ComponentPortal(component, null, this.injector));
+    const componentRef = overlayRef.attach(
+      new ComponentPortal(component, null, config.injector ?? this.injector),
+    );
     for (const [name, value] of Object.entries(config.inputs ?? {})) {
       componentRef.setInput(name, value);
     }

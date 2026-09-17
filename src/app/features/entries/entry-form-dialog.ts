@@ -332,7 +332,8 @@ export class EntryFormDialog {
     required: this.translate.instant('valueTree.required'),
     clear: this.translate.instant('valueTree.clear'),
     remove: this.translate.instant('valueTree.node.remove'),
-    childOf: (field, tracker) => this.translate.instant('valueTree.node.childOf', { field, tracker }),
+    childOf: (field, tracker) =>
+      this.translate.instant('valueTree.node.childOf', { field, tracker }),
     level: (depth, cap) => this.translate.instant('valueTree.node.level', { depth, cap }),
     version: (version) => this.translate.instant('valueTree.version', { version }),
     addTo: (field) => this.translate.instant('valueTree.node.add', { field }),

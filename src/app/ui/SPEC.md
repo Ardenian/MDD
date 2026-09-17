@@ -32,8 +32,9 @@ Where a CDK primitive normally demands injection — `DIALOG_DATA`, `DialogRef`,
 the DI-free chrome that wrapper renders. `DialogService.open()` and
 `OverlayService.openPopover()` therefore take an `inputs` map and set it on the opened
 component, instead of handing it an injection token to read. `DialogService.open()` also
-takes the opener's `injector`: a dialog otherwise resolves from the root injector, which
-cannot see what a lazy feature route provides (that feature's own translations, for one).
+takes the opener's `injector`, and so does `OverlayService.openPopover()`: an opened
+component otherwise resolves from the root injector, which cannot see what a lazy feature
+route provides (that feature's own translations, for one).
 
 ## Services (`ui/services/`) — singleton coordination only
 

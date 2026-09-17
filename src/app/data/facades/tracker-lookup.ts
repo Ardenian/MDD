@@ -1,11 +1,16 @@
 import { computed, inject, resource, Service } from '@angular/core';
 import { TRACKER_REPOSITORY } from '../ports/tracker-repository';
 
-/** A name and archived state per Tracker — nothing about Fields or Versions. */
+/** A name and archived state per Tracker — nothing about its Fields. */
 export interface TrackerSummary {
   readonly id: string;
   readonly name: string;
   readonly archived: boolean;
+  /**
+   * Whether anything can be logged against it yet. A Tracker with no committed Version
+   * has no schema to snapshot, so a picker that starts an Entry must not offer it.
+   */
+  readonly hasVersion: boolean;
 }
 
 /**
@@ -23,7 +28,12 @@ export class TrackerLookup {
   });
 
   readonly list = computed<readonly TrackerSummary[]>(() =>
-    this.all.value().map(({ id, name, archived }) => ({ id, name, archived })),
+    this.all.value().map(({ id, name, archived, currentVersion }) => ({
+      id,
+      name,
+      archived,
+      hasVersion: currentVersion > 0,
+    })),
   );
 
   readonly isLoading = computed(() => this.all.isLoading());

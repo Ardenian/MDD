@@ -1,0 +1,34 @@
+{
+  "calendar": {
+    "view": { "label": "Ansicht", "day": "Tag", "week": "Woche" },
+    "previous": "Zurück",
+    "next": "Weiter",
+    "today": "Heute",
+    "goToDate": "Zu Datum springen",
+    "now": "Jetzt",
+    "trackers": {
+      "legend": "Tracker",
+      "all": "Alle",
+      "none": "Keine",
+      "archived": "archiviert",
+      "showChildren": "Kind-Einträge anzeigen"
+    },
+    "grid": {
+      "hint": "Mit den Pfeiltasten zwischen Zeitfenstern wechseln, mit Enter einen Eintrag im gewählten Zeitfenster erfassen.",
+      "slot": "{{ day }}, {{ time }}"
+    },
+    "entry": {
+      "label": "{{ tracker }}, {{ time }}",
+      "fadeout": "{{ label }}, unsicher von {{ from }} bis {{ to }}",
+      "child": "{{ label }}, Teil eines Eintrags {{ parent }}",
+      "dayBucketed": "ganzer Tag"
+    },
+    "quickCreate": {
+      "heading": "Erfassen um {{ time }}",
+      "headingNow": "Jetzt erfassen",
+      "label": "Tracker wählen",
+      "noTrackers": "Noch kein Tracker ist bereit. Lege einen an und schreibe seine erste Version fest.",
+      "cancel": "Abbrechen"
+    }
+  }
+}

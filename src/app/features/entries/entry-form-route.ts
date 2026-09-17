@@ -1,5 +1,6 @@
 import { afterNextRender, Component, DestroyRef, inject, Injector, input } from '@angular/core';
 import { Router } from '@angular/router';
+import type { TimeMode } from '../../data/model/tracker';
 import { TranslateService } from '@ngx-translate/core';
 import { DialogService, type UiDialogHandle } from '../../ui/services/dialog.service';
 import { ToastService } from '../../ui/services/toast.service';
@@ -22,6 +23,7 @@ export class EntryFormRoute {
   readonly trackerId = input<string>();
   readonly presetId = input<string>();
   readonly at = input<string>();
+  readonly mode = input<string>();
 
   private readonly dialogs = inject(DialogService);
   private readonly toasts = inject(ToastService);
@@ -48,6 +50,7 @@ export class EntryFormRoute {
           trackerId: this.trackerId(),
           presetId: this.presetId(),
           at: this.at(),
+          mode: asTimeMode(this.mode()),
         },
       },
       injector: this.injector,
@@ -76,8 +79,12 @@ export class EntryFormRoute {
       return;
     }
     await this.router.navigate([{ outlets: { modal: null } }], {
-      queryParams: { trackerId: null, presetId: null, at: null },
+      queryParams: { trackerId: null, presetId: null, at: null, mode: null },
       queryParamsHandling: 'merge',
     });
   }
+}
+
+function asTimeMode(value: string | undefined): TimeMode | undefined {
+  return value === 'point' || value === 'period' || value === 'dayBucketed' ? value : undefined;
 }

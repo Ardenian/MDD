@@ -41,6 +41,7 @@ const TIME_MODES: readonly TimeMode[] = ['point', 'period', 'dayBucketed'];
       data-testid="tracker-designer"
       [attr.data-current-version]="view.tracker()?.currentVersion"
       [attr.data-default-time-mode]="view.tracker()?.defaultTimeMode"
+      [attr.data-archived]="view.tracker()?.archived"
     >
       <a routerLink="/trackers" data-testid="back-to-trackers">{{
         'trackers.designer.back' | translate
@@ -415,7 +416,11 @@ export class TrackerDesignerPage {
   protected toggleArchived(): void {
     const tracker = this.view.tracker();
     if (tracker !== undefined) {
-      void this.access.setArchived(tracker.id, !tracker.archived).then(() => this.view.reload());
+      void this.access.setArchived(tracker.id, !tracker.archived).then(() => {
+        this.view.reload();
+        // Archived Trackers leave every picker, which all read the shared lookup.
+        this.lookup.reload();
+      });
     }
   }
 
@@ -445,7 +450,11 @@ export class TrackerDesignerPage {
     if (tracker !== undefined) {
       // The local Draft is deliberately kept: it already equals what was committed, and
       // clearing it here would discard any edit made while the commit was in flight.
-      void this.access.commitDraft(tracker.id).then(() => this.view.reload());
+      void this.access.commitDraft(tracker.id).then(() => {
+        this.view.reload();
+        // The shared lookup says whether a Tracker can be logged against; a first commit changes that.
+        this.lookup.reload();
+      });
     }
   }
 

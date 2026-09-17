@@ -9,6 +9,7 @@ export type EntryValueSpec =
 export interface LogEntryOptions {
   readonly trackerId: string;
   readonly at?: string;
+  readonly mode?: 'point' | 'period' | 'dayBucketed';
   readonly values?: readonly EntryValueSpec[];
   readonly tags?: readonly string[];
 }
@@ -16,7 +17,7 @@ export interface LogEntryOptions {
 /** Logs one Entry through the Entry form and waits for the form to close (ADR 0013). */
 export async function logEntry(page: Page, options: LogEntryOptions): Promise<void> {
   const form = new EntryFormDialogObject(page);
-  await form.openNew({ trackerId: options.trackerId, at: options.at });
+  await form.openNew({ trackerId: options.trackerId, at: options.at, mode: options.mode });
 
   for (const value of options.values ?? []) {
     const field = form.entry.field(value.field);

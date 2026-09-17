@@ -47,7 +47,9 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
 ## UI
 
 - **How the form is opened.** This feature owns a lazy route in the app shell's `modal`
-  router outlet: `/…(modal:entry/new)?trackerId=…&at=…&presetId=…` for a new Entry,
+  router outlet: `/…(modal:entry/new)?trackerId=…&at=…&presetId=…&mode=…` for a new Entry
+  (`mode` overrides the Tracker's default Time mode — the Calendar's "Now" asks for a
+  Point),
   `/…(modal:entry/<entryId>)` for a saved one. The Calendar opens the form by
   *navigating* there, never by importing this feature (which `AGENTS.md` forbids); the
   primary route stays rendered underneath, and an open form is addressable by URL. The

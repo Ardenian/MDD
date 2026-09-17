@@ -26,7 +26,7 @@ describe('TrackerLookup', () => {
     const instance = await lookup();
 
     expect(instance.list()).toEqual([
-      { id: expect.any(String), name: 'Sleep', archived: false },
+      { id: expect.any(String), name: 'Sleep', archived: false, hasVersion: false },
     ]);
   });
 
@@ -36,7 +36,9 @@ describe('TrackerLookup', () => {
 
     const instance = await lookup();
 
-    expect(instance.list()).toEqual([{ id: tracker.id, name: 'Snack', archived: true }]);
+    expect(instance.list()).toEqual([
+      { id: tracker.id, name: 'Snack', archived: true, hasVersion: false },
+    ]);
   });
 
   it('reflects a rename once reloaded', async () => {
@@ -47,7 +49,25 @@ describe('TrackerLookup', () => {
     instance.reload();
     await TestBed.inject(ApplicationRef).whenStable();
 
-    expect(instance.list()).toEqual([{ id: tracker.id, name: 'Sleep & Rest', archived: false }]);
+    expect(instance.list()).toEqual([
+      { id: tracker.id, name: 'Sleep & Rest', archived: false, hasVersion: false },
+    ]);
+  });
+
+  it('says whether a Tracker has a committed Version to log against', async () => {
+    await layer.trackers.create({ name: 'Draft only', defaultTimeMode: 'point' });
+    await layer.trackers.create({
+      name: 'Sleep',
+      defaultTimeMode: 'point',
+      fields: [{ name: 'Satisfaction', required: false, dataType: 'integer' }],
+    });
+
+    const instance = await lookup();
+
+    expect(instance.list().map((tracker) => [tracker.name, tracker.hasVersion])).toEqual([
+      ['Draft only', false],
+      ['Sleep', true],
+    ]);
   });
 
   it('reports loading while the first read is in flight', () => {

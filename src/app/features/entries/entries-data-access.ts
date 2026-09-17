@@ -6,7 +6,7 @@ import { coerceValue } from '../../data/model/field-values';
 import type { Placement } from '../../data/model/placement';
 import type { Preset } from '../../data/model/preset';
 import { DEFAULT_SETTINGS } from '../../data/model/settings';
-import type { Tracker } from '../../data/model/tracker';
+import type { TimeMode, Tracker } from '../../data/model/tracker';
 import { ENTRY_REPOSITORY } from '../../data/ports/entry-repository';
 import { PRESET_REPOSITORY } from '../../data/ports/preset-repository';
 import { SETTINGS_REPOSITORY } from '../../data/ports/settings-repository';
@@ -23,8 +23,10 @@ export interface EntryFormRequest {
   /** Start a new Entry of this Tracker, at its current Version. */
   readonly trackerId?: string;
   readonly presetId?: string;
-  /** Where a new Entry starts; defaults to now, in the Tracker's default Time mode. */
+  /** Where a new Entry starts; defaults to now. */
   readonly at?: string;
+  /** Overrides the Tracker's default Time mode — the Calendar's "Now" asks for a Point. */
+  readonly mode?: TimeMode;
 }
 
 export interface EntryForm {
@@ -109,7 +111,7 @@ export class EntriesDataAccess {
       request.at !== undefined && !Number.isNaN(Date.parse(request.at))
         ? request.at
         : new Date().toISOString();
-    const placement = withTimeMode({ kind: 'point', at }, tracker.defaultTimeMode);
+    const placement = withTimeMode({ kind: 'point', at }, request.mode ?? tracker.defaultTimeMode);
     const root =
       request.presetId === undefined
         ? await this.newNode(tracker.id, null)

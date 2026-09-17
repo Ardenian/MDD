@@ -1,6 +1,12 @@
 import type { FieldDef } from '../../data/model/field-def';
 import { addChild, updateNode } from '../../data/model/value-tree';
-import { createNode, type EntryFormNode, persistedIds, toSnapshot, validateForm } from './entry-form';
+import {
+  createNode,
+  type EntryFormNode,
+  persistedIds,
+  toSnapshot,
+  validateForm,
+} from './entry-form';
 
 const grams: FieldDef = { name: 'grams', required: true, dataType: 'decimal' };
 const satisfaction: FieldDef = { name: 'Satisfaction', required: false, dataType: 'integer' };
@@ -112,10 +118,7 @@ describe('persistedIds', () => {
   it('collects every Entry id already saved anywhere in the tree', () => {
     const saved: EntryFormNode = { ...ingredient('a'), entryId: 'entry-a' };
     const root: EntryFormNode = { ...meal(), entryId: 'entry-root' };
-    const tree = addChild(addChild(root, 'root', saved),
-      'root',
-      ingredient('new'),
-    );
+    const tree = addChild(addChild(root, 'root', saved), 'root', ingredient('new'));
 
     expect([...persistedIds(tree)].sort()).toEqual(['entry-a', 'entry-root']);
   });

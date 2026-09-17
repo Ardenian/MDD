@@ -31,6 +31,14 @@ export class PlacementEditorObject {
     await this.root.getByTestId('fadeout-after').fill(String(afterMinutes));
   }
 
+  get at(): Locator {
+    return this.root.getByTestId('at');
+  }
+
+  get start(): Locator {
+    return this.root.getByTestId('start');
+  }
+
   get fadeoutBefore(): Locator {
     return this.root.getByTestId('fadeout-before');
   }
