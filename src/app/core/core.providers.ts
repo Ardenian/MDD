@@ -1,7 +1,11 @@
 import { ErrorHandler, inject, provideAppInitializer } from '@angular/core';
 import { provideEffects } from '@ngrx/effects';
 import { provideState, provideStore, Store } from '@ngrx/store';
-import { provideTranslateService, TranslateService } from '@ngx-translate/core';
+import {
+  provideTranslateLoader,
+  provideTranslateService,
+  TranslateService,
+} from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
 import { DesignTokenService } from '../ui/services/design-token.service';
 import { ActivePortSet, provideDataAdapters } from './data-providers';
@@ -21,7 +25,7 @@ export function provideCoreState() {
     provideState(identityFeature),
     provideEffects(localeEffects),
     ...provideTranslateService({
-      loader: StaticCommonTranslateLoader,
+      loader: provideTranslateLoader(StaticCommonTranslateLoader),
       fallbackLang: FALLBACK_LOCALE,
     }),
     provideAppInitializer(() => {
