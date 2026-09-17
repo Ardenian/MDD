@@ -22,8 +22,7 @@ export const routes: Routes = [
   },
   {
     path: 'settings',
-    title: 'Settings',
-    loadComponent: () => import('./features/settings/settings-page').then((m) => m.SettingsPage),
+    loadChildren: () => import('./features/settings/settings.routes').then((m) => m.settingsRoutes),
   },
   {
     path: 'data-transfer',

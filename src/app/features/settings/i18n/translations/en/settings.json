@@ -1,0 +1,62 @@
+{
+  "settings": {
+    "save": "Save settings",
+    "saved": "Settings saved.",
+    "blocked": "Fix the highlighted values before saving.",
+    "correlation": {
+      "heading": "Correlation defaults",
+      "bucketSize": "Bucket size",
+      "bucket": {
+        "hour": "Hourly",
+        "day": "Daily",
+        "week": "Weekly",
+        "month": "Monthly"
+      },
+      "lagRange": "Lag range",
+      "lagMin": "Earliest Lag",
+      "lagMax": "Latest Lag",
+      "minSampleSize": "Minimum sample size",
+      "pThreshold": "p-value threshold",
+      "benjaminiHochberg": "Correct for multiple comparisons (Benjamini–Hochberg)"
+    },
+    "schema": {
+      "heading": "Schema",
+      "expansionDepthCap": "Expansion-depth cap",
+      "expansionDepthHint": "How many levels of Child Entries an Entry form allows. The Tracker designer never checks this."
+    },
+    "storageProfile": {
+      "heading": "Storage Profile",
+      "label": "Active Profile",
+      "offline": "Offline",
+      "hint": "Where your data lives. Offline keeps everything on this device; switching Profiles restarts the app."
+    },
+    "data": {
+      "heading": "Local data",
+      "body": "Clearing removes every Tracker, Entry, Preset and Tag stored on this device. It cannot be undone.",
+      "clear": "Clear local data",
+      "cleared": "Local data cleared.",
+      "counts": {
+        "trackers": "Trackers",
+        "trackerVersions": "Tracker Versions",
+        "entries": "Entries",
+        "presets": "Presets",
+        "tags": "Tags"
+      },
+      "confirm": {
+        "title": "Clear local data?",
+        "body": "This permanently deletes everything below. Export first if you want a copy.",
+        "phrase": "clear",
+        "prompt": "Type {{ phrase }} to confirm",
+        "submit": "Clear everything",
+        "cancel": "Cancel"
+      }
+    },
+    "problems": {
+      "not-a-number": "Enter a number.",
+      "not-an-integer": "Enter a whole number.",
+      "below-minimum": "Enter 1 or more.",
+      "range-inverted": "The earliest Lag must not be later than the latest.",
+      "out-of-range": "Enter a value above 0 and up to 1."
+    }
+  }
+}

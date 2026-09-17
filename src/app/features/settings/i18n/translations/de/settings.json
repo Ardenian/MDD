@@ -1,0 +1,62 @@
+{
+  "settings": {
+    "save": "Einstellungen speichern",
+    "saved": "Einstellungen gespeichert.",
+    "blocked": "Bitte die markierten Werte korrigieren, bevor du speicherst.",
+    "correlation": {
+      "heading": "Standardwerte für Korrelation",
+      "bucketSize": "Bucket-Größe",
+      "bucket": {
+        "hour": "Stündlich",
+        "day": "Täglich",
+        "week": "Wöchentlich",
+        "month": "Monatlich"
+      },
+      "lagRange": "Lag-Bereich",
+      "lagMin": "Frühester Lag",
+      "lagMax": "Spätester Lag",
+      "minSampleSize": "Mindeststichprobe",
+      "pThreshold": "p-Wert-Schwelle",
+      "benjaminiHochberg": "Für multiples Testen korrigieren (Benjamini–Hochberg)"
+    },
+    "schema": {
+      "heading": "Schema",
+      "expansionDepthCap": "Maximale Verschachtelungstiefe",
+      "expansionDepthHint": "Wie viele Ebenen an Child Entries ein Entry-Formular zulässt. Der Tracker-Designer prüft das nie."
+    },
+    "storageProfile": {
+      "heading": "Storage Profile",
+      "label": "Aktives Profil",
+      "offline": "Offline",
+      "hint": "Wo deine Daten liegen. Offline hält alles auf diesem Gerät; ein Profilwechsel startet die App neu."
+    },
+    "data": {
+      "heading": "Lokale Daten",
+      "body": "Beim Löschen verschwinden alle Tracker, Entries, Presets und Tags von diesem Gerät. Das lässt sich nicht rückgängig machen.",
+      "clear": "Lokale Daten löschen",
+      "cleared": "Lokale Daten gelöscht.",
+      "counts": {
+        "trackers": "Tracker",
+        "trackerVersions": "Tracker Versions",
+        "entries": "Entries",
+        "presets": "Presets",
+        "tags": "Tags"
+      },
+      "confirm": {
+        "title": "Lokale Daten löschen?",
+        "body": "Damit wird alles unten dauerhaft gelöscht. Exportiere vorher, wenn du eine Kopie möchtest.",
+        "phrase": "löschen",
+        "prompt": "Tippe {{ phrase }} zur Bestätigung",
+        "submit": "Alles löschen",
+        "cancel": "Abbrechen"
+      }
+    },
+    "problems": {
+      "not-a-number": "Bitte eine Zahl eingeben.",
+      "not-an-integer": "Bitte eine ganze Zahl eingeben.",
+      "below-minimum": "Bitte 1 oder mehr eingeben.",
+      "range-inverted": "Der früheste Lag darf nicht nach dem spätesten liegen.",
+      "out-of-range": "Bitte einen Wert über 0 und höchstens 1 eingeben."
+    }
+  }
+}
