@@ -1,4 +1,5 @@
 import { scenario } from '../../../../playwright/gallery/scenario';
+import type { ResultSort } from './results-sort';
 import { provideCorrelationTranslations } from './i18n/correlation-translations';
 import type { PairResult } from './discovery';
 import { DEFAULT_RESULT_SORT } from './results-sort';
@@ -43,4 +44,7 @@ export const ranked = scenario({
     pinnedIds: [],
     currentSort: DEFAULT_RESULT_SORT,
   },
+  // The table asks to be sorted and re-renders from the answer; the Correlation page is
+  // what answers, so the scenario has to answer too.
+  bindings: { sort: (value: ResultSort) => ({ currentSort: value }) },
 });

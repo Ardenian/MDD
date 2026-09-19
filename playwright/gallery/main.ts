@@ -101,6 +101,19 @@ async function bootstrap(): Promise<void> {
       mounted.setInput(name, value);
     }
 
+    // Close the loop the real parent closes: an output the scenario binds comes straight
+    // back in as an input.
+    for (const [output, toInputs] of Object.entries(definition.bindings ?? {})) {
+      const emitter = (mounted.instance as Record<string, unknown>)[output] as {
+        subscribe(next: (value: never) => void): unknown;
+      };
+      emitter.subscribe((value) => {
+        for (const [name, next] of Object.entries(toInputs(value))) {
+          mounted?.setInput(name, next);
+        }
+      });
+    }
+
     application.injector.get(ApplicationRef).attachView(mounted.hostView);
     await application.injector.get(ApplicationRef).whenStable();
   };

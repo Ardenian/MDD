@@ -4,6 +4,7 @@ import { MAINTENANCE_PORT } from '../../data/ports/maintenance-port';
 import { SETTINGS_REPOSITORY } from '../../data/ports/settings-repository';
 import { createInMemoryDataLayer, type DataLayer } from '../../data/testing/in-memory-data-layer';
 import { provideSettingsTranslations } from './i18n/settings-translations';
+import { SettingsDataAccess } from './settings-data-access';
 import { SettingsPage } from './settings-page';
 
 /**
@@ -23,6 +24,10 @@ export const defaults = scenario({
   component: SettingsPage,
   providers: [
     provideSettingsTranslations(),
+    // `SettingsDataAccess` is `providedIn: 'root'`, so left alone it would be built in
+    // the root injector — where the fakes below do not exist. Naming it here builds it
+    // in the scenario's own injector instead, which is the whole point of having one.
+    SettingsDataAccess,
     { provide: DATA_LAYER, useFactory: createInMemoryDataLayer },
     {
       provide: SETTINGS_REPOSITORY,

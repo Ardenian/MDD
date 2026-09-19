@@ -12,8 +12,23 @@ export interface Scenario<C = unknown> {
   readonly component: Type<C>;
   /** Set with `setInput`, so the component stays presentation-only (ADR 0002). */
   readonly inputs?: Readonly<Record<string, unknown>>;
-  /** Fakes in place of real services — reuse `data/testing`'s, never a second set. */
+  /**
+   * Fakes in place of real services — reuse `data/testing`'s, never a second set.
+   *
+   * A facade declared `providedIn: 'root'` must be named here too, not just the ports it
+   * depends on: otherwise Angular builds it in the root injector, where the fakes are not
+   * visible, and it resolves the real tokens instead (or fails with NG0201).
+   */
   readonly providers?: readonly Provider[];
+  /**
+   * Feeds an output back in as inputs, which is what the real parent does. A
+   * presentation-only component reports a change and re-renders from the input it gets
+   * back; with nothing listening it would emit into the void and never update, so a
+   * scenario for one is only honest if it closes that loop.
+   *
+   * Keyed by output name; the returned object is applied with `setInput`.
+   */
+  readonly bindings?: Readonly<Record<string, (value: never) => Record<string, unknown>>>;
 }
 
 /** Identity function that pins the type of a scenario export. */

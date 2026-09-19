@@ -86,12 +86,20 @@
             "tsConfig": "tsconfig.gallery.json",
             "inlineStyleLanguage": "scss",
             "styles": ["src/styles.scss"]
-          }
+          },
+          "configurations": {
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "development"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "buildTarget": "gallery:build",
+            "buildTarget": "gallery:build:development",
             "port": 4201
           }
         }
