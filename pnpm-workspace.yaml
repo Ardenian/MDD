@@ -2,6 +2,7 @@ packages:
   - '.'
   - 'api-spec'
 allowBuilds:
+  '@playwright/test': true
   '@parcel/watcher': false
   esbuild: false
   lmdb: false
