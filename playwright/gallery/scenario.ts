@@ -1,4 +1,4 @@
-import type { Provider, Type } from '@angular/core';
+import type { EnvironmentInjector, EnvironmentProviders, Provider, Type } from '@angular/core';
 
 /**
  * One render case for the mount harness: a component, the inputs it is rendered with,
@@ -19,7 +19,7 @@ export interface Scenario<C = unknown> {
    * depends on: otherwise Angular builds it in the root injector, where the fakes are not
    * visible, and it resolves the real tokens instead (or fails with NG0201).
    */
-  readonly providers?: readonly Provider[];
+  readonly providers?: readonly (Provider | EnvironmentProviders)[];
   /**
    * Feeds an output back in as inputs, which is what the real parent does. A
    * presentation-only component reports a change and re-renders from the input it gets
@@ -29,6 +29,13 @@ export interface Scenario<C = unknown> {
    * Keyed by output name; the returned object is applied with `setInput`.
    */
   readonly bindings?: Readonly<Record<string, (value: never) => Record<string, unknown>>>;
+  /**
+   * Runs against the scenario's own injector before the component is created, for a
+   * component that only makes sense against data that already exists — a Tracker
+   * designer needs a Tracker. Anything it returns is merged into the inputs, which is
+   * how an id created here reaches the component.
+   */
+  readonly setup?: (injector: EnvironmentInjector) => Promise<Record<string, unknown> | void>;
 }
 
 /** Identity function that pins the type of a scenario export. */

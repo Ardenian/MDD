@@ -71,6 +71,7 @@ function find(series: readonly Series[], name: string, path?: string): Series | 
 describe('extractSeries', () => {
   it('averages a numeric Field within each Bucket', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('sleep', 'Sleep')],
       trackerVersions: [
         version('sleep', [{ name: 'Hours', dataType: 'decimal', required: false }]),
@@ -87,6 +88,7 @@ describe('extractSeries', () => {
 
   it('counts occurrences, and counts an empty Bucket as none rather than as a gap', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('coffee', 'Coffee')],
       trackerVersions: [version('coffee', [])],
       entries: [
@@ -104,6 +106,7 @@ describe('extractSeries', () => {
 
   it('counts nothing before the first Entry and after the last as no data, not as zero', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('coffee', 'Coffee')],
       trackerVersions: [version('coffee', [])],
       entries: [entry('a', 'coffee', '2026-03-11')],
@@ -124,6 +127,7 @@ describe('extractSeries', () => {
       options: ['low', 'high'],
     };
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('sleep', 'Sleep')],
       trackerVersions: [version('sleep', [field])],
       entries: [
@@ -147,6 +151,7 @@ describe('extractSeries', () => {
       options: ['low', 'high'],
     };
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('sleep', 'Sleep')],
       trackerVersions: [version('sleep', [field])],
       entries: [entry('a', 'sleep', '2026-03-11', [{ fieldName: 'Energy', value: 'low' }])],
@@ -163,6 +168,7 @@ describe('extractSeries', () => {
       options: ['bloating', 'headache'],
     };
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('symptom', 'Symptom')],
       trackerVersions: [version('symptom', [field])],
       entries: [
@@ -181,6 +187,7 @@ describe('extractSeries', () => {
 
   it('reads a boolean Field as the fraction of Entries where it is true', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('workout', 'Workout')],
       trackerVersions: [
         version('workout', [{ name: 'Outdoors', dataType: 'boolean', required: false }]),
@@ -196,6 +203,7 @@ describe('extractSeries', () => {
 
   it('names a nested Field by the path that reaches it', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('meal', 'Meal'), tracker('ingredient', 'Ingredient')],
       trackerVersions: [
         version('meal', [
@@ -225,6 +233,7 @@ describe('extractSeries', () => {
 
   it('resolves a nested Field two levels down', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [
         tracker('meal', 'Meal'),
         tracker('ingredient', 'Ingredient'),
@@ -269,6 +278,7 @@ describe('extractSeries', () => {
 
   it('reads a Tag as the fraction of the Bucket carrying it, children included', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('meal', 'Meal')],
       trackerVersions: [version('meal', [])],
       entries: [
@@ -286,6 +296,7 @@ describe('extractSeries', () => {
 
   it('reads each Entry against its own pinned Version, not the Tracker current one', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('sleep', 'Sleep')],
       trackerVersions: [
         version('sleep', [{ name: 'Hours', dataType: 'decimal', required: false }]),
@@ -311,6 +322,7 @@ describe('extractSeries', () => {
 
   it('skips an Entry whose pinned Version is missing rather than guessing a schema', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('sleep', 'Sleep')],
       trackerVersions: [],
       entries: [entry('a', 'sleep', '2026-03-10', [{ fieldName: 'Hours', value: 7 }])],
@@ -321,6 +333,7 @@ describe('extractSeries', () => {
 
   it('weights an Entry by how much of the Bucket it occupies', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('sleep', 'Sleep')],
       trackerVersions: [
         version('sleep', [{ name: 'Hours', dataType: 'decimal', required: false }]),
@@ -347,6 +360,7 @@ describe('extractSeries', () => {
 
   it('leaves out a Series that never has a value', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('sleep', 'Sleep')],
       trackerVersions: [version('sleep', [{ name: 'Note', dataType: 'text', required: false }])],
       entries: [entry('a', 'sleep', '2026-03-10', [{ fieldName: 'Note', value: 'slept badly' }])],
@@ -358,6 +372,7 @@ describe('extractSeries', () => {
 
   it('is deterministic: the same data always yields the same Series in the same order', () => {
     const dataset: CorrelationDataset = {
+      tags: [],
       trackers: [tracker('sleep', 'Sleep'), tracker('coffee', 'Coffee')],
       trackerVersions: [
         version('sleep', [{ name: 'Hours', dataType: 'decimal', required: false }]),

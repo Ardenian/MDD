@@ -1,10 +1,14 @@
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { TrackerLookup } from '../../data/facades/tracker-lookup';
 import type { FieldDataType, FieldDef, ReferenceCardinality } from '../../data/model/field-def';
 import { addChild, problemCount, type ValueTreeProblems } from '../../data/model/value-tree';
-import type { ValueNodeLabels } from '../../ui/components/value-node-editor/value-node-editor';
+import {
+  translateValueTreeProblems,
+  type TranslateFn,
+  valueNodeLabels,
+} from '../../ui/components/value-node-editor/value-node-messages';
 import type { TimeMode } from '../../data/model/tracker';
 import { ReorderableList } from '../../ui/components/reorderable-list/reorderable-list';
 import { Select } from '../../ui/components/select/select';
@@ -283,10 +287,17 @@ export class TrackerDesignerPage {
   private readonly access = inject(TrackersDataAccess);
   private readonly lookup = inject(TrackerLookup);
   private readonly translate = inject(TranslateService);
+  /** Bound once, so the pure label and message helpers can be called without `this`. */
+  private readonly instant: TranslateFn = (key, params) => this.translate.instant(key, params);
 
   protected readonly view = this.access.designerFor(computed(() => this.trackerId()));
 
-  private readonly localDraft = signal<readonly FieldDef[] | null>(null);
+  // A different Tracker means a different Draft; local edits must not leak across, which
+  // is exactly what `linkedSignal` does — reset on a change of source.
+  private readonly localDraft = linkedSignal<string, readonly FieldDef[] | null>({
+    source: () => this.trackerId(),
+    computation: () => null,
+  });
 
   protected readonly draftFields = computed(
     () => this.localDraft() ?? this.view.tracker()?.draftFields ?? [],
@@ -345,7 +356,10 @@ export class TrackerDesignerPage {
 
   protected readonly rowId = (row: { field: FieldDef; index: number }) => String(row.index);
 
-  protected readonly presetDraft = signal<PresetDraft | null>(null);
+  protected readonly presetDraft = linkedSignal<string, PresetDraft | null>({
+    source: () => this.trackerId(),
+    computation: () => null,
+  });
   protected readonly presetRoot = signal<PresetFormNode>(EMPTY_PRESET_ROOT);
   protected readonly presetName = signal('');
   protected readonly presetSaving = signal(false);
@@ -360,9 +374,7 @@ export class TrackerDesignerPage {
     }));
   });
 
-  protected readonly trackerNames = computed(
-    () => new Map(this.lookup.list().map((tracker) => [tracker.id, tracker.name])),
-  );
+  protected readonly trackerNames = this.lookup.nameById;
 
   protected readonly presetProblems = computed(() =>
     validatePreset(
@@ -375,33 +387,14 @@ export class TrackerDesignerPage {
   protected readonly presetProblemCount = computed(() => problemCount(this.presetProblems().tree));
 
   protected readonly presetMessages = computed(() =>
-    translateProblems(
+    translateValueTreeProblems(
       this.presetProblems().tree,
-      this.translate,
+      this.instant,
       this.presetDraft()?.expansionDepthCap ?? 1,
     ),
   );
 
-  protected readonly presetLabels = computed<ValueNodeLabels>(() => ({
-    required: this.translate.instant('valueTree.required'),
-    clear: this.translate.instant('valueTree.clear'),
-    remove: this.translate.instant('valueTree.node.remove'),
-    childOf: (field, tracker) =>
-      this.translate.instant('valueTree.node.childOf', { field, tracker }),
-    level: (depth, cap) => this.translate.instant('valueTree.node.level', { depth, cap }),
-    version: (version) => this.translate.instant('valueTree.version', { version }),
-    addTo: (field) => this.translate.instant('valueTree.node.add', { field }),
-    capReached: (cap) => this.translate.instant('valueTree.node.capReached', { cap }),
-  }));
-
-  constructor() {
-    // A different Tracker means a different Draft; local edits must not leak across.
-    effect(() => {
-      this.trackerId();
-      this.localDraft.set(null);
-      this.presetDraft.set(null);
-    });
-  }
+  protected readonly presetLabels = computed(() => valueNodeLabels(this.instant));
 
   protected rename(event: Event): void {
     void this.applyMeta({ name: (event.target as HTMLInputElement).value });
@@ -460,10 +453,10 @@ export class TrackerDesignerPage {
 
   /** Discard reverts to the committed Version, which is what a Draft is measured against. */
   protected discard(): void {
-    const tracker = this.view.tracker();
-    if (tracker !== undefined) {
-      void this.persistDraft(this.view.committedFields()).then(() => this.view.reload());
+    if (this.view.tracker() === undefined) {
+      return;
     }
+    void this.persistDraft(this.view.committedFields()).then(() => this.view.reload());
   }
 
   /** Opens the editor for a new Preset (`null`) or a saved one, always at the current Version. */
@@ -550,20 +543,3 @@ const EMPTY_PRESET_ROOT: PresetFormNode = {
   values: {},
   children: [],
 };
-
-function translateProblems(
-  problems: ValueTreeProblems,
-  translate: TranslateService,
-  cap: number,
-): Partial<Record<string, Record<string, string>>> {
-  const messages: Partial<Record<string, Record<string, string>>> = {};
-  for (const [key, fields] of Object.entries(problems)) {
-    messages[key] = Object.fromEntries(
-      Object.entries(fields ?? {}).map(([field, problem]) => [
-        field,
-        translate.instant(`valueTree.problems.${problem}`, { cap }),
-      ]),
-    );
-  }
-  return messages;
-}

@@ -175,36 +175,3 @@ test.describe('Calendar', () => {
     await expect(form.children).toHaveCount(1);
   });
 });
-
-test.describe('Calendar interaction', { tag: '@integration-candidate' }, () => {
-  test('the grid is operable by keyboard, and focus returns to the slot', async ({ appPage }) => {
-    await createTracker(appPage, {
-      name: 'Sleep',
-      fields: [{ name: 'Hours', dataType: 'decimal' }],
-    });
-    const calendar = new CalendarPageObject(appPage);
-    await calendar.openDay(DAY);
-    const day = calendar.day(DAY);
-
-    await day.slot(28).focus();
-    await day.slot(28).press('ArrowDown');
-    await expect(day.slot(29)).toBeFocused();
-    await day.slot(29).press('Enter');
-    await expect(calendar.quickCreate.self).toBeVisible();
-
-    await calendar.quickCreate.cancel();
-
-    await expect(calendar.quickCreate.self).toHaveCount(0);
-    await expect(day.slot(29)).toBeFocused();
-  });
-
-  test('quick-create explains when no Tracker is ready to log against', async ({ appPage }) => {
-    await createTracker(appPage, { name: 'Snack', fields: [], commit: false });
-    const calendar = new CalendarPageObject(appPage);
-    await calendar.openDay(DAY);
-
-    await calendar.day(DAY).slot(20).click();
-
-    await expect(calendar.quickCreate.noTrackers).toBeVisible();
-  });
-});

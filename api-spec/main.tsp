@@ -331,6 +331,27 @@ model PortableSettings {
   expansionDepthCap?: int32;
 }
 
+/**
+ * The single implicit Calendar every Entry is placed on. v1 has exactly one, seeded at
+ * bootstrap and re-seeded by a clear or an import; it carries no settings of its own yet.
+ */
+model Calendar {
+  ...AggregateMeta;
+}
+
+/**
+ * One batch for a Correlation scan: the Entries in range, the Trackers they belong to,
+ * and the exact Tracker Versions they pin to — never a Tracker's current schema, since an
+ * old Entry's Series reads against its own Version (ADR 0005). Tags come in the same
+ * batch so Tag Series need no second round trip.
+ */
+model CorrelationDataset {
+  entries: Entry[];
+  trackers: Tracker[];
+  trackerVersions: TrackerVersion[];
+  tags: Tag[];
+}
+
 model RecordCounts {
   trackers: int32;
   trackerVersions: int32;
@@ -443,4 +464,27 @@ namespace Maintenance {
   @post
   @route("/import")
   op importAll(@body bundle: ExportBundle): void | ApiError;
+
+  /** Create-if-absent, called at bootstrap. Returns the one Calendar either way. */
+  @post
+  @route("/calendar")
+  op ensureCalendar(): Calendar;
+}
+
+/**
+ * The read behind a Discovery scan. One batch rather than a query per Series: a scan
+ * needs every Entry in range together with the schemas to read them against, and
+ * round-tripping per Tracker would multiply that by the scope (correlation/SPEC.md).
+ */
+@route("/correlation")
+namespace Correlation {
+  @get
+  @route("/dataset")
+  op loadEntriesForScope(
+    @query from: Timestamp,
+    @query to: Timestamp,
+
+    /** Omitted or empty means every Tracker is in scope. */
+    @query trackerIds?: Uuid[],
+  ): CorrelationDataset;
 }

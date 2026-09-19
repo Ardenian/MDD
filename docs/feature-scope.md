@@ -68,7 +68,9 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
 - Open an Entry to view/edit (children embedded)
 
 ### Correlation — [`src/app/features/correlation/SPEC.md`](../src/app/features/correlation/SPEC.md)
-- Client-side, explicitly triggered Discovery scan over in-scope Signal pairs
+- **User guide**: [`correlation-guide.md`](correlation-guide.md) — how to design Trackers and
+  Fields so a scan has something to find (written for users and developers alike)
+- Client-side, explicitly triggered Discovery scan over in-scope Series pairs
 - Series extraction: numeric Field value; Tracker occurrence count; boolean/select
   state; nested child-Entry Field (numeric or presence), arbitrary depth; Tag presence
   (including child Entries)
@@ -168,7 +170,8 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
   viewer; migrating a Snapshot from an old Tracker Version to a newer one; merging one
   Tracker's data into another (e.g. consolidating "Water" into "Liquid"); unifying a
   Field's rename lineage across Versions so Correlation treats it as one continuous
-  Signal
+  Series (the user-facing consequence is documented in
+  [`correlation-guide.md`](correlation-guide.md) → *Do not rename things mid-study*)
 - **Switch the generated API client to Angular's `HttpClient`** instead of the current
   fetch-based `swagger-typescript-api` output. Flagged, not yet designed — see the note
   in [ADR 0004](adr/0004-typespec-api-contract.md).

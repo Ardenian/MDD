@@ -9,7 +9,7 @@ export class ComboboxObject {
 
   /** Every chosen value, for asserting that nothing was chosen at all. */
   get chips(): Locator {
-    return this.root.getByTestId('chips').locator('> *');
+    return this.root.getByTestId('chips').getByTestId('chip-label');
   }
 
   chip(value: string): Locator {

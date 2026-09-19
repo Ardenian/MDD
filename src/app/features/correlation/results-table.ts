@@ -77,7 +77,9 @@ const COLUMNS: readonly ResultColumn[] = [
       </ng-container>
 
       <tr cdk-header-row *cdkHeaderRowDef="allColumns"></tr>
-      <tr cdk-row *cdkRowDef="let row; columns: allColumns" [attr.data-testid]="row.result.id"></tr>
+      <!-- A fixed test id, so a POM can count rows by test id alone (ADR 0012). The pair
+           a row shows is read from its cells, not from its id. -->
+      <tr cdk-row *cdkRowDef="let row; columns: allColumns" data-testid="result-row"></tr>
     </table>
   `,
   styles: `

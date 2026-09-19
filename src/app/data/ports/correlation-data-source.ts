@@ -1,5 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import type { Entry } from '../model/entry';
+import type { Tag } from '../model/tag';
 import type { Tracker } from '../model/tracker';
 import type { TrackerVersion } from '../model/tracker-version';
 
@@ -21,6 +22,8 @@ export interface CorrelationDataset {
   readonly entries: readonly Entry[];
   readonly trackers: readonly Tracker[];
   readonly trackerVersions: readonly TrackerVersion[];
+  /** In the same batch, so Tag Series never need a second round trip. */
+  readonly tags: readonly Tag[];
 }
 
 export interface CorrelationDataSource {

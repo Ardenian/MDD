@@ -2,10 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { Component, computed, inject, Injector, signal } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ExportBundle, RecordCounts } from '../../data/model/export-bundle';
-import {
-  ConfirmDialog,
-  type ConfirmDetail,
-} from '../../ui/components/confirm-dialog/confirm-dialog';
+import type { ConfirmDetail } from '../../ui/components/confirm-dialog/confirm-dialog';
 import { DialogService } from '../../ui/services/dialog.service';
 import { ToastService } from '../../ui/services/toast.service';
 import { DataTransferDataAccess } from './data-transfer-data-access';
@@ -162,41 +159,32 @@ export class DataTransferPage {
     this.access.reloadCounts();
   }
 
-  protected confirmImport(): void {
+  protected async confirmImport(): Promise<void> {
     const chosen = this.accepted();
     if (chosen === null) {
       return;
     }
 
-    const title = this.translate.instant('dataTransfer.import.confirm.title');
     const phrase = this.translate.instant('dataTransfer.import.confirm.phrase');
-    const handle = this.dialogs.open<ConfirmDialog, void>(ConfirmDialog, {
-      inputs: {
-        title,
-        body: this.translate.instant('dataTransfer.import.confirm.body'),
-        phrase,
-        prompt: this.translate.instant('dataTransfer.import.confirm.prompt', { phrase }),
-        confirmLabel: this.translate.instant('dataTransfer.import.confirm.submit'),
-        cancelLabel: this.translate.instant('dataTransfer.import.confirm.cancel'),
-        details: this.countDetails(this.access.recordCounts()),
-      },
-      ariaLabel: title,
+    const confirmed = await this.dialogs.confirm({
+      title: this.translate.instant('dataTransfer.import.confirm.title'),
+      body: this.translate.instant('dataTransfer.import.confirm.body'),
+      phrase,
+      prompt: this.translate.instant('dataTransfer.import.confirm.prompt', { phrase }),
+      confirmLabel: this.translate.instant('dataTransfer.import.confirm.submit'),
+      cancelLabel: this.translate.instant('dataTransfer.import.confirm.cancel'),
+      details: this.countDetails(this.access.recordCounts()),
       injector: this.injector,
     });
-    if (handle === null) {
+    if (!confirmed) {
       return;
     }
 
-    handle.component?.cancelled.subscribe(() => handle.close());
-    handle.component?.confirmed.subscribe(() => {
-      void this.access.importAll(chosen.bundle).then(() => {
-        handle.close();
-        this.toasts.show(this.translate.instant('dataTransfer.import.done'));
-        // The whole dataset was replaced, so every cached read in the running app now
-        // describes records that are gone. A fresh start is the honest next step.
-        this.document.defaultView?.location.reload();
-      });
-    });
+    await this.access.importAll(chosen.bundle);
+    this.toasts.show(this.translate.instant('dataTransfer.import.done'));
+    // The whole dataset was replaced, so every cached read in the running app now
+    // describes records that are gone. A fresh start is the honest next step.
+    this.document.defaultView?.location.reload();
   }
 
   /** What the import is about to discard, one row per aggregate. */

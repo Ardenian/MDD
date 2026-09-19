@@ -46,8 +46,8 @@ Thumbs.db
 # PNPM
 .pnpm-store/*
 
-# API
-api-spec/dist
+# API — `api-spec/dist/` is deliberately NOT ignored: ADR 0004 commits the emitted
+# OpenAPI document alongside the generated client.
 
 # Playwright
 node_modules/

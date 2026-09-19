@@ -28,10 +28,12 @@ import {
   type ValueTreeProblems,
 } from '../../data/model/value-tree';
 import { Combobox } from '../../ui/components/combobox/combobox';
+import { ValueNodeEditor } from '../../ui/components/value-node-editor/value-node-editor';
 import {
-  ValueNodeEditor,
-  type ValueNodeLabels,
-} from '../../ui/components/value-node-editor/value-node-editor';
+  translateValueTreeProblems,
+  type TranslateFn,
+  valueNodeLabels,
+} from '../../ui/components/value-node-editor/value-node-messages';
 import { type EntryFormNode, validateForm } from './entry-form';
 import { PlacementEditor } from './placement-editor';
 import { movedTo, validatePlacement } from './fadeout';
@@ -252,6 +254,8 @@ export class EntryFormDialog {
   private readonly access = inject(EntriesDataAccess);
   private readonly lookup = inject(TrackerLookup);
   private readonly translate = inject(TranslateService);
+  /** Bound once, so the pure label and message helpers can be called without `this`. */
+  private readonly instant: TranslateFn = (key, params) => this.translate.instant(key, params);
 
   protected readonly form = signal<EntryForm | null>(null);
   protected readonly root = signal<EntryFormNode>(emptyRoot());
@@ -272,9 +276,7 @@ export class EntryFormDialog {
     computed(() => (this.form()?.isNew === true ? this.root().trackerId : null)),
   );
 
-  protected readonly trackerNames = computed(
-    () => new Map(this.lookup.list().map((tracker) => [tracker.id, tracker.name])),
-  );
+  protected readonly trackerNames = this.lookup.nameById;
 
   protected readonly title = computed(() => {
     const form = this.form();
@@ -305,19 +307,9 @@ export class EntryFormDialog {
     return problem === null ? null : this.translate.instant(`entries.problems.${problem}`);
   });
 
-  protected readonly messages = computed(() => {
-    const cap = this.form()?.expansionDepthCap ?? 1;
-    const translated: Partial<Record<string, Record<string, string>>> = {};
-    for (const [key, fields] of Object.entries(this.problems())) {
-      translated[key] = Object.fromEntries(
-        Object.entries(fields ?? {}).map(([field, problem]) => [
-          field,
-          this.translate.instant(`valueTree.problems.${problem}`, { cap }),
-        ]),
-      );
-    }
-    return translated;
-  });
+  protected readonly messages = computed(() =>
+    translateValueTreeProblems(this.problems(), this.instant, this.form()?.expansionDepthCap ?? 1),
+  );
 
   /** Nodes with no problems are absent from `messages`, so this is where that is handled. */
   protected messagesFor(key: string): Readonly<Record<string, string>> {
@@ -328,17 +320,7 @@ export class EntryFormDialog {
     () => problemCount(this.problems()) + (this.placementProblem() === null ? 0 : 1),
   );
 
-  protected readonly nodeLabels = computed<ValueNodeLabels>(() => ({
-    required: this.translate.instant('valueTree.required'),
-    clear: this.translate.instant('valueTree.clear'),
-    remove: this.translate.instant('valueTree.node.remove'),
-    childOf: (field, tracker) =>
-      this.translate.instant('valueTree.node.childOf', { field, tracker }),
-    level: (depth, cap) => this.translate.instant('valueTree.node.level', { depth, cap }),
-    version: (version) => this.translate.instant('valueTree.version', { version }),
-    addTo: (field) => this.translate.instant('valueTree.node.add', { field }),
-    capReached: (cap) => this.translate.instant('valueTree.node.capReached', { cap }),
-  }));
+  protected readonly nodeLabels = computed(() => valueNodeLabels(this.instant));
 
   protected readonly canSave = computed(
     () =>

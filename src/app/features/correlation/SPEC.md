@@ -6,6 +6,11 @@ Help the user find time-lagged relationships in their diary: extract **Series** 
 diverse Trackers, align them into **Buckets**, run a client-side **Discovery scan** with
 significance guardrails, and drill into any pair in a **Directed view**.
 
+How the choices below land for someone using the app — which Field shapes make a Series
+worth scanning, and which quietly waste one — is written up for users and developers alike
+in [`docs/correlation-guide.md`](../../../../docs/correlation-guide.md). A behaviour change
+here that alters that advice updates that guide too.
+
 ## Status
 
 Built: the controls bar, Discovery scan with progress and cancel, the results Table with

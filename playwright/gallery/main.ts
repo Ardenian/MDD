@@ -93,11 +93,14 @@ async function bootstrap(): Promise<void> {
       [...(definition.providers ?? [])],
       application.injector,
     );
+    // Seed before the component exists: it reads its data on construction.
+    const seeded = (await definition.setup?.(scenarioInjector)) ?? {};
+
     mounted = createComponent(definition.component, {
       environmentInjector: scenarioInjector,
       hostElement: host,
     });
-    for (const [name, value] of Object.entries({ ...definition.inputs, ...inputs })) {
+    for (const [name, value] of Object.entries({ ...definition.inputs, ...seeded, ...inputs })) {
       mounted.setInput(name, value);
     }
 

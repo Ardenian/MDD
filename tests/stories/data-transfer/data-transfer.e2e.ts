@@ -110,16 +110,4 @@ test.describe('Data Transfer', () => {
     await trackers.open();
     await expect(trackers.list.row(trackerId).name).toHaveText('Sleep');
   });
-
-  test('@integration-candidate a file that is not an export at all is refused', async ({
-    appPage,
-  }) => {
-    const transfer = new DataTransferPageObject(appPage);
-    await transfer.open();
-
-    await transfer.chooseFile('notes.json', 'this is not JSON');
-
-    await expect(transfer.importError).toBeVisible();
-    await expect(transfer.importButton).toBeDisabled();
-  });
 });

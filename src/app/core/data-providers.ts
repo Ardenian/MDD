@@ -68,7 +68,9 @@ export class ActivePortSet {
   }
 
   private build(profile: StorageProfile): PortSet {
-    const builder = PORT_SET_BUILDERS[profile.id] ?? PORT_SET_BUILDERS[OFFLINE_PROFILE.id];
+    // `resolveStorageProfile` has already mapped an unknown id to Offline, so reaching
+    // here with no builder means the Profile registry and the builder registry disagree.
+    const builder = PORT_SET_BUILDERS[profile.id];
     if (builder === undefined) {
       throw new Error(`No adapter set is registered for Storage Profile "${profile.id}"`);
     }

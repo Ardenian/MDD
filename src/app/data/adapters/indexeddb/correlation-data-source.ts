@@ -1,4 +1,5 @@
 import type { Entry } from '../../model/entry';
+import type { Tag } from '../../model/tag';
 import type { Tracker } from '../../model/tracker';
 import { type TrackerVersion, trackerVersionKey } from '../../model/tracker-version';
 import type {
@@ -8,6 +9,7 @@ import type {
   SeriesScope,
 } from '../../ports/correlation-data-source';
 import type { EntryRepository } from '../../ports/entry-repository';
+import type { TagRepository } from '../../ports/tag-repository';
 import type { IdbEngine } from './idb-engine';
 import { liveOnly } from './records';
 
@@ -15,6 +17,7 @@ export class IndexedDbCorrelationDataSource implements CorrelationDataSource {
   constructor(
     private readonly engine: IdbEngine,
     private readonly entries: EntryRepository,
+    private readonly tags: TagRepository,
   ) {}
 
   async loadEntriesForScope(range: DateRange, scope: SeriesScope): Promise<CorrelationDataset> {
@@ -23,17 +26,23 @@ export class IndexedDbCorrelationDataSource implements CorrelationDataSource {
     });
     const entries = scopeEntries(inRange, scope);
 
-    const [trackers, trackerVersions] = await Promise.all([
+    const [trackers, trackerVersions, tags] = await Promise.all([
       this.loadTrackers(entries),
       this.loadVersions(entries),
+      this.loadTags(),
     ]);
-    return { entries, trackers, trackerVersions };
+    return { entries, trackers, trackerVersions, tags };
   }
 
   private async loadTrackers(entries: readonly Entry[]): Promise<readonly Tracker[]> {
     const ids = [...new Set(entries.map((entry) => entry.trackerId))];
     const trackers = await Promise.all(ids.map((id) => this.engine.get<Tracker>('trackers', id)));
     return liveOnly(trackers.filter((tracker): tracker is Tracker => tracker !== undefined));
+  }
+
+  /** Every live Tag: an Entry names its Tags, and this is what gives them their rows. */
+  private async loadTags(): Promise<readonly Tag[]> {
+    return this.tags.listAll();
   }
 
   private async loadVersions(entries: readonly Entry[]): Promise<readonly TrackerVersion[]> {

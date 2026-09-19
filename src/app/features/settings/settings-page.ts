@@ -6,10 +6,7 @@ import type { BucketSize } from '../../data/model/settings';
 import { STORAGE_PROFILES } from '../../core/storage-profile';
 import { Select } from '../../ui/components/select/select';
 import type { SelectOption } from '../../ui/components/select/select-option';
-import {
-  ConfirmDialog,
-  type ConfirmDetail,
-} from '../../ui/components/confirm-dialog/confirm-dialog';
+import type { ConfirmDetail } from '../../ui/components/confirm-dialog/confirm-dialog';
 import { DialogService } from '../../ui/services/dialog.service';
 import { ToastService } from '../../ui/services/toast.service';
 import { CorrelationDefaultsEditor } from './correlation-defaults-editor';
@@ -224,35 +221,26 @@ export class SettingsPage {
   }
 
   protected async confirmClear(): Promise<void> {
-    const title = this.translate.instant('settings.data.confirm.title');
     const phrase = this.translate.instant('settings.data.confirm.phrase');
-    const handle = this.dialogs.open<ConfirmDialog, void>(ConfirmDialog, {
-      inputs: {
-        title,
-        body: this.translate.instant('settings.data.confirm.body'),
-        phrase,
-        prompt: this.translate.instant('settings.data.confirm.prompt', { phrase }),
-        confirmLabel: this.translate.instant('settings.data.confirm.submit'),
-        cancelLabel: this.translate.instant('settings.data.confirm.cancel'),
-        details: this.countDetails(await this.access.counts()),
-      },
-      ariaLabel: title,
+    const confirmed = await this.dialogs.confirm({
+      title: this.translate.instant('settings.data.confirm.title'),
+      body: this.translate.instant('settings.data.confirm.body'),
+      phrase,
+      prompt: this.translate.instant('settings.data.confirm.prompt', { phrase }),
+      confirmLabel: this.translate.instant('settings.data.confirm.submit'),
+      cancelLabel: this.translate.instant('settings.data.confirm.cancel'),
+      details: this.countDetails(await this.access.counts()),
       injector: this.injector,
     });
-    if (handle === null) {
+    if (!confirmed) {
       return;
     }
 
-    handle.component?.cancelled.subscribe(() => handle.close());
-    handle.component?.confirmed.subscribe(() => {
-      void this.access.clearAll().then(() => {
-        handle.close();
-        this.toasts.show(this.translate.instant('settings.data.cleared'));
-        // Every cached read in the app — Tracker lookups included — now describes data
-        // that no longer exists, so the honest next step is a fresh start.
-        this.reload();
-      });
-    });
+    await this.access.clearAll();
+    this.toasts.show(this.translate.instant('settings.data.cleared'));
+    // Every cached read in the app — Tracker lookups included — now describes data that
+    // no longer exists, so the honest next step is a fresh start.
+    this.reload();
   }
 
   /** What the confirmation shows is about to be lost, one row per aggregate. */

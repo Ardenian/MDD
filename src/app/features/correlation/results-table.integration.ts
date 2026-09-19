@@ -1,5 +1,5 @@
 import { expect, test } from '../../testing/support/mount-fixture';
-import { ResultsTableObject } from './correlation-page.pom';
+import { ResultsTableObject } from './results-table.pom';
 
 /**
  * Sorting is a UI-only concern: it needs rows on screen, not a scan, a database or an

@@ -119,37 +119,3 @@ test.describe('Presets', () => {
     await expect(new TrackerDesignerPageObject(appPage).presets.unavailable).toBeVisible();
   });
 });
-
-test.describe('Preset editor validation', { tag: '@integration-candidate' }, () => {
-  test('a Preset needs a name, but no required Field needs a value', async ({ appPage }) => {
-    await createTracker(appPage, {
-      name: 'Journal',
-      fields: [{ name: 'Notes', dataType: 'text', required: true }],
-    });
-    const presets = new TrackerDesignerPageObject(appPage).presets;
-
-    await presets.newPreset();
-    await expect(presets.editor.nameError).toBeVisible();
-    await expect(presets.editor.saveButton).toBeDisabled();
-
-    await presets.editor.setName('Blank page');
-
-    await expect(presets.editor.preset.field('Notes').error).toHaveCount(0);
-    await expect(presets.editor.saveButton).toBeEnabled();
-  });
-
-  test('a filled value must still have the right shape', async ({ appPage }) => {
-    await createTracker(appPage, {
-      name: 'Sleep',
-      fields: [{ name: 'Satisfaction', dataType: 'integer' }],
-    });
-    const presets = new TrackerDesignerPageObject(appPage).presets;
-
-    await presets.newPreset();
-    await presets.editor.setName('Good night');
-    await presets.editor.preset.field('Satisfaction').fill('2.5');
-
-    await expect(presets.editor.preset.field('Satisfaction').error).toBeVisible();
-    await expect(presets.editor.saveButton).toBeDisabled();
-  });
-});

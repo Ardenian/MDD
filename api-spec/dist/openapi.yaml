@@ -1,0 +1,1473 @@
+openapi: 3.0.0
+info:
+  title: Diary Calendar API
+  description: |-
+    Diary Calendar API contract — the single source of truth (ADR 0004).
+
+    This is the starting shape. Evolve it alongside `src/app/data/SPEC.md`; every
+    persisted aggregate must keep the `AggregateMeta` fields (ADR 0003). Regenerate the
+    client after any change: `pnpm --filter @ard/api-spec build` then the client
+    generator script.
+  version: 0.0.0
+tags: []
+paths:
+  /correlation/dataset:
+    get:
+      operationId: Correlation_loadEntriesForScope
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: trackerIds
+          in: query
+          required: false
+          description: Omitted or empty means every Tracker is in scope.
+          schema:
+            type: array
+            items:
+              type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CorrelationDataset'
+  /entries:
+    get:
+      operationId: Entries_list
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          explode: false
+        - name: includeChildren
+          in: query
+          required: false
+          schema:
+            type: boolean
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entry'
+    post:
+      operationId: Entries_create
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntryInput'
+  /entries/{id}:
+    get:
+      operationId: Entries_read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    patch:
+      operationId: Entries_update
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntryInput'
+    delete:
+      operationId: Entries_remove
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /maintenance/calendar:
+    post:
+      operationId: Maintenance_ensureCalendar
+      description: Create-if-absent, called at bootstrap. Returns the one Calendar either way.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Calendar'
+  /maintenance/clear:
+    post:
+      operationId: Maintenance_clearAll
+      description: Empties every store and re-seeds the single implicit Calendar.
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+  /maintenance/counts:
+    get:
+      operationId: Maintenance_counts
+      description: Backs the confirm-before-destroy displays in Settings and Data Transfer.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordCounts'
+  /maintenance/export:
+    get:
+      operationId: Maintenance_exportAll
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportBundle'
+  /maintenance/import:
+    post:
+      operationId: Maintenance_importAll
+      description: Full replace; a format-version mismatch is rejected and nothing is touched.
+      parameters: []
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportBundle'
+  /presets:
+    get:
+      operationId: Presets_list
+      parameters:
+        - name: trackerId
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Preset'
+    post:
+      operationId: Presets_create
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preset'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preset'
+  /presets/{id}:
+    patch:
+      operationId: Presets_update
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preset'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preset'
+    delete:
+      operationId: Presets_remove
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /settings:
+    get:
+      operationId: SettingsRoutes_read
+      description: Returns the documented fallback values when nothing has been saved yet.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+    patch:
+      operationId: SettingsRoutes_save
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsPatch'
+  /tags:
+    get:
+      operationId: Tags_list
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+  /tags/suggestions:
+    get:
+      operationId: Tags_suggest
+      description: Case-insensitive prefix match, ranked by usage frequency then alphabetically.
+      parameters:
+        - name: prefix
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagSuggestion'
+  /trackers:
+    get:
+      operationId: Trackers_list
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tracker'
+    post:
+      operationId: Trackers_create
+      description: Creates the Tracker header and commits its Field schema as Version 1.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackerCreateInput'
+  /trackers/{id}:
+    get:
+      operationId: Trackers_read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+    patch:
+      operationId: Trackers_updateMeta
+      description: Renames / changes default Time mode. Never versions.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrackerMetaInput'
+  /trackers/{id}/archive:
+    post:
+      operationId: Trackers_archive
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /trackers/{id}/draft:
+    put:
+      operationId: Trackers_saveDraft
+      description: Replaces the working Draft. Does not version until `commitDraft` is called.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/FieldDef'
+  /trackers/{id}/draft/commit:
+    post:
+      operationId: Trackers_commitDraft
+      description: Mints `currentVersion + 1` iff the Draft differs from the current Version.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /trackers/{id}/unarchive:
+    post:
+      operationId: Trackers_unarchive
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /trackers/{id}/versions/{version}:
+    get:
+      operationId: Trackers_readVersion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackerVersion'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+components:
+  schemas:
+    AggregateMeta:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - deletedAt
+        - revision
+        - ownerId
+        - userId
+      properties:
+        id:
+          type: string
+          description: Client-generated UUID.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when soft-deleted; default reads exclude these rows.
+          readOnly: true
+        revision:
+          type: integer
+          format: int32
+          description: Monotonic per-record counter for conflict detection.
+          readOnly: true
+        ownerId:
+          type: string
+          readOnly: true
+        userId:
+          type: string
+          readOnly: true
+      description: Fields carried by every persisted aggregate. See ADR 0003.
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    BooleanFieldDef:
+      type: object
+      required:
+        - dataType
+      properties:
+        dataType:
+          type: string
+          enum:
+            - boolean
+      allOf:
+        - $ref: '#/components/schemas/FieldBase'
+    BucketSize:
+      type: string
+      enum:
+        - hour
+        - day
+        - week
+        - month
+    Calendar:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - deletedAt
+        - revision
+        - ownerId
+        - userId
+      properties:
+        id:
+          type: string
+          description: Client-generated UUID.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when soft-deleted; default reads exclude these rows.
+          readOnly: true
+        revision:
+          type: integer
+          format: int32
+          description: Monotonic per-record counter for conflict detection.
+          readOnly: true
+        ownerId:
+          type: string
+          readOnly: true
+        userId:
+          type: string
+          readOnly: true
+      description: |-
+        The single implicit Calendar every Entry is placed on. v1 has exactly one, seeded at
+        bootstrap and re-seeded by a clear or an import; it carries no settings of its own yet.
+    CorrelationDataset:
+      type: object
+      required:
+        - entries
+        - trackers
+        - trackerVersions
+        - tags
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entry'
+        trackers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tracker'
+        trackerVersions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrackerVersion'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+      description: |-
+        One batch for a Correlation scan: the Entries in range, the Trackers they belong to,
+        and the exact Tracker Versions they pin to — never a Tracker's current schema, since an
+        old Entry's Series reads against its own Version (ADR 0005). Tags come in the same
+        batch so Tag Series need no second round trip.
+    DayBucketedPlacement:
+      type: object
+      required:
+        - kind
+        - day
+      properties:
+        kind:
+          type: string
+          enum:
+            - dayBucketed
+        day:
+          type: string
+          format: date
+    Entry:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - deletedAt
+        - revision
+        - ownerId
+        - userId
+        - trackerId
+        - trackerVersion
+        - parentEntryId
+        - placement
+        - snapshot
+        - tags
+      properties:
+        id:
+          type: string
+          description: Client-generated UUID.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when soft-deleted; default reads exclude these rows.
+          readOnly: true
+        revision:
+          type: integer
+          format: int32
+          description: Monotonic per-record counter for conflict detection.
+          readOnly: true
+        ownerId:
+          type: string
+          readOnly: true
+        userId:
+          type: string
+          readOnly: true
+        trackerId:
+          type: string
+        trackerVersion:
+          type: integer
+          format: int32
+          description: The Tracker Version current when this Entry was created. Immutable thereafter.
+        parentEntryId:
+          type: string
+          nullable: true
+          description: Zero or one parent; a child's placement always mirrors its parent's.
+        placement:
+          $ref: '#/components/schemas/Placement'
+        snapshot:
+          type: array
+          items:
+            $ref: '#/components/schemas/SnapshotField'
+        tags:
+          type: array
+          items:
+            type: string
+    EntryInput:
+      type: object
+      required:
+        - trackerId
+        - parentEntryId
+        - placement
+        - snapshot
+        - tags
+      properties:
+        trackerId:
+          type: string
+        parentEntryId:
+          type: string
+          nullable: true
+        placement:
+          $ref: '#/components/schemas/Placement'
+        snapshot:
+          type: array
+          items:
+            $ref: '#/components/schemas/SnapshotField'
+        tags:
+          type: array
+          items:
+            type: string
+      description: |-
+        No `trackerVersion` field: the adapter resolves it from the target Tracker's
+        `currentVersion` at creation time — a caller never supplies it. See ADR 0005.
+    ExportBundle:
+      type: object
+      required:
+        - formatVersion
+        - exportedAt
+        - trackers
+        - trackerVersions
+        - entries
+        - presets
+        - tags
+        - settings
+      properties:
+        formatVersion:
+          type: integer
+          format: int32
+        exportedAt:
+          type: string
+          format: date-time
+        trackers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tracker'
+        trackerVersions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrackerVersion'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entry'
+        presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Preset'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        settings:
+          $ref: '#/components/schemas/PortableSettings'
+      description: |-
+        The export file's shape. Versioned independently of this API: an import whose
+        `formatVersion` differs is rejected outright, with no partial restore (ADR 0009).
+    Fadeout:
+      type: object
+      required:
+        - beforeMinutes
+        - afterMinutes
+      properties:
+        beforeMinutes:
+          type: integer
+          format: int32
+        afterMinutes:
+          type: integer
+          format: int32
+    FieldBase:
+      type: object
+      required:
+        - name
+        - required
+      properties:
+        name:
+          type: string
+        required:
+          type: boolean
+    FieldDataType:
+      type: string
+      enum:
+        - text
+        - longText
+        - integer
+        - decimal
+        - boolean
+        - singleSelect
+        - multiSelect
+        - reference
+    FieldDef:
+      anyOf:
+        - $ref: '#/components/schemas/TextFieldDef'
+        - $ref: '#/components/schemas/NumberFieldDef'
+        - $ref: '#/components/schemas/BooleanFieldDef'
+        - $ref: '#/components/schemas/SelectFieldDef'
+        - $ref: '#/components/schemas/ReferenceFieldDef'
+      description: One property in a Tracker Version's schema.
+    Guardrails:
+      type: object
+      required:
+        - minSampleSize
+        - pThreshold
+        - benjaminiHochberg
+      properties:
+        minSampleSize:
+          type: integer
+          format: int32
+        pThreshold:
+          type: number
+          format: double
+        benjaminiHochberg:
+          type: boolean
+    LagRange:
+      type: object
+      required:
+        - min
+        - max
+      properties:
+        min:
+          type: integer
+          format: int32
+        max:
+          type: integer
+          format: int32
+      description: Bucket offsets, so the range is inclusive at both ends and may be zero-width.
+    NumberFieldDef:
+      type: object
+      required:
+        - dataType
+      properties:
+        dataType:
+          anyOf:
+            - type: string
+              enum:
+                - integer
+            - type: string
+              enum:
+                - decimal
+      allOf:
+        - $ref: '#/components/schemas/FieldBase'
+    PeriodPlacement:
+      type: object
+      required:
+        - kind
+        - start
+        - end
+      properties:
+        kind:
+          type: string
+          enum:
+            - period
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        fadeout:
+          $ref: '#/components/schemas/Fadeout'
+    Placement:
+      anyOf:
+        - $ref: '#/components/schemas/PointPlacement'
+        - $ref: '#/components/schemas/PeriodPlacement'
+        - $ref: '#/components/schemas/DayBucketedPlacement'
+    PointPlacement:
+      type: object
+      required:
+        - kind
+        - at
+      properties:
+        kind:
+          type: string
+          enum:
+            - point
+        at:
+          type: string
+          format: date-time
+        fadeout:
+          $ref: '#/components/schemas/Fadeout'
+    PortableSettings:
+      type: object
+      properties:
+        defaultBucketSize:
+          $ref: '#/components/schemas/BucketSize'
+        defaultLagRange:
+          $ref: '#/components/schemas/LagRange'
+        guardrails:
+          $ref: '#/components/schemas/Guardrails'
+        expansionDepthCap:
+          type: integer
+          format: int32
+      description: The portable subset of Settings — everything but the device-local Profile.
+    Preset:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - deletedAt
+        - revision
+        - ownerId
+        - userId
+        - trackerId
+        - trackerVersion
+        - name
+        - values
+        - children
+      properties:
+        id:
+          type: string
+          description: Client-generated UUID.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when soft-deleted; default reads exclude these rows.
+          readOnly: true
+        revision:
+          type: integer
+          format: int32
+          description: Monotonic per-record counter for conflict detection.
+          readOnly: true
+        ownerId:
+          type: string
+          readOnly: true
+        userId:
+          type: string
+          readOnly: true
+        trackerId:
+          type: string
+        trackerVersion:
+          type: integer
+          format: int32
+          description: The Tracker Version this Preset's values were authored against.
+        name:
+          type: string
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetFieldValue'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetChild'
+          description: Filled child Entries for reference Fields, resolved depth-first.
+    PresetChild:
+      type: object
+      required:
+        - fieldName
+        - trackerId
+        - trackerVersion
+        - values
+        - children
+      properties:
+        fieldName:
+          type: string
+        trackerId:
+          type: string
+        trackerVersion:
+          type: integer
+          format: int32
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetFieldValue'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/PresetChild'
+    PresetFieldValue:
+      type: object
+      required:
+        - fieldName
+        - value
+      properties:
+        fieldName:
+          type: string
+        value:
+          description: Shape depends on the Field's data type.
+    RecordCounts:
+      type: object
+      required:
+        - trackers
+        - trackerVersions
+        - entries
+        - presets
+        - tags
+      properties:
+        trackers:
+          type: integer
+          format: int32
+        trackerVersions:
+          type: integer
+          format: int32
+        entries:
+          type: integer
+          format: int32
+        presets:
+          type: integer
+          format: int32
+        tags:
+          type: integer
+          format: int32
+    ReferenceCardinality:
+      type: string
+      enum:
+        - one
+        - many
+    ReferenceFieldDef:
+      type: object
+      required:
+        - dataType
+        - targetTrackerId
+        - cardinality
+      properties:
+        dataType:
+          type: string
+          enum:
+            - reference
+        targetTrackerId:
+          type: string
+        cardinality:
+          $ref: '#/components/schemas/ReferenceCardinality'
+      allOf:
+        - $ref: '#/components/schemas/FieldBase'
+    SelectFieldDef:
+      type: object
+      required:
+        - dataType
+        - options
+      properties:
+        dataType:
+          anyOf:
+            - type: string
+              enum:
+                - singleSelect
+            - type: string
+              enum:
+                - multiSelect
+        options:
+          type: array
+          items:
+            type: string
+      allOf:
+        - $ref: '#/components/schemas/FieldBase'
+    Settings:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - deletedAt
+        - revision
+        - ownerId
+        - userId
+        - defaultBucketSize
+        - defaultLagRange
+        - guardrails
+        - expansionDepthCap
+        - activeProfileId
+      properties:
+        id:
+          type: string
+          description: Client-generated UUID.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when soft-deleted; default reads exclude these rows.
+          readOnly: true
+        revision:
+          type: integer
+          format: int32
+          description: Monotonic per-record counter for conflict detection.
+          readOnly: true
+        ownerId:
+          type: string
+          readOnly: true
+        userId:
+          type: string
+          readOnly: true
+        defaultBucketSize:
+          $ref: '#/components/schemas/BucketSize'
+        defaultLagRange:
+          $ref: '#/components/schemas/LagRange'
+        guardrails:
+          $ref: '#/components/schemas/Guardrails'
+        expansionDepthCap:
+          type: integer
+          format: int32
+        activeProfileId:
+          type: string
+          description: |-
+            Names the active Storage Profile. Device-local: it is never part of an export and
+            an import never touches it (ADR 0009).
+    SettingsPatch:
+      type: object
+      properties:
+        defaultBucketSize:
+          $ref: '#/components/schemas/BucketSize'
+        defaultLagRange:
+          $ref: '#/components/schemas/LagRange'
+        guardrails:
+          $ref: '#/components/schemas/Guardrails'
+        expansionDepthCap:
+          type: integer
+          format: int32
+        activeProfileId:
+          type: string
+      description: 'Every field optional: a save is a patch of whatever the user changed.'
+    SnapshotField:
+      type: object
+      required:
+        - fieldName
+        - value
+      properties:
+        fieldName:
+          type: string
+        value: {}
+      description: |-
+        A Field value frozen onto an Entry. No dataType or schema copy — that's looked up
+        from the Entry's pinned `(trackerId, trackerVersion)` TrackerVersion. See ADR 0005.
+    Tag:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - deletedAt
+        - revision
+        - ownerId
+        - userId
+        - name
+      properties:
+        id:
+          type: string
+          description: Client-generated UUID.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when soft-deleted; default reads exclude these rows.
+          readOnly: true
+        revision:
+          type: integer
+          format: int32
+          description: Monotonic per-record counter for conflict detection.
+          readOnly: true
+        ownerId:
+          type: string
+          readOnly: true
+        userId:
+          type: string
+          readOnly: true
+        name:
+          type: string
+      description: A free-text label; the aggregate row is what autocomplete suggests from.
+    TagSuggestion:
+      type: object
+      required:
+        - name
+        - usageCount
+      properties:
+        name:
+          type: string
+        usageCount:
+          type: integer
+          format: int32
+    TextFieldDef:
+      type: object
+      required:
+        - dataType
+      properties:
+        dataType:
+          anyOf:
+            - type: string
+              enum:
+                - text
+            - type: string
+              enum:
+                - longText
+      allOf:
+        - $ref: '#/components/schemas/FieldBase'
+    TimeMode:
+      type: string
+      enum:
+        - point
+        - period
+        - dayBucketed
+    Tracker:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - deletedAt
+        - revision
+        - ownerId
+        - userId
+        - name
+        - defaultTimeMode
+        - currentVersion
+        - archived
+        - draftFields
+      properties:
+        id:
+          type: string
+          description: Client-generated UUID.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when soft-deleted; default reads exclude these rows.
+          readOnly: true
+        revision:
+          type: integer
+          format: int32
+          description: Monotonic per-record counter for conflict detection.
+          readOnly: true
+        ownerId:
+          type: string
+          readOnly: true
+        userId:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        defaultTimeMode:
+          $ref: '#/components/schemas/TimeMode'
+        currentVersion:
+          type: integer
+          format: int32
+          description: The highest committed TrackerVersion.version. 0 until the first commit.
+        archived:
+          type: boolean
+          description: Hidden from "create new" / reference-target pickers; never migrated, never deleted.
+        draftFields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDef'
+          description: Uncommitted working schema; equals the current Version's fields right after a commit.
+      description: |-
+        A Tracker's header: identity, metadata, and its current place in its own version
+        history. The Field schema itself lives on `TrackerVersion`, not here. See ADR 0005.
+    TrackerCreateInput:
+      type: object
+      required:
+        - name
+        - defaultTimeMode
+        - fields
+      properties:
+        name:
+          type: string
+        defaultTimeMode:
+          $ref: '#/components/schemas/TimeMode'
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDef'
+          description: Committed immediately as Version 1.
+    TrackerMetaInput:
+      type: object
+      properties:
+        name:
+          type: string
+        defaultTimeMode:
+          $ref: '#/components/schemas/TimeMode'
+    TrackerVersion:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+        - deletedAt
+        - revision
+        - ownerId
+        - userId
+        - trackerId
+        - version
+        - fields
+      properties:
+        id:
+          type: string
+          description: Client-generated UUID.
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when soft-deleted; default reads exclude these rows.
+          readOnly: true
+        revision:
+          type: integer
+          format: int32
+          description: Monotonic per-record counter for conflict detection.
+          readOnly: true
+        ownerId:
+          type: string
+          readOnly: true
+        userId:
+          type: string
+          readOnly: true
+        trackerId:
+          type: string
+        version:
+          type: integer
+          format: int32
+          description: Sequential per Tracker, starting at 1.
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDef'
+      description: |-
+        An immutable, sequentially numbered snapshot of a Tracker's Field schema. Never
+        updated or deleted — an Entry's Snapshot pins to one of these forever. See ADR 0005.

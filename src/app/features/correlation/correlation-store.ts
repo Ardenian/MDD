@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import {
@@ -134,16 +135,16 @@ export const CorrelationStore = signalStore(
   withMethods((store) => {
     const source = inject(CORRELATION_DATA_SOURCE);
     const settings = inject(SETTINGS_REPOSITORY);
+    // Reached through the document, as the Calendar does: there is no global `window`
+    // wherever this runs without one.
+    const storage = inject(DOCUMENT).defaultView?.localStorage;
     /** Read at the top of each scan loop; a plain field, since it must not be reactive. */
     let cancelRequested = false;
 
     const persist = (preferences: CorrelationPreferences): void => {
       patchState(store, { preferences });
       try {
-        localStorage.setItem(
-          CORRELATION_PREFERENCES_KEY,
-          serializeCorrelationPreferences(preferences),
-        );
+        storage?.setItem(CORRELATION_PREFERENCES_KEY, serializeCorrelationPreferences(preferences));
       } catch {
         // A device that refuses storage still gets a working page for this session.
       }
@@ -154,7 +155,7 @@ export const CorrelationStore = signalStore(
       async loadDefaults(): Promise<void> {
         let stored: string | null = null;
         try {
-          stored = localStorage.getItem(CORRELATION_PREFERENCES_KEY);
+          stored = storage?.getItem(CORRELATION_PREFERENCES_KEY) ?? null;
         } catch {
           stored = null;
         }

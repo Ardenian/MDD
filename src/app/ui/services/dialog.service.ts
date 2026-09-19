@@ -1,6 +1,7 @@
 import { Dialog, type DialogConfig, type DialogRef } from '@angular/cdk/dialog';
 import { type ComponentType } from '@angular/cdk/portal';
 import { computed, inject, type Injector, Service, signal } from '@angular/core';
+import { ConfirmDialog, type ConfirmDetail } from '../components/confirm-dialog/confirm-dialog';
 
 export interface UiDialogConfig<D> {
   /** Inputs set on the opened component — it stays presentation-only, injecting nothing. */
@@ -75,7 +76,61 @@ export class DialogService {
     };
   }
 
+  /**
+   * Puts the standard confirm-by-typing guard on screen and resolves to what the user
+   * decided. Every string arrives translated, as `ConfirmDialog` itself requires.
+   *
+   * The choreography — open, listen to both outcomes, close either way — is identical
+   * wherever an irreversible action is confirmed, so it lives here rather than being
+   * rebuilt per feature (`ui/SPEC.md`).
+   */
+  async confirm(request: ConfirmRequest): Promise<boolean> {
+    const handle = this.open<ConfirmDialog, void>(ConfirmDialog, {
+      inputs: {
+        title: request.title,
+        body: request.body,
+        phrase: request.phrase,
+        prompt: request.prompt,
+        confirmLabel: request.confirmLabel,
+        cancelLabel: request.cancelLabel,
+        details: request.details ?? [],
+      },
+      ariaLabel: request.title,
+      injector: request.injector,
+    });
+    if (handle === null) {
+      // Another dialog is already up; refusing is what `open` does, and a confirmation
+      // nobody saw must not read as a yes.
+      return false;
+    }
+
+    return new Promise<boolean>((resolve) => {
+      handle.component?.cancelled.subscribe(() => handle.close());
+      // Closed on the way out, so the caller gets a decision rather than a dialog to
+      // dispose of, and the work it then does is not hidden behind one.
+      handle.component?.confirmed.subscribe(() => {
+        handle.close();
+        resolve(true);
+      });
+      // A dismissal — Escape, the backdrop, the close button — is a no.
+      void handle.closed.then(() => resolve(false));
+    });
+  }
+
   close(): void {
     this.current()?.close(undefined);
   }
+}
+
+export interface ConfirmRequest {
+  readonly title: string;
+  readonly body: string;
+  /** The word to type out, and the sentence asking for it. */
+  readonly phrase: string;
+  readonly prompt: string;
+  readonly confirmLabel: string;
+  readonly cancelLabel: string;
+  /** What the action will cost, one row each. */
+  readonly details?: readonly ConfirmDetail[];
+  readonly injector?: Injector;
 }

@@ -5,7 +5,9 @@ export class TrackersPageObject {
   private readonly root: Locator;
 
   constructor(private readonly page: Page) {
-    this.root = page.getByTestId('main-content').getByTestId('trackers-page');
+    // Not scoped to the app shell, so the same object drives the page mounted alone in
+    // the ADR 0014 gallery as well as inside the running app.
+    this.root = page.getByTestId('trackers-page');
   }
 
   async open(): Promise<void> {

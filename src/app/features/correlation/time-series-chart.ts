@@ -52,7 +52,7 @@ const BOX: ChartBox = { width: 600, height: 200, padding: 12 };
                 fill="none"
               />
             </svg>
-            {{ line.label }}
+            <span data-testid="legend-label">{{ line.label }}</span>
           </span>
         }
       </figcaption>

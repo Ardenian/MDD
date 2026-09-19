@@ -70,6 +70,44 @@ export type BooleanFieldDef = FieldBase & {
   dataType: "boolean";
 };
 
+/**
+ * The single implicit Calendar every Entry is placed on. v1 has exactly one, seeded at
+ * bootstrap and re-seeded by a clear or an import; it carries no settings of its own yet.
+ */
+export interface Calendar {
+  /** Client-generated UUID. */
+  id: string;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  updatedAt: string;
+  /**
+   * Set when soft-deleted; default reads exclude these rows.
+   * @format date-time
+   */
+  deletedAt: string | null;
+  /**
+   * Monotonic per-record counter for conflict detection.
+   * @format int32
+   */
+  revision: number;
+  ownerId: string;
+  userId: string;
+}
+
+/**
+ * One batch for a Correlation scan: the Entries in range, the Trackers they belong to,
+ * and the exact Tracker Versions they pin to — never a Tracker's current schema, since an
+ * old Entry's Series reads against its own Version (ADR 0005). Tags come in the same
+ * batch so Tag Series need no second round trip.
+ */
+export interface CorrelationDataset {
+  entries: Entry[];
+  trackers: Tracker[];
+  trackerVersions: TrackerVersion[];
+  tags: Tag[];
+}
+
 export interface DayBucketedPlacement {
   kind: "dayBucketed";
   /** @format date */
@@ -710,6 +748,32 @@ export class HttpClient<SecurityDataType = unknown> {
 export class Api<
   SecurityDataType extends unknown,
 > extends HttpClient<SecurityDataType> {
+  correlation = {
+    /**
+     * No description
+     *
+     * @name CorrelationLoadEntriesForScope
+     * @request GET:/correlation/dataset
+     */
+    correlationLoadEntriesForScope: (
+      query: {
+        /** @format date-time */
+        from: string;
+        /** @format date-time */
+        to: string;
+        /** Omitted or empty means every Tracker is in scope. */
+        trackerIds?: string[];
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<CorrelationDataset, any>({
+        path: `/correlation/dataset`,
+        method: "GET",
+        query: query,
+        format: "json",
+        ...params,
+      }),
+  };
   entries = {
     /**
      * No description
@@ -795,6 +859,20 @@ export class Api<
       }),
   };
   maintenance = {
+    /**
+     * @description Create-if-absent, called at bootstrap. Returns the one Calendar either way.
+     *
+     * @name MaintenanceEnsureCalendar
+     * @request POST:/maintenance/calendar
+     */
+    maintenanceEnsureCalendar: (params: RequestParams = {}) =>
+      this.request<Calendar, any>({
+        path: `/maintenance/calendar`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
     /**
      * @description Empties every store and re-seeds the single implicit Calendar.
      *

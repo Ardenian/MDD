@@ -36,13 +36,14 @@ export function createIndexedDbPortSet(engine: IdbEngine, context: StampContext)
   // every store, so per-repository queues would still let those interleave.
   const queue = new WriteQueue();
   const entries = new IndexedDbEntryRepository(engine, context, queue);
+  const tags = new IndexedDbTagRepository(engine);
   return {
     trackers: new IndexedDbTrackerRepository(engine, context, queue),
     entries,
     presets: new IndexedDbPresetRepository(engine, context, queue),
-    tags: new IndexedDbTagRepository(engine),
+    tags,
     settings: new IndexedDbSettingsRepository(engine, context, queue),
-    correlation: new IndexedDbCorrelationDataSource(engine, entries),
+    correlation: new IndexedDbCorrelationDataSource(engine, entries, tags),
     maintenance: new IndexedDbMaintenancePort(engine, context, queue),
   };
 }

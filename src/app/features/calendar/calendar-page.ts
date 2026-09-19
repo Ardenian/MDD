@@ -62,7 +62,7 @@ const MORNING_SLOT = 14;
   selector: 'app-calendar-page',
   imports: [TranslatePipe, CalendarToolbar, TrackerToggles, CalendarGrid],
   template: `
-    <div class="calendar">
+    <div class="calendar" data-testid="calendar-page">
       <app-calendar-toolbar
         [view]="preferences().view"
         [day]="day()"

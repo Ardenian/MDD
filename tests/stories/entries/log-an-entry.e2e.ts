@@ -233,53 +233,7 @@ test.describe('Logging an Entry', () => {
   });
 });
 
-test.describe('Entry form validation', { tag: '@integration-candidate' }, () => {
-  test('a required Field blocks saving, with its error linked to the control', async ({
-    appPage,
-  }) => {
-    const journalId = await createTracker(appPage, {
-      name: 'Journal',
-      fields: [{ name: 'Notes', dataType: 'text', required: true }],
-    });
-    const form = new EntryFormDialogObject(appPage);
-
-    await form.openNew({ trackerId: journalId });
-    const notes = form.entry.field('Notes');
-    await expect(notes.error).toBeVisible();
-    await expect(notes.control).toHaveAttribute(
-      'aria-describedby',
-      (await notes.error.getAttribute('id')) ?? '',
-    );
-    await expect(form.saveButton).toBeDisabled();
-
-    await notes.fill('Slept well');
-
-    await expect(notes.error).toHaveCount(0);
-    await expect(form.saveButton).toBeEnabled();
-  });
-
-  test('a whole number is required for an integer Field', async ({ appPage }) => {
-    const sleepId = await createTracker(appPage, { name: 'Sleep', fields: SLEEP_FIELDS });
-    const form = new EntryFormDialogObject(appPage);
-
-    await form.openNew({ trackerId: sleepId });
-    await form.entry.field('Satisfaction').fill('2.5');
-
-    await expect(form.entry.field('Satisfaction').error).toBeVisible();
-    await expect(form.saveButton).toBeDisabled();
-  });
-
-  test('a negative Fadeout blocks saving', async ({ appPage }) => {
-    const sleepId = await createTracker(appPage, { name: 'Sleep', fields: SLEEP_FIELDS });
-    const form = new EntryFormDialogObject(appPage);
-
-    await form.openNew({ trackerId: sleepId });
-    await form.placement.setFadeout(-5, 0);
-
-    await expect(form.placement.problem).toBeVisible();
-    await expect(form.saveButton).toBeDisabled();
-  });
-
+test.describe('Entry form persistence', () => {
   test('cancelling leaves nothing behind', async ({ appPage }) => {
     const sleepId = await createTracker(appPage, { name: 'Sleep', fields: SLEEP_FIELDS });
     const form = new EntryFormDialogObject(appPage);

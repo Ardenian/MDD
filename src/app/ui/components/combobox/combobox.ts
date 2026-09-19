@@ -21,7 +21,7 @@ let nextId = 0;
         <ul class="combobox__chips" data-testid="chips" [attr.aria-label]="label()">
           @for (value of values(); track value) {
             <li class="combobox__chip" [attr.data-testid]="value">
-              <span>{{ value }}</span>
+              <span data-testid="chip-label">{{ value }}</span>
               <button
                 type="button"
                 class="combobox__remove"

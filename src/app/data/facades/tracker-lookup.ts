@@ -36,6 +36,14 @@ export class TrackerLookup {
     })),
   );
 
+  /**
+   * Names by id, for anywhere a Tracker is referred to by id alone — a reference Field's
+   * target, a child Entry's parent. Derived here rather than rebuilt per feature.
+   */
+  readonly nameById = computed(
+    () => new Map(this.list().map((tracker) => [tracker.id, tracker.name])),
+  );
+
   readonly isLoading = computed(() => this.all.isLoading());
 
   /** Trackers are metadata, not versioned — a rename must show up immediately. */
