@@ -56,3 +56,6 @@ sanctioned exception, since it performs the same kind of immutable update `updat
   accumulates state a single `resource()` call can't express — mirroring this repo's
   existing "promote on second use" pattern for `data/`'s shared facades and `ui/`'s
   CDK-backed components.
+- [ADR 0016](0016-page-provided-dataaccess.md) later gave this split a second job: it
+  also decides lifetime. A DataAccess is provided by the page that uses it and rebuilt
+  per visit; a Store stays root-provided because its state is meant to outlive the route.

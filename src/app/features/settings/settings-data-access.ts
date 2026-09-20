@@ -1,4 +1,4 @@
-import { computed, inject, resource, Service } from '@angular/core';
+import { Injectable, computed, inject, resource } from '@angular/core';
 import type { AppSettings, SettingsPatch } from '../../data/model/settings';
 import type { RecordCounts } from '../../data/model/export-bundle';
 import { MAINTENANCE_PORT } from '../../data/ports/maintenance-port';
@@ -8,7 +8,7 @@ import { SETTINGS_REPOSITORY } from '../../data/ports/settings-repository';
  * Stateless DataAccess (ADR 0008) over this feature's two ports. The form's own values
  * are the page's state, not this facade's — everything here is the persisted truth.
  */
-@Service()
+@Injectable()
 export class SettingsDataAccess {
   private readonly settings = inject(SETTINGS_REPOSITORY);
   private readonly maintenance = inject(MAINTENANCE_PORT);

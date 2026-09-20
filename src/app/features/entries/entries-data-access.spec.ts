@@ -26,6 +26,7 @@ describe('EntriesDataAccess', () => {
     layer = createInMemoryDataLayer();
     TestBed.configureTestingModule({
       providers: [
+        EntriesDataAccess,
         { provide: ENTRY_REPOSITORY, useValue: layer.entries },
         { provide: TRACKER_REPOSITORY, useValue: layer.trackers },
         { provide: PRESET_REPOSITORY, useValue: layer.presets },

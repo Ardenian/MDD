@@ -10,7 +10,7 @@ describe('CalendarDataAccess', () => {
   beforeEach(() => {
     layer = createInMemoryDataLayer();
     TestBed.configureTestingModule({
-      providers: [{ provide: ENTRY_REPOSITORY, useValue: layer.entries }],
+      providers: [CalendarDataAccess, { provide: ENTRY_REPOSITORY, useValue: layer.entries }],
     });
   });
 

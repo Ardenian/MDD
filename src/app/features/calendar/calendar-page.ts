@@ -60,6 +60,7 @@ const MORNING_SLOT = 14;
  */
 @Component({
   selector: 'app-calendar-page',
+  providers: [CalendarDataAccess],
   imports: [TranslatePipe, CalendarToolbar, TrackerToggles, CalendarGrid],
   template: `
     <div class="calendar" data-testid="calendar-page">

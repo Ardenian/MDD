@@ -1,4 +1,4 @@
-import { computed, inject, Injector, resource, Service, type Signal } from '@angular/core';
+import { Injectable, computed, inject, Injector, resource, type Signal } from '@angular/core';
 import { DataError } from '../../data/model/data-error';
 import type { Entry } from '../../data/model/entry';
 import { type FieldDef, isReferenceField } from '../../data/model/field-def';
@@ -52,7 +52,7 @@ export interface TrackerHeader {
  * Stateless DataAccess (ADR 0008). The form's working state — the tree being edited — is
  * the dialog's own; this only reads it in and writes it back out.
  */
-@Service()
+@Injectable()
 export class EntriesDataAccess {
   private readonly entries = inject(ENTRY_REPOSITORY);
   private readonly trackers = inject(TRACKER_REPOSITORY);

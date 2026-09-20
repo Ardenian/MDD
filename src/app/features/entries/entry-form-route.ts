@@ -5,6 +5,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { DialogService, type UiDialogHandle } from '../../ui/services/dialog.service';
 import { ToastService } from '../../ui/services/toast.service';
 import { EntryFormDialog, type EntryFormOutcome } from './entry-form-dialog';
+import { EntriesDataAccess } from './entries-data-access';
 
 /**
  * Lives in the app shell's `modal` outlet, so any feature opens the Entry form by
@@ -13,6 +14,7 @@ import { EntryFormDialog, type EntryFormOutcome } from './entry-form-dialog';
  * underneath, and the URL makes an open form directly addressable.
  */
 @Component({
+  providers: [EntriesDataAccess],
   selector: 'app-entry-form-route',
   template: '',
 })

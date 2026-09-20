@@ -59,6 +59,8 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Use the `providedIn: 'root'` option for singleton services
 - Prefer the `@Service` decorator over `@Injectable({providedIn: 'root'})` for new singleton services (Angular v22+)
 - Use the `inject()` function instead of constructor injection
+- A `DataAccess` facade is deliberately **not** a singleton — it is page-provided, so the
+  two rules above do not apply to it (ADR 0016, and Data access below)
 
 ## Project: Diary Calendar
 
@@ -138,6 +140,12 @@ This repo is the Diary Calendar app. Before changing anything, read
   no state of its own — or a stateful **Store**, built on `@ngrx/signals`, for the rare
   case where a facade genuinely accumulates state beyond one async call. DataAccess is
   the default; promote to a Store only when it earns it.
+- A **DataAccess is provided by the route component that uses it** — `@Injectable()` with
+  no `providedIn`, listed in that component's `providers` — so it is rebuilt on every
+  visit and can never serve a cache from a previous one. Do NOT use `@Service()`,
+  `providedIn: 'root'`, or `Route.providers` for one: a lazy route's injector is cached
+  and reused across activations, so route providers are not per-visit. A **Store** stays
+  root-provided, because its state is meant to outlive the route. See ADR 0016.
 - Naming makes the kind legible: raw ports keep `*Repository`/`*Port`/`*Source`;
   DataAccess facades take a `*DataAccess` suffix, Stores a `*Store` suffix, and a
   facade with a distinct purpose-named identifier (e.g. `TrackerLookup`) is exempt from

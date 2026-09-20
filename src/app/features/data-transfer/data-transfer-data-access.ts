@@ -1,4 +1,4 @@
-import { computed, inject, resource, Service } from '@angular/core';
+import { Injectable, computed, inject, resource } from '@angular/core';
 import type { ExportBundle, RecordCounts } from '../../data/model/export-bundle';
 import { MAINTENANCE_PORT } from '../../data/ports/maintenance-port';
 
@@ -6,7 +6,7 @@ import { MAINTENANCE_PORT } from '../../data/ports/maintenance-port';
  * Stateless DataAccess (ADR 0008) over `MaintenancePort`. The selected file and whatever
  * the user has typed are the page's state; nothing here outlives a call.
  */
-@Service()
+@Injectable()
 export class DataTransferDataAccess {
   private readonly maintenance = inject(MAINTENANCE_PORT);
 

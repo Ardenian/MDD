@@ -1,4 +1,4 @@
-import { computed, inject, Injector, resource, Service, type Signal } from '@angular/core';
+import { Injectable, computed, inject, Injector, resource, type Signal } from '@angular/core';
 import type { Entry } from '../../data/model/entry';
 import { ENTRY_REPOSITORY } from '../../data/ports/entry-repository';
 
@@ -18,7 +18,7 @@ export interface CalendarEntriesView {
  * Stateless DataAccess (ADR 0008) over the Calendar's only read. The visible range and
  * the child filter are the page's state; they come in as a signal, so this holds none.
  */
-@Service()
+@Injectable()
 export class CalendarDataAccess {
   private readonly entries = inject(ENTRY_REPOSITORY);
   private readonly injector = inject(Injector);

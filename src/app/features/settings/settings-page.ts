@@ -22,6 +22,7 @@ const BUCKET_SIZES: readonly BucketSize[] = ['hour', 'day', 'week', 'month'];
  */
 @Component({
   selector: 'app-settings-page',
+  providers: [SettingsDataAccess],
   imports: [TranslatePipe, Select, CorrelationDefaultsEditor],
   template: `
     <!--

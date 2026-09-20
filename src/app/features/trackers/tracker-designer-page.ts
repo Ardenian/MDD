@@ -30,6 +30,7 @@ const TIME_MODES: readonly TimeMode[] = ['point', 'period', 'dayBucketed'];
  */
 @Component({
   selector: 'app-tracker-designer-page',
+  providers: [TrackersDataAccess],
   imports: [
     TranslatePipe,
     RouterLink,

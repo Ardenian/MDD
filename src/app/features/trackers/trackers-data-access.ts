@@ -1,4 +1,4 @@
-import { computed, inject, Injector, resource, Service, type Signal } from '@angular/core';
+import { Injectable, computed, inject, Injector, resource, type Signal } from '@angular/core';
 import { canAddChild } from '../../data/model/expansion-depth';
 import { DataError } from '../../data/model/data-error';
 import type { FieldDef, ReferenceFieldDef } from '../../data/model/field-def';
@@ -48,7 +48,7 @@ export interface PresetDraft {
  * state — it comes in as a `Signal` to `designerFor()` rather than being stored here,
  * which is what keeps this a DataAccess instead of a Store.
  */
-@Service()
+@Injectable()
 export class TrackersDataAccess {
   private readonly trackers = inject(TRACKER_REPOSITORY);
   private readonly presets = inject(PRESET_REPOSITORY);
@@ -243,9 +243,5 @@ export class TrackersDataAccess {
       trackerVersion: tracker.currentVersion,
       fields: version?.fields ?? [],
     };
-  }
-
-  reload(): void {
-    this.overview.reload();
   }
 }

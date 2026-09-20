@@ -15,6 +15,7 @@ import { exportFileName, type ImportProblem, parseBundle } from './import-bundle
  */
 @Component({
   selector: 'app-data-transfer-page',
+  providers: [DataTransferDataAccess],
   imports: [TranslatePipe],
   template: `
     <section class="transfer" data-testid="data-transfer-page">

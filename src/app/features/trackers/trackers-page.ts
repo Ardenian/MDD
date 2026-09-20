@@ -11,6 +11,7 @@ import { TrackersDataAccess } from './trackers-data-access';
  */
 @Component({
   selector: 'app-trackers-page',
+  providers: [TrackersDataAccess],
   imports: [TranslatePipe, TrackerListRows],
   template: `
     <section class="trackers" data-testid="trackers-page">
@@ -109,14 +110,6 @@ export class TrackersPage {
   private readonly router = inject(Router);
 
   protected readonly newName = signal('');
-
-  constructor() {
-    // Entries and Presets are written by other features, which must not reach into this
-    // one's facade (ADR 0002) — so nothing invalidates the counts from outside. The list
-    // is re-created on every navigation into it, which makes entering it the moment to
-    // re-read them.
-    this.access.reload();
-  }
 
   protected create(event: Event): void {
     event.preventDefault();
