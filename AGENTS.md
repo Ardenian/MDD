@@ -215,6 +215,12 @@ This repo is the Diary Calendar app. Before changing anything, read
   [`docs/feature-scope.md`](docs/feature-scope.md) too.
 - Each `SPEC.md` keeps its sections: Purpose, User stories / flows, Domain terms used,
   UI, Data & API contract touched, Test cases, Out of scope.
+- **Before numbering a new ADR, list [`docs/adr/`](docs/adr/) and take the next number
+  after the highest one there — read it at the moment you write the file, never from
+  memory or from an earlier listing in the same session.** Another ADR may have landed
+  since you last looked, and two files sharing a number is a merge conflict waiting to
+  happen. Same rule when citing an ADR by number: check the number still points at the
+  decision you mean.
 
 ### Domain language
 
