@@ -1,15 +1,16 @@
 You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
-## Model selection
+## Task routing
 
-- Use **Sonnet** for text-based tasks: writing or editing `SPEC.md`, ADRs, `CONTEXT.md`,
-  `docs/`, commit messages and PR descriptions, summaries, and answering questions about
-  the codebase.
-- Use **Opus** for code-based tasks: writing, refactoring, or debugging TypeScript,
-  Angular components, SCSS, and tests — anything that changes files under `src/`,
-  `api-spec/`, or `tests/`.
-- When a task mixes both, use Opus. A task that ends in a code change is a code-based
-  task, even when it starts with a spec update.
+- Text-based work — `SPEC.md`, ADRs, `CONTEXT.md`, `docs/`, commit messages and PR
+  descriptions, summaries — goes to the `spec-writer` agent. It does not touch code.
+- Code-based work — anything that changes files under `src/`, `api-spec/`, or `tests/` —
+  goes to the `feature-dev` agent.
+- A task that mixes both is code-based: route it to `feature-dev`, even when it starts
+  with a spec update.
+- Each agent's model is pinned in its `.claude/agents/<name>.md` frontmatter (Sonnet for
+  `spec-writer`, Opus for `feature-dev`), so it is set by the harness, not by anything
+  written here.
 
 ## TypeScript Best Practices
 
