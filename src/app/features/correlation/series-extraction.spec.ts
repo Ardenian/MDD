@@ -231,6 +231,26 @@ describe('extractSeries', () => {
     expect(nested?.values).toEqual([120, null, null]);
   });
 
+  it('reads a Child Entry as a Standalone reading when its parent is outside the dataset', () => {
+    // A scan scoped to the child Tracker alone, with the parent Tracker excluded, never
+    // loads the parent Entry — this is exactly that shape of dataset (ADR 0015).
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [tracker('ingredient', 'Ingredient')],
+      trackerVersions: [version('ingredient', [{ name: 'grams', dataType: 'decimal', required: false }])],
+      entries: [
+        entry('child', 'ingredient', '2026-03-10', [{ fieldName: 'grams', value: 120 }], {
+          parentEntryId: 'parent',
+        }),
+      ],
+    };
+
+    const standalone = find(extractSeries(dataset, axis), 'grams');
+
+    expect(standalone?.path).toBe('Ingredient');
+    expect(standalone?.values).toEqual([120, null, null]);
+  });
+
   it('resolves a nested Field two levels down', () => {
     const dataset: CorrelationDataset = {
       tags: [],

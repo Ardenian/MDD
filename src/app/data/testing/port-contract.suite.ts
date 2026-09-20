@@ -806,6 +806,43 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         expect(dataset.entries[0]?.trackerId).toBe(workout.id);
       });
 
+      it('excludes a child Entry\'s parent when only the child Tracker is scoped', async () => {
+        // Scope grows only downward — a scoped parent brings its children, but a scoped
+        // child never brings its parent along (ADR 0015). This is what lets a scan read
+        // a Reference field's target Tracker as a Standalone reading.
+        const meal = await layer.trackers.create({
+          name: 'Meal',
+          defaultTimeMode: 'point',
+          fields: [SATISFACTION],
+        });
+        const protein = await layer.trackers.create({
+          name: 'Protein',
+          defaultTimeMode: 'point',
+          fields: [SATISFACTION],
+        });
+        const parent = await layer.entries.create({
+          trackerId: meal.id,
+          parentEntryId: null,
+          placement: { kind: 'point', at: '2026-03-01T10:01:00.000Z' },
+          snapshot: [],
+          tags: [],
+        });
+        const child = await layer.entries.create({
+          trackerId: protein.id,
+          parentEntryId: parent.id,
+          placement: { kind: 'point', at: '2026-03-01T10:01:00.000Z' },
+          snapshot: [],
+          tags: [],
+        });
+
+        const dataset = await layer.correlation.loadEntriesForScope(
+          { start: '2026-03-01T00:00:00.000Z', end: '2026-03-02T00:00:00.000Z' },
+          { trackerIds: [protein.id] },
+        );
+
+        expect(dataset.entries.map((entry) => entry.id)).toEqual([child.id]);
+      });
+
       it('includes child Entries, which carry their own Tags', async () => {
         const tracker = await createSleepTracker();
         const parent = await layer.entries.create({

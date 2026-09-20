@@ -155,9 +155,23 @@ Tracker's Entry count ("occurrence"), a boolean or select Field's state, a numer
 presence value drawn from a nested child Entry Field, or the presence of a Tag. Keyed to
 an exact `(Tracker, Field name, data type)` as defined by whichever Tracker Version each
 Entry was snapshotted against — a Field rename across Tracker Versions produces two
-distinct Series rather than one continuous history.
+distinct Series rather than one continuous history. A Series drawn from a Child Entry is
+further keyed to the ancestor path reaching it, which isn't fixed — see **Standalone
+reading** and **Nested reading**.
 _Avoid_: signal (reserved in this codebase for Angular's `signal()`/`Signal<T>` — a
 Series is never called a Signal), metric, variable, feature
+
+**Standalone reading**:
+A Child Entry's Series keyed to its own Tracker alone, with no ancestor path — produced
+when a scan's scope excludes every one of its parent Trackers. See
+[ADR 0015](docs/adr/0015-scope-dependent-child-series-identity.md).
+_Avoid_: bare Series, unscoped Series
+
+**Nested reading**:
+A Child Entry's Series keyed to the full ancestor path leading to it (e.g.
+`Meal → Ingredients: Ingredient`) — produced when a scan's scope includes at least its
+immediate parent Tracker.
+_Avoid_: scoped Series, compound Series
 
 **Bucket**:
 The time unit Series are aligned to — hour, day, week, or month. An Entry contributes

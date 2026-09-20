@@ -219,6 +219,26 @@ of the ingredients I logged were dairy"* — a question about composition. If yo
 is *"did I eat any dairy that day"*, put a checkbox or a multi-select option on the Meal
 itself; that one is measured against meals, which is what you meant.
 
+### One Tracker referenced from more than one parent
+
+A Tracker can be a reference target for more than one other Tracker — a Protein Tracker
+might be a child of both a Meal Tracker and a Snack Tracker, say. Each parent produces
+its own Series (`Meal → Protein: grams`, `Snack → Protein: grams`), and the app never
+combines them: an average from one can't be added to an average from the other, and
+scanning both against a third Tracker tests two separate, weaker comparisons instead of
+the one you actually meant.
+
+To read the child on its own — one combined `Protein: grams`, regardless of which parent
+it came through — scope the scan to that child Tracker alone, with **every one of its
+parent Trackers switched off**. With no parent Tracker in scope, there's no ancestor to
+name the Series after, so it falls back to the Tracker's own name.
+
+You can't get both readings from the same scan. Run one scan scoped to the child alone
+for the combined question ("how much protein did I eat, from any source"), and a
+separate scan scoped to a parent for the compositional question ("how much of what I ate
+at meals was protein") — which is exactly the "narrow the scope, run several focused
+scans" habit from section 7 anyway.
+
 ---
 
 ## 4. Do not rename things mid-study
