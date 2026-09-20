@@ -9,7 +9,7 @@ import type { TrackerVersion } from './tracker-version';
  * Bumped whenever the bundle shape changes. An import whose version differs is rejected
  * outright — no partial or best-effort restore (ADR 0009).
  */
-export const EXPORT_FORMAT_VERSION = 1;
+export const EXPORT_FORMAT_VERSION = 2;
 
 export interface ExportBundle {
   readonly formatVersion: number;

@@ -1,5 +1,5 @@
 import { expect, test } from '../../testing/support/mount-fixture';
-import { ResultsTableObject } from './results-table.pom';
+import { ResultRowObject, ResultsTableObject } from './results-table.pom';
 
 /**
  * Sorting is a UI-only concern: it needs rows on screen, not a scan, a database or an
@@ -43,5 +43,41 @@ test.describe('Results table sorting', () => {
 
     await expect(table.firstRow().seriesA).toContainText('Apple');
     await expect(table.header('seriesA')).toHaveAttribute('aria-sort', 'ascending');
+  });
+});
+
+/**
+ * Two readings of one Field look identical by name alone, so the table says which is
+ * which every time — in words, since colour alone would not survive WCAG AA.
+ */
+test.describe('Results table Series labelling', () => {
+  test.beforeEach(async ({ harness }) => {
+    await harness.mount('results-table.scenario.ts#readings');
+  });
+
+  test('marks a total and a mean of the same Field apart', async ({ mountPage }) => {
+    const rows = ResultsTableObject.on(mountPage).rows;
+    const total = new ResultRowObject(rows.first());
+    const mean = new ResultRowObject(rows.last());
+
+    await expect(total.seriesA).toContainText('Meal → Protein · grams');
+    await expect(total.seriesABadge).toHaveText('Sum');
+    await expect(mean.seriesA).toContainText('Meal → Protein · grams');
+    await expect(mean.seriesABadge).toHaveText('Average');
+  });
+
+  test('names a synthetic duration without showing its internal marker', async ({ mountPage }) => {
+    const first = ResultsTableObject.on(mountPage).firstRow();
+
+    await expect(first.seriesB).toContainText('Sleep');
+    await expect(first.seriesB).not.toContainText('entryDuration');
+    await expect(first.seriesBBadge).toHaveText('Length');
+  });
+
+  test('leaves a fraction unbadged, having nothing to disambiguate', async ({ mountPage }) => {
+    const mean = new ResultRowObject(ResultsTableObject.on(mountPage).rows.last());
+
+    await expect(mean.seriesB).toContainText('Health · headache');
+    await expect(mean.seriesBBadge).toHaveCount(0);
   });
 });

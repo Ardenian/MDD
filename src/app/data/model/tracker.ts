@@ -1,4 +1,5 @@
 import type { AggregateMeta } from './aggregate-meta';
+import type { FieldDeclarations } from './field-declaration';
 import type { FieldDef } from './field-def';
 
 export type TimeMode = 'point' | 'period' | 'dayBucketed';
@@ -13,6 +14,8 @@ export interface Tracker extends AggregateMeta {
   readonly currentVersion: number;
   readonly archived: boolean;
   readonly draftFields: readonly FieldDef[];
+  /** Absent until a Field is declared; unversioned metadata, like `defaultTimeMode`. */
+  readonly fieldDeclarations?: FieldDeclarations;
 }
 
 export interface TrackerCreateInput {

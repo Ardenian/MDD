@@ -4,6 +4,7 @@ import type { TrackerSummary } from '../../data/facades/tracker-lookup';
 import { Multiselect } from '../../ui/components/multiselect/multiselect';
 import type { SelectOption } from '../../ui/components/select/select-option';
 import type { Series } from './series-extraction';
+import { seriesLabel, type SeriesWords } from './series-naming';
 import { TimeSeriesChart } from './time-series-chart';
 
 /**
@@ -100,6 +101,11 @@ export class SeriesOverlay {
   /** Every Series of the chosen Trackers, drawn or not. */
   readonly candidates = input.required<readonly Series[]>();
   readonly hiddenSeriesIds = input<readonly string[]>([]);
+  /**
+   * Already translated, since a chart legend and a checkbox need one plain string and
+   * this component injects nothing to translate with.
+   */
+  readonly seriesWords = input.required<SeriesWords>();
 
   readonly trackersChanged = output<readonly string[]>();
   readonly seriesToggled = output<string>();
@@ -120,6 +126,6 @@ export class SeriesOverlay {
   );
 
   protected labelOf(series: Series): string {
-    return [series.path, series.name].filter((part) => part !== '').join(' · ');
+    return seriesLabel(series, this.seriesWords());
   }
 }

@@ -4,6 +4,7 @@ import { correlate } from './correlation-stats';
 import type { PairResult } from './discovery';
 import { shift } from './lag-scan';
 import { ScatterPlot } from './scatter-plot';
+import { seriesLabel, type SeriesWords } from './series-naming';
 import { TimeSeriesChart } from './time-series-chart';
 
 /**
@@ -131,6 +132,8 @@ export class DirectedView {
   readonly lag = input.required<number>();
   readonly lagMin = input.required<number>();
   readonly lagMax = input.required<number>();
+  /** Already translated: a chart legend needs one plain string (see SeriesOverlay). */
+  readonly seriesWords = input.required<SeriesWords>();
   readonly pinned = input(false);
 
   readonly lagChanged = output<number>();
@@ -156,7 +159,7 @@ export class DirectedView {
     { id: this.pair().b.id, label: this.labelOf(this.pair().b), values: this.shifted() },
   ]);
 
-  protected labelOf(series: { path: string; name: string }): string {
-    return [series.path, series.name].filter((part) => part !== '').join(' · ');
+  protected labelOf(series: Parameters<typeof seriesLabel>[0]): string {
+    return seriesLabel(series, this.seriesWords());
   }
 }

@@ -8,6 +8,11 @@
       "spearman": "Spearman",
       "point-biserial": "point-biserial"
     },
+    "series": {
+      "average": "Average",
+      "sum": "Sum",
+      "entryDuration": "Length"
+    },
     "controls": {
       "from": "From",
       "to": "To",

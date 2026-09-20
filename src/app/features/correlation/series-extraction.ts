@@ -1,12 +1,23 @@
 import type { Entry } from '../../data/model/entry';
+import type { FieldDeclaration } from '../../data/model/field-declaration';
 import type { FieldDef } from '../../data/model/field-def';
+import type { FieldValue } from '../../data/model/field-values';
 import type { Tracker } from '../../data/model/tracker';
 import { trackerVersionKey } from '../../data/model/tracker-version';
 import type { CorrelationDataset } from '../../data/ports/correlation-data-source';
 import { type BucketAxis, bucketWeights } from './bucketing';
 import type { SeriesValue } from './correlation-stats';
 
-export type SeriesKind = 'numeric' | 'occurrence' | 'fraction' | 'tag';
+export type SeriesKind = 'numeric' | 'occurrence' | 'fraction' | 'sum' | 'tag';
+
+/**
+ * The name carried by the synthetic Series read from a Period Entry's own placement.
+ * Deliberately not a natural-language word: it is what the page matches on to swap in a
+ * translated label, and no Field a user names by hand is likely to collide with it.
+ */
+export const ENTRY_DURATION = 'entryDuration';
+
+const MINUTE_MS = 60_000;
 
 export interface Series {
   /** Stable and deterministic, so a scan of the same data always names things alike. */
@@ -79,8 +90,11 @@ export function extractSeries(dataset: CorrelationDataset, axis: BucketAxis): re
         denominator: weight,
       });
 
+      contributeDuration(builder, path, entry, index, weight);
+
+      const declarations = trackers.get(entry.trackerId)?.fieldDeclarations;
       for (const field of version.fields) {
-        contributeField(builder, path, entry, field, index, weight);
+        contributeField(builder, path, entry, field, index, weight, declarations?.[field.name]);
       }
       for (const tag of entry.tags) {
         builder.add({
@@ -141,6 +155,38 @@ function referenceFieldHolding(parent: Entry, childId: string): string | null {
   return null;
 }
 
+/**
+ * A Period's own length, as a Series nobody has to log. Points have no span at all, and
+ * a Day-bucketed Entry's span is always exactly one day — a Series that never varies
+ * cannot correlate with anything, so neither contributes.
+ */
+function contributeDuration(
+  builder: SeriesBuilder,
+  path: SeriesPath,
+  entry: Entry,
+  index: number,
+  weight: number,
+): void {
+  if (entry.placement.kind !== 'period') {
+    return;
+  }
+  const minutes = (Date.parse(entry.placement.end) - Date.parse(entry.placement.start)) / MINUTE_MS;
+  if (!Number.isFinite(minutes)) {
+    return;
+  }
+  builder.add({
+    id: `${path.id}|${ENTRY_DURATION}`,
+    source: `${path.id}|${ENTRY_DURATION}`,
+    path: path.label,
+    name: ENTRY_DURATION,
+    kind: 'numeric',
+    trackerId: entry.trackerId,
+    index,
+    numerator: weight * minutes,
+    denominator: weight,
+  });
+}
+
 function contributeField(
   builder: SeriesBuilder,
   path: SeriesPath,
@@ -148,6 +194,7 @@ function contributeField(
   field: FieldDef,
   index: number,
   weight: number,
+  declaration: FieldDeclaration | undefined,
 ): void {
   const raw = entry.snapshot.find((value) => value.fieldName === field.name)?.value;
 
@@ -166,7 +213,26 @@ function contributeField(
           index,
           numerator: weight * raw,
           denominator: weight,
+          baseline: declaration?.baseline,
         });
+        if (declaration?.sum === true) {
+          // The same numerator, read back without dividing by it (declared per Field, so
+          // a Field nobody asked to total costs no one a comparison — see the guide, §7).
+          builder.add({
+            id: `${path.id}|field|${field.name}|sum`,
+            source: `${path.id}|${field.name}`,
+            path: path.label,
+            name: field.name,
+            kind: 'sum',
+            trackerId: entry.trackerId,
+            index,
+            numerator: weight * raw,
+            denominator: weight,
+            // The same baseline as the mean: a Field declared both must not read over
+            // fewer Buckets as a total than it does as an average.
+            baseline: declaration.baseline,
+          });
+        }
       }
       return;
     }
@@ -182,6 +248,7 @@ function contributeField(
           index,
           numerator: raw ? weight : 0,
           denominator: weight,
+          baseline: declaration?.baseline,
         });
       }
       return;
@@ -230,6 +297,30 @@ function contributeField(
   }
 }
 
+/**
+ * A declared baseline as the Series reads it: a boolean is a 0..1 fraction like any
+ * other tick, a number is itself. Select options are not filled in this pass — one
+ * declared option has to zero-fill every sibling option's Series too, which the
+ * per-option accumulators can't see from here.
+ */
+function baselineValueOf(accumulator: Accumulator): number | null {
+  const { baseline, kind } = accumulator;
+  if (baseline === undefined || baseline === null) {
+    return null;
+  }
+  if (kind === 'fraction' && typeof baseline === 'boolean') {
+    return baseline ? 1 : 0;
+  }
+  if (
+    (kind === 'numeric' || kind === 'sum') &&
+    typeof baseline === 'number' &&
+    Number.isFinite(baseline)
+  ) {
+    return baseline;
+  }
+  return null;
+}
+
 interface Accumulator {
   readonly path: string;
   readonly name: string;
@@ -238,6 +329,8 @@ interface Accumulator {
   readonly trackerId: string;
   readonly numerator: Float64Array;
   readonly denominator: Float64Array;
+  /** What an unlogged Bucket means here, if the Field was declared one. */
+  readonly baseline: FieldValue | undefined;
   /** The first and last Bucket this Series has any data in; -1 until it has some. */
   firstIndex: number;
   lastIndex: number;
@@ -254,6 +347,7 @@ interface Contribution {
   readonly index: number;
   readonly numerator: number;
   readonly denominator: number;
+  readonly baseline?: FieldValue;
 }
 
 class SeriesBuilder {
@@ -279,6 +373,8 @@ class SeriesBuilder {
         trackerId,
         numerator: new Float64Array(this.bucketCount),
         denominator: new Float64Array(this.bucketCount),
+        // Declared per Field, so every contribution to this Series carries the same one.
+        baseline: contribution.baseline,
         firstIndex: -1,
         lastIndex: -1,
       };
@@ -336,9 +432,20 @@ class SeriesBuilder {
       }
       const denominator =
         accumulator.kind === 'tag' ? (tagTotals?.[index] ?? 0) : accumulator.denominator[index];
-      // A Bucket with no Entries to read says nothing; one with Entries and no matches
-      // says zero, which is very different.
-      values.push(denominator > 0 ? accumulator.numerator[index] / denominator : null);
+      if (denominator > 0) {
+        // A total is the same weighted numerator as the mean, simply not divided by it.
+        values.push(
+          accumulator.kind === 'sum'
+            ? accumulator.numerator[index]
+            : accumulator.numerator[index] / denominator,
+        );
+        continue;
+      }
+      // A Bucket with no Entries to read says nothing — unless the Field was declared a
+      // baseline, which is the user stating what not logging it means. Bounded to the
+      // window the Tracker was actually kept in, for the same reason `occurrence` is.
+      const kept = index >= accumulator.firstIndex && index <= accumulator.lastIndex;
+      values.push(kept ? baselineValueOf(accumulator) : null);
     }
     return values;
   }

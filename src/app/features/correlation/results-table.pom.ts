@@ -16,6 +16,15 @@ export class ResultRowObject {
     return this.root.getByTestId('seriesB');
   }
 
+  /** What a Series' number is — a mean, a total, a length — said in words, not colour. */
+  get seriesABadge(): Locator {
+    return this.seriesA.getByTestId('badge');
+  }
+
+  get seriesBBadge(): Locator {
+    return this.seriesB.getByTestId('badge');
+  }
+
   get lag(): Locator {
     return this.root.getByTestId('lag');
   }

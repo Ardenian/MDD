@@ -135,6 +135,25 @@ model Tracker {
 
   /** Uncommitted working schema; equals the current Version's fields right after a commit. */
   draftFields: FieldDef[];
+
+  /**
+   * How each Field's Series reads on the Correlation page, keyed by Field name. Metadata,
+   * never versioned schema: setting one mints no TrackerVersion, and it applies when
+   * reading Entries pinned to any Version. See ADR 0017.
+   */
+  fieldDeclarations?: Record<FieldDeclaration>;
+}
+
+/** Per-Field Correlation metadata. Both settings are opt-in and independent. */
+model FieldDeclaration {
+  /** Also produce a per-Bucket total alongside the Field's weighted mean. */
+  sum?: boolean;
+
+  /**
+   * What an unlogged Bucket means for this Field. Never inferred — its shape depends on
+   * the Field's data type, as a Snapshot value does.
+   */
+  baseline?: unknown;
 }
 
 model TrackerCreateInput {
@@ -398,6 +417,14 @@ namespace Trackers {
   @get
   @route("/{id}/versions/{version}")
   op readVersion(@path id: Uuid, @path version: int32): TrackerVersion | ApiError;
+  /** `null` clears the Field's declaration. Mints no TrackerVersion (ADR 0017). */
+  @put
+  @route("/{id}/declarations/{fieldName}")
+  op setFieldDeclaration(
+    @path id: Uuid,
+    @path fieldName: string,
+    @body declaration: FieldDeclaration | null,
+  ): Tracker | ApiError;
   @post
   @route("/{id}/archive")
   op archive(@path id: Uuid): Tracker | ApiError;

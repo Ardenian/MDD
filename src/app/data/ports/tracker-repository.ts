@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import type { FieldDeclaration } from '../model/field-declaration';
 import type { FieldDef } from '../model/field-def';
 import type { Tracker, TrackerCreateInput, TrackerMetaInput } from '../model/tracker';
 import type { TrackerVersion } from '../model/tracker-version';
@@ -12,6 +13,12 @@ export interface TrackerRepository {
   /** Mints `currentVersion + 1`; a Draft equal to the current Version mints nothing. */
   commitDraft(id: string): Promise<Tracker>;
   updateMeta(id: string, input: TrackerMetaInput): Promise<Tracker>;
+  /** Metadata, never schema: declaring one mints no Tracker Version. `null` clears it. */
+  setFieldDeclaration(
+    id: string,
+    fieldName: string,
+    declaration: FieldDeclaration | null,
+  ): Promise<Tracker>;
   archive(id: string): Promise<Tracker>;
   unarchive(id: string): Promise<Tracker>;
   getVersion(trackerId: string, version: number): Promise<TrackerVersion | undefined>;

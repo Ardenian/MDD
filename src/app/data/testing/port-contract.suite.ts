@@ -757,6 +757,40 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
       });
     });
 
+    describe('Field declarations', () => {
+      it('declares and clears a Field declaration without minting a Tracker Version', async () => {
+        const tracker = await createSleepTracker();
+
+        const declared = await layer.trackers.setFieldDeclaration(tracker.id, 'Satisfaction', {
+          sum: true,
+          baseline: 0,
+        });
+
+        // Metadata, not schema: the same rule that lets a Tracker be renamed in place.
+        expect(declared.currentVersion).toBe(tracker.currentVersion);
+        expect(declared.fieldDeclarations).toEqual({ Satisfaction: { sum: true, baseline: 0 } });
+
+        const cleared = await layer.trackers.setFieldDeclaration(tracker.id, 'Satisfaction', null);
+
+        expect(cleared.currentVersion).toBe(tracker.currentVersion);
+        expect(cleared.fieldDeclarations).toEqual({});
+      });
+
+      it('leaves other Fields declarations alone', async () => {
+        const tracker = await createSleepTracker([SATISFACTION, ENERGY]);
+
+        await layer.trackers.setFieldDeclaration(tracker.id, 'Satisfaction', { sum: true });
+        const both = await layer.trackers.setFieldDeclaration(tracker.id, 'Energy', {
+          baseline: 'low',
+        });
+
+        expect(both.fieldDeclarations).toEqual({
+          Satisfaction: { sum: true },
+          Energy: { baseline: 'low' },
+        });
+      });
+    });
+
     describe('CorrelationDataSource', () => {
       it('returns in-range Entries with the exact Versions they pin to', async () => {
         const tracker = await createSleepTracker();
@@ -806,7 +840,7 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         expect(dataset.entries[0]?.trackerId).toBe(workout.id);
       });
 
-      it('excludes a child Entry\'s parent when only the child Tracker is scoped', async () => {
+      it("excludes a child Entry's parent when only the child Tracker is scoped", async () => {
         // Scope grows only downward — a scoped parent brings its children, but a scoped
         // child never brings its parent along (ADR 0015). This is what lets a scan read
         // a Reference field's target Tracker as a Standalone reading.

@@ -73,7 +73,15 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
 - Client-side, explicitly triggered Discovery scan over in-scope Series pairs
 - Series extraction: numeric Field value; Tracker occurrence count; boolean/select
   state; nested child-Entry Field (numeric or presence), arbitrary depth; Tag presence
-  (including child Entries)
+  (including child Entries); a Period Entry's own length, synthesised from its placement
+  with no Field to fill in
+- Per-Field **declarations** on the Tracker header — metadata, never versioned schema
+  ([ADR 0017](adr/0017-field-declarations-are-tracker-metadata.md)): opt a numeric Field
+  into a per-Bucket **total** alongside its mean, and declare a **baseline** so an
+  unlogged Bucket reads as a stated value instead of a gap (boolean and numeric Fields)
+- A Child Entry reads **standalone or nested** depending on scan scope, which is how one
+  Tracker referenced by several parents is read as one Series
+  ([ADR 0015](adr/0015-scope-dependent-child-series-identity.md))
 - Buckets: hour / day / week / month; Entry contributes to every Bucket it touches;
   Fadeout as linearly weighted partial membership
 - Methods by pairing: Spearman (numeric×numeric), point-biserial (numeric×binary);
@@ -155,6 +163,17 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
 - Richer per-Field value visualisations (rating stars, gauges, etc.)
 - Deeper correlation: automatic lag recommendation from data, partial correlation,
   controlling for confounders
+- **The rest of the Field-declaration story** (see
+  [ADR 0017](adr/0017-field-declarations-are-tracker-metadata.md)), each deferred for its
+  own reason rather than as one batch:
+  - *Authoring declarations in the Tracker designer.* The data model, the port and the
+    extraction behaviour ship; the UI to set a baseline or tick "also total this" does
+    not, so declarations are settable only through the port today.
+  - *Baselines on select Fields.* One declared option has to zero-fill every sibling
+    option's Series, which the per-option accumulators can't see from where they run.
+  - *Baselines on an optional Reference-field child* (a Meal logged with no Protein
+    child). Needs iteration over parent Entries' *empty* reference Fields — nothing in
+    extraction walks those today, since only real Entries are ever visited.
 - **Zoom and pan on the correlation time axis.** v1 draws the Directed view and Series
   overlay over the whole scanned range at once, with no way to zoom into part of it.
   Descoped during the v1 build rather than built and rushed; the charts read their

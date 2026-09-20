@@ -237,7 +237,9 @@ describe('extractSeries', () => {
     const dataset: CorrelationDataset = {
       tags: [],
       trackers: [tracker('ingredient', 'Ingredient')],
-      trackerVersions: [version('ingredient', [{ name: 'grams', dataType: 'decimal', required: false }])],
+      trackerVersions: [
+        version('ingredient', [{ name: 'grams', dataType: 'decimal', required: false }]),
+      ],
       entries: [
         entry('child', 'ingredient', '2026-03-10', [{ fieldName: 'grams', value: 120 }], {
           parentEntryId: 'parent',
@@ -249,6 +251,185 @@ describe('extractSeries', () => {
 
     expect(standalone?.path).toBe('Ingredient');
     expect(standalone?.values).toEqual([120, null, null]);
+  });
+
+  it('gives a Period Entry a synthetic entryDuration in minutes', () => {
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [tracker('sleep', 'Sleep')],
+      trackerVersions: [version('sleep', [])],
+      entries: [
+        entry('a', 'sleep', '2026-03-10', [], {
+          placement: {
+            kind: 'period',
+            start: new Date(2026, 2, 10, 1, 0).toISOString(),
+            end: new Date(2026, 2, 10, 8, 30).toISOString(),
+          },
+        }),
+      ],
+    };
+
+    expect(find(extractSeries(dataset, axis), 'entryDuration')?.values).toEqual([450, null, null]);
+  });
+
+  it('gives no entryDuration to a Point or a Day-bucketed Entry', () => {
+    // A Point has no span at all; a Day-bucketed Entry's span is always exactly one day,
+    // and a Series that never varies cannot correlate with anything.
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [tracker('sleep', 'Sleep')],
+      trackerVersions: [version('sleep', [])],
+      entries: [
+        entry('a', 'sleep', '2026-03-10'),
+        entry('b', 'sleep', '2026-03-11', [], {
+          placement: { kind: 'point', at: new Date(2026, 2, 11, 9, 0).toISOString() },
+        }),
+      ],
+    };
+
+    expect(find(extractSeries(dataset, axis), 'entryDuration')).toBeUndefined();
+  });
+
+  it('adds a total alongside the mean only for a Field declared with sum', () => {
+    const declared = {
+      ...tracker('sleep', 'Sleep'),
+      fieldDeclarations: { Hours: { sum: true } },
+    } as const;
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [declared],
+      trackerVersions: [
+        version('sleep', [{ name: 'Hours', dataType: 'decimal', required: false }]),
+      ],
+      entries: [
+        entry('a', 'sleep', '2026-03-10', [{ fieldName: 'Hours', value: 7 }]),
+        entry('b', 'sleep', '2026-03-10', [{ fieldName: 'Hours', value: 9 }]),
+      ],
+    };
+
+    const series = extractSeries(dataset, axis);
+    const mean = series.find((candidate) => candidate.kind === 'numeric');
+    const total = series.find((candidate) => candidate.kind === 'sum');
+
+    expect(mean?.values[0]).toBe(8);
+    expect(total?.values[0]).toBe(16);
+    // The name stays the user's own word; the page adds the Average/Sum wording.
+    expect(total?.name).toBe('Hours');
+  });
+
+  it('gives a total the same declared baseline as its mean', () => {
+    const declared = {
+      ...tracker('water', 'Water'),
+      fieldDeclarations: { glasses: { sum: true, baseline: 0 } },
+    } as const;
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [declared],
+      trackerVersions: [
+        version('water', [{ name: 'glasses', dataType: 'integer', required: false }]),
+      ],
+      entries: [
+        entry('a', 'water', '2026-03-10', [{ fieldName: 'glasses', value: 4 }]),
+        entry('b', 'water', '2026-03-12', [{ fieldName: 'glasses', value: 6 }]),
+      ],
+    };
+
+    const series = extractSeries(dataset, axis);
+
+    // Otherwise the total would quietly correlate over fewer Buckets than the mean of
+    // the very same Entries.
+    expect(series.find((candidate) => candidate.kind === 'numeric')?.values).toEqual([4, 0, 6]);
+    expect(series.find((candidate) => candidate.kind === 'sum')?.values).toEqual([4, 0, 6]);
+  });
+
+  it('produces no sum Series for a numeric Field that was never declared', () => {
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [tracker('sleep', 'Sleep')],
+      trackerVersions: [
+        version('sleep', [{ name: 'Hours', dataType: 'decimal', required: false }]),
+      ],
+      entries: [entry('a', 'sleep', '2026-03-10', [{ fieldName: 'Hours', value: 7 }])],
+    };
+
+    expect(extractSeries(dataset, axis).some((series) => series.kind === 'sum')).toBe(false);
+  });
+
+  it('fills an unlogged Bucket with a declared boolean baseline, within the active window', () => {
+    const declared = {
+      ...tracker('health', 'Health'),
+      fieldDeclarations: { headache: { baseline: false } },
+    } as const;
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [declared],
+      trackerVersions: [
+        version('health', [{ name: 'headache', dataType: 'boolean', required: false }]),
+      ],
+      entries: [
+        entry('a', 'health', '2026-03-10', [{ fieldName: 'headache', value: true }]),
+        entry('b', 'health', '2026-03-12', [{ fieldName: 'headache', value: true }]),
+      ],
+    };
+
+    // The 11th has no Entry at all: without a declaration that is a gap, with one it is
+    // a recorded "no headache".
+    expect(find(extractSeries(dataset, axis), 'headache')?.values).toEqual([1, 0, 1]);
+  });
+
+  it('leaves an unlogged Bucket alone when no baseline was declared', () => {
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [tracker('health', 'Health')],
+      trackerVersions: [
+        version('health', [{ name: 'headache', dataType: 'boolean', required: false }]),
+      ],
+      entries: [
+        entry('a', 'health', '2026-03-10', [{ fieldName: 'headache', value: true }]),
+        entry('b', 'health', '2026-03-12', [{ fieldName: 'headache', value: true }]),
+      ],
+    };
+
+    expect(find(extractSeries(dataset, axis), 'headache')?.values).toEqual([1, null, 1]);
+  });
+
+  it('never fills a declared baseline outside the Tracker active window', () => {
+    const declared = {
+      ...tracker('health', 'Health'),
+      fieldDeclarations: { headache: { baseline: false } },
+    } as const;
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [declared],
+      trackerVersions: [
+        version('health', [{ name: 'headache', dataType: 'boolean', required: false }]),
+      ],
+      entries: [entry('a', 'health', '2026-03-11', [{ fieldName: 'headache', value: true }])],
+    };
+
+    // Same guard the occurrence Series already applies: emptiness before a Tracker was
+    // ever kept is not a recorded zero.
+    expect(find(extractSeries(dataset, axis), 'headache')?.values).toEqual([null, 1, null]);
+  });
+
+  it('fills an unlogged Bucket with a declared numeric baseline', () => {
+    const declared = {
+      ...tracker('water', 'Water'),
+      fieldDeclarations: { glasses: { baseline: 0 } },
+    } as const;
+    const dataset: CorrelationDataset = {
+      tags: [],
+      trackers: [declared],
+      trackerVersions: [
+        version('water', [{ name: 'glasses', dataType: 'integer', required: false }]),
+      ],
+      entries: [
+        entry('a', 'water', '2026-03-10', [{ fieldName: 'glasses', value: 4 }]),
+        entry('b', 'water', '2026-03-12', [{ fieldName: 'glasses', value: 6 }]),
+      ],
+    };
+
+    expect(find(extractSeries(dataset, axis), 'glasses')?.values).toEqual([4, 0, 6]);
   });
 
   it('resolves a nested Field two levels down', () => {

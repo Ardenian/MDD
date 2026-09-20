@@ -188,6 +188,17 @@ export interface FieldBase {
   required: boolean;
 }
 
+/** Per-Field Correlation metadata. Both settings are opt-in and independent. */
+export interface FieldDeclaration {
+  /** Also produce a per-Bucket total alongside the Field's weighted mean. */
+  sum?: boolean;
+  /**
+   * What an unlogged Bucket means for this Field. Never inferred — its shape depends on
+   * the Field's data type, as a Snapshot value does.
+   */
+  baseline?: any;
+}
+
 /** One property in a Tracker Version's schema. */
 export type FieldDef =
   | TextFieldDef
@@ -433,6 +444,12 @@ export interface Tracker {
   archived: boolean;
   /** Uncommitted working schema; equals the current Version's fields right after a commit. */
   draftFields: FieldDef[];
+  /**
+   * How each Field's Series reads on the Correlation page, keyed by Field name. Metadata,
+   * never versioned schema: setting one mints no TrackerVersion, and it applies when
+   * reading Entries pinned to any Version. See ADR 0017.
+   */
+  fieldDeclarations?: Record<string, FieldDeclaration>;
 }
 
 export interface TrackerCreateInput {
@@ -1136,6 +1153,27 @@ export class Api<
       this.request<Tracker, ApiError>({
         path: `/trackers/${id}/archive`,
         method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description `null` clears the Field's declaration. Mints no TrackerVersion (ADR 0017).
+     *
+     * @name TrackersSetFieldDeclaration
+     * @request PUT:/trackers/{id}/declarations/{fieldName}
+     */
+    trackersSetFieldDeclaration: (
+      id: string,
+      fieldName: string,
+      data: FieldDeclaration | null,
+      params: RequestParams = {},
+    ) =>
+      this.request<Tracker, ApiError>({
+        path: `/trackers/${id}/declarations/${fieldName}`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

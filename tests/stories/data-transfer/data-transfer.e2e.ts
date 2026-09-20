@@ -1,3 +1,4 @@
+import { EXPORT_FORMAT_VERSION } from '../../../src/app/data/model/export-bundle';
 import { DataTransferPageObject } from '../../../src/app/features/data-transfer/data-transfer-page.pom';
 import { SettingsPageObject } from '../../../src/app/features/settings/settings-page.pom';
 import { TrackersPageObject } from '../../../src/app/features/trackers/trackers-page.pom';
@@ -30,7 +31,7 @@ test.describe('Data Transfer', () => {
     await transfer.open();
     const bundle = await transfer.exportBundle();
 
-    expect(bundle['formatVersion']).toBe(1);
+    expect(bundle['formatVersion']).toBe(EXPORT_FORMAT_VERSION);
     expect(bundle['trackers']).toHaveLength(1);
     expect(bundle['trackerVersions']).toHaveLength(1);
     // The Storage Profile is device-local and never leaves it (ADR 0009).

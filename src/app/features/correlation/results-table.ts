@@ -3,6 +3,8 @@ import { Component, computed, input, output } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import type { PairResult } from './discovery';
 import { nextSort, type ResultColumn, type ResultSort, sortResults } from './results-sort';
+import { SeriesLabel } from './series-label';
+import type { Series } from './series-extraction';
 
 export interface ResultRow {
   readonly result: PairResult;
@@ -27,7 +29,7 @@ const COLUMNS: readonly ResultColumn[] = [
  */
 @Component({
   selector: 'app-results-table',
-  imports: [TranslatePipe, CdkTableModule],
+  imports: [TranslatePipe, CdkTableModule, SeriesLabel],
   template: `
     <table cdk-table [dataSource]="rows()" class="results" data-testid="results-table">
       @for (column of columns; track column) {
@@ -52,7 +54,11 @@ const COLUMNS: readonly ResultColumn[] = [
             </button>
           </th>
           <td cdk-cell *cdkCellDef="let row" [attr.data-testid]="column">
-            {{ cell(row, column) }}
+            @if (seriesOf(row, column); as series) {
+              <app-series-label [series]="series" />
+            } @else {
+              {{ cell(row, column) }}
+            }
           </td>
         </ng-container>
       }
@@ -137,6 +143,18 @@ export class ResultsTable {
       return 'none';
     }
     return this.currentSort().direction === 'asc' ? 'ascending' : 'descending';
+  }
+
+  /** The two Series columns render a label component; every other column is plain text. */
+  protected seriesOf(row: ResultRow, column: ResultColumn): Series | null {
+    switch (column) {
+      case 'seriesA':
+        return row.result.a;
+      case 'seriesB':
+        return row.result.b;
+      default:
+        return null;
+    }
   }
 
   protected cell(row: ResultRow, column: ResultColumn): string {

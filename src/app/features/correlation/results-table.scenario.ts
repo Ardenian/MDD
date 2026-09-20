@@ -4,10 +4,10 @@ import { provideCorrelationTranslations } from './i18n/correlation-translations'
 import type { PairResult } from './discovery';
 import { DEFAULT_RESULT_SORT } from './results-sort';
 import { ResultsTable } from './results-table';
-import type { Series } from './series-extraction';
+import { ENTRY_DURATION, type Series } from './series-extraction';
 
-function series(id: string, path: string, name: string): Series {
-  return { id, path, name, kind: 'numeric', source: id, trackerId: `${id}-tracker`, values: [] };
+function series(id: string, path: string, name: string, kind: Series['kind'] = 'numeric'): Series {
+  return { id, path, name, kind, source: id, trackerId: `${id}-tracker`, values: [] };
 }
 
 function pair(id: string, overrides: Partial<PairResult> = {}): PairResult {
@@ -46,5 +46,29 @@ export const ranked = scenario({
   },
   // The table asks to be sorted and re-renders from the answer; the Correlation page is
   // what answers, so the scenario has to answer too.
+  bindings: { sort: (value: ResultSort) => ({ currentSort: value }) },
+});
+
+/**
+ * One pair of readings of the same Field — a mean against a total — plus a synthetic
+ * duration. Which reading a number is has to be legible without opening anything.
+ */
+export const readings = scenario({
+  component: ResultsTable,
+  providers: [provideCorrelationTranslations()],
+  inputs: {
+    results: [
+      pair('totals', {
+        a: series('t-a', 'Meal → Protein', 'grams', 'sum'),
+        b: series('t-b', 'Sleep', ENTRY_DURATION),
+      }),
+      pair('means', {
+        a: series('m-a', 'Meal → Protein', 'grams'),
+        b: series('m-b', 'Health', 'headache', 'fraction'),
+      }),
+    ],
+    pinnedIds: [],
+    currentSort: DEFAULT_RESULT_SORT,
+  },
   bindings: { sort: (value: ResultSort) => ({ currentSort: value }) },
 });

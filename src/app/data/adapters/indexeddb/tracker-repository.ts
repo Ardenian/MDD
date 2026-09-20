@@ -1,3 +1,4 @@
+import type { FieldDeclaration } from '../../model/field-declaration';
 import { type FieldDef, fieldsEqual } from '../../model/field-def';
 import type { TimeMode, Tracker, TrackerCreateInput, TrackerMetaInput } from '../../model/tracker';
 import { type TrackerVersion, trackerVersionKey } from '../../model/tracker-version';
@@ -78,6 +79,25 @@ export class IndexedDbTrackerRepository implements TrackerRepository {
         changes.defaultTimeMode = input.defaultTimeMode;
       }
       return this.write(stampUpdate(tracker, changes, this.context));
+    });
+  }
+
+  async setFieldDeclaration(
+    id: string,
+    fieldName: string,
+    declaration: FieldDeclaration | null,
+  ): Promise<Tracker> {
+    return this.queue.run(async () => {
+      const tracker = await this.require(id);
+      const fieldDeclarations: Record<string, FieldDeclaration> = {
+        ...tracker.fieldDeclarations,
+      };
+      if (declaration === null) {
+        delete fieldDeclarations[fieldName];
+      } else {
+        fieldDeclarations[fieldName] = declaration;
+      }
+      return this.write(stampUpdate(tracker, { fieldDeclarations }, this.context));
     });
   }
 

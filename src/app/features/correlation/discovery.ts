@@ -151,11 +151,13 @@ export function candidatePairs(series: readonly Series[]): readonly (readonly [S
 }
 
 /**
- * Two counts or means are ranked against each other (Spearman); anything measured as a
- * 0..1 fraction goes through point-biserial, which is Pearson against that fraction.
+ * Two counts, means or totals are ranked against each other (Spearman); anything
+ * measured as a 0..1 fraction goes through point-biserial, which is Pearson against
+ * that fraction.
  */
 export function methodFor(a: Series, b: Series): CorrelationMethod {
-  const continuous = (series: Series) => series.kind === 'numeric' || series.kind === 'occurrence';
+  const continuous = (series: Series) =>
+    series.kind === 'numeric' || series.kind === 'occurrence' || series.kind === 'sum';
   return continuous(a) && continuous(b) ? 'spearman' : 'point-biserial';
 }
 

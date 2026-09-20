@@ -472,6 +472,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiError'
+  /trackers/{id}/declarations/{fieldName}:
+    put:
+      operationId: Trackers_setFieldDeclaration
+      description: "`null` clears the Field's declaration. Mints no TrackerVersion (ADR 0017)."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fieldName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tracker'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              allOf:
+                - $ref: '#/components/schemas/FieldDeclaration'
+              nullable: true
   /trackers/{id}/draft:
     put:
       operationId: Trackers_saveDraft
@@ -901,6 +938,17 @@ components:
         - singleSelect
         - multiSelect
         - reference
+    FieldDeclaration:
+      type: object
+      properties:
+        sum:
+          type: boolean
+          description: Also produce a per-Bucket total alongside the Field's weighted mean.
+        baseline:
+          description: |-
+            What an unlogged Bucket means for this Field. Never inferred — its shape depends on
+            the Field's data type, as a Snapshot value does.
+      description: Per-Field Correlation metadata. Both settings are opt-in and independent.
     FieldDef:
       anyOf:
         - $ref: '#/components/schemas/TextFieldDef'
@@ -1389,6 +1437,14 @@ components:
           items:
             $ref: '#/components/schemas/FieldDef'
           description: Uncommitted working schema; equals the current Version's fields right after a commit.
+        fieldDeclarations:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FieldDeclaration'
+          description: |-
+            How each Field's Series reads on the Correlation page, keyed by Field name. Metadata,
+            never versioned schema: setting one mints no TrackerVersion, and it applies when
+            reading Entries pinned to any Version. See ADR 0017.
       description: |-
         A Tracker's header: identity, metadata, and its current place in its own version
         history. The Field schema itself lives on `TrackerVersion`, not here. See ADR 0005.

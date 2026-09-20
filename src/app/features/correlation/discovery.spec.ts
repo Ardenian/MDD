@@ -58,6 +58,11 @@ describe('methodFor', () => {
     );
     expect(methodFor(series('a', [], 'tag'), series('b', [], 'occurrence'))).toBe('point-biserial');
   });
+
+  it('treats a total as continuous, the same as a mean', () => {
+    expect(methodFor(series('a', [], 'sum'), series('b', [], 'numeric'))).toBe('spearman');
+    expect(methodFor(series('a', [], 'sum'), series('b', [], 'fraction'))).toBe('point-biserial');
+  });
 });
 
 describe('runDiscovery', () => {

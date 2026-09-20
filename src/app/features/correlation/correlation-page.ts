@@ -8,6 +8,7 @@ import { CorrelationStore } from './correlation-store';
 import { DirectedView } from './directed-view';
 import { DEFAULT_RESULT_SORT, type ResultSort } from './results-sort';
 import { ResultsTable } from './results-table';
+import type { SeriesWords } from './series-naming';
 import { SeriesOverlay } from './series-overlay';
 
 const BUCKET_SIZES: readonly BucketSize[] = ['hour', 'day', 'week', 'month'];
@@ -81,6 +82,7 @@ const BUCKET_SIZES: readonly BucketSize[] = ['hour', 'day', 'week', 'month'];
       @if (store.selectedPair(); as pair) {
         <app-directed-view
           [pair]="pair"
+          [seriesWords]="seriesWords()"
           [lag]="store.selectedLag() ?? pair.lag"
           [lagMin]="store.lagRange().min"
           [lagMax]="store.lagRange().max"
@@ -93,6 +95,7 @@ const BUCKET_SIZES: readonly BucketSize[] = ['hour', 'day', 'week', 'month'];
 
       <app-series-overlay
         [trackers]="lookup.list()"
+        [seriesWords]="seriesWords()"
         [selectedTrackerIds]="store.preferences().overlayTrackerIds"
         [candidates]="store.overlayCandidates()"
         [hiddenSeriesIds]="store.preferences().hiddenSeriesIds"
@@ -148,6 +151,13 @@ export class CorrelationPage {
         showAll: this.store.showAll(),
       })),
   });
+
+  /** Translated once here, because a chart legend needs a plain string, not a pipe. */
+  protected readonly seriesWords = computed<SeriesWords>(() => ({
+    average: this.translate.instant('correlation.series.average'),
+    sum: this.translate.instant('correlation.series.sum'),
+    entryDuration: this.translate.instant('correlation.series.entryDuration'),
+  }));
 
   protected readonly bucketLabels = computed<Readonly<Record<BucketSize, string>>>(
     () =>

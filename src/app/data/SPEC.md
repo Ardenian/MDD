@@ -76,8 +76,9 @@ src/app/data/
 
 - **TrackerRepository**: `list()`, `get(id)`, `create(input)`, `saveDraft(id, fields)`,
   `commitDraft(id)` (mints the next `TrackerVersion`; no-op if unchanged from current),
-  `updateMeta(id, { name?, defaultTimeMode? })`, `archive(id)`, `unarchive(id)`,
-  `getVersion(trackerId, version)`. No `delete` — see ADR 0005.
+  `updateMeta(id, { name?, defaultTimeMode? })`,
+  `setFieldDeclaration(id, fieldName, declaration | null)`, `archive(id)`,
+  `unarchive(id)`, `getVersion(trackerId, version)`. No `delete` — see ADR 0005.
 - **EntryRepository**: `get`, `listByRange(start, end, opts)`, `listByTracker`,
   `listChildren(parentId)`, `create`, `update`, `softDelete`. `create` resolves
   `trackerVersion` from the target Tracker's `currentVersion` itself.

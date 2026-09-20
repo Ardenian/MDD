@@ -102,6 +102,11 @@ nothing for a service to own.
 - **Toast list** — renders `ToastService`'s queued messages and emits dismissals. The
   announcing is the service's job; this is only the visible surface, so `core/`'s layout
   shell injects the service and feeds this component.
+- **Badge** — a small text marker beside a label, for a distinction the label itself
+  cannot carry: Correlation uses it to say whether a number is an Average, a Sum or a
+  Length. Purely static, so it builds on no CDK/aria primitive. It always renders its own
+  visible words — the distinction has to survive without colour, which is both the WCAG
+  AA contract and the only way it reads in a dense table.
 - **Select / Multiselect** — `@angular/aria` Listbox/Select/Multiselect directives.
   Backs single-select and multi-select Fields on the Entry form, the reference-target
   and cardinality pickers in the Tracker designer, and Settings' Storage Profile picker.

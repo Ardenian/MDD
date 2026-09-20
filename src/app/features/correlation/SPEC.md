@@ -47,6 +47,8 @@ From in-scope data, derive these Series kinds:
 | Kind | Value per Bucket |
 |---|---|
 | Numeric Field | mean of the Field's values in the Bucket (integer/decimal) |
+| Numeric total (`sum`) | sum of the Field's weighted values in the Bucket — **only** for a Field declared `sum` (see Field declarations below); never produced by default, since every extra Series raises the multiple-comparison bar for every other pair |
+| Entry duration | a Period Entry's own span in minutes, synthesised from its placement — no Field to fill in, nothing persisted. Emitted **only** for `placement.kind === 'period'`: a Point has no span, and a Day-bucketed Entry's span is always exactly one day, so it could never vary. Carries the reserved name `entryDuration`, which the page swaps for a translated label |
 | Occurrence | count of Entries of a Tracker touching the Bucket |
 | Boolean / select state | fraction of the Bucket's Entries where the Field = a given value (one Series per option; multi-select: per selected option) |
 | Nested child Field | same as numeric/boolean but drawn from child Entries reached through reference Fields, to arbitrary depth (path shown in the Series name) |
@@ -68,12 +70,34 @@ Day-bucketed Entry is smaller than the Bucket — a day inside a weekly Bucket �
 gives it that day's share, one seventh.
 
 A numeric Series is a **weighted** mean: an Entry half-present in a Bucket has half a say
-in it.
+in it. A `sum` Series is that same weighted numerator, simply not divided by it.
+
+### Field declarations
+
+Per-Field metadata on the Tracker header, never part of the versioned Field schema —
+declaring one mints no Tracker Version, and it applies when reading Entries pinned to any
+Version ([ADR 0017](../../../../docs/adr/0017-field-declarations-are-tracker-metadata.md)).
+Two independent settings, both opt-in, both authored once:
+
+- **`sum`** — also produce the total Series described above.
+- **`baseline`** — what "I did not log this Tracker in this Bucket" means for this Field.
+  Given one, a Bucket with no Entries at all reads as that value instead of as a gap,
+  bounded to the window between the Series' first and last Entry for exactly the reason
+  `occurrence` is: emptiness before a Tracker was ever kept is not a recorded zero.
+  **Never inferred** — `false` is the calm case for `headache` and the alarming one for
+  `noHeadache`; `0` is a neutral baseline for grams and an out-of-range worst case for a
+  1–5 rating. No declaration, no filling.
+
+Supported for boolean and numeric Fields. Select options are **out of scope for now**: one
+declared option must zero-fill every sibling option's Series, which the per-option
+accumulators cannot see. Optional Reference-field children (a Meal logged with no Protein
+child) are likewise a follow-up — filling those needs iteration over parent Entries'
+*empty* reference Fields, which nothing in extraction does today.
 
 ## Method
 
-- numeric × numeric → **Spearman** rank correlation
-- numeric × binary/fraction → **point-biserial** (Pearson with a 0..1 Series)
+- numeric/total × numeric/total → **Spearman** rank correlation
+- numeric/total × binary/fraction → **point-biserial** (Pearson with a 0..1 Series)
 - Each result: effect size (−1..1), overlapping-Bucket count `n`, and a p-value.
 - Cramér's V / categorical×categorical is **out of scope for v1** — every v1 Series kind
   reduces to a numeric mean or a [0,1] fraction per Bucket (even select Fields, which are
@@ -114,6 +138,13 @@ in it.
   no sort primitive — see ADR 0006). This is v1's only Table consumer; it stays here
   rather than in `ui/` until a second feature needs one (`ui/SPEC.md`'s promotion rule).
   Row → Directed view.
+- **Series labelling**: wherever a Series is named, what its number *is* is said in
+  words next to it, via `ui/`'s **Badge** — "Average" for a mean, "Sum" for a total,
+  "Length" for a synthetic `entryDuration`. A mean and a total of the same Field are
+  otherwise indistinguishable by name, and the distinction has to survive without colour
+  (WCAG AA). The wording lives in the page's translations, never in `Series.name`, which
+  stays the user's own word for the Field. A fraction or occurrence carries no badge:
+  there is nothing to disambiguate it from.
 - **Directed view**: shared time-axis chart (two Series), scatter plot, lag slider,
   method + n + p-value readout, "add to pinned".
 - **Series overlay**: pick one or more Trackers via `TrackerLookup`, then toggle which of
@@ -179,7 +210,11 @@ plain data — but it is not what v1 ships.
   proportional weights; week/month boundaries (incl. month lengths) correct.
 - `series-extraction`: numeric mean per Bucket; occurrence count; select-fraction with
   0 matching Entries → 0 (not undefined); multi-select yields one Series per option;
-  nested child path of depth 2 resolves; Tag fraction correct.
+  nested child path of depth 2 resolves; Tag fraction correct; a Child Entry whose parent
+  is outside the scoped dataset reads as a Standalone reading (ADR 0015); `entryDuration`
+  present for a Period and absent for Point/Day-bucketed; a `sum` Series appears only for
+  a declared Field; a declared baseline fills an Entry-less Bucket inside the active
+  window and never outside it, and no baseline leaves the gap untouched.
 - `correlation-stats`: Spearman against known fixtures incl. ties; point-biserial equals
   Pearson on a 0/1 Series; p-values within tolerance of reference values; `n < 3` → no
   result, not a throw.

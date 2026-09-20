@@ -47,7 +47,9 @@ For every Bucket, a Series holds either a number or **nothing at all**.
 
 A day where you simply did not open the app is *nothing*. A day where you logged your
 check-in and left every box unticked is a row of real **zeros**. These look similar in
-your diary and are worlds apart to a scan. Section 2 is entirely about this.
+your diary and are worlds apart to a scan. Section 2 is entirely about this — including
+how to tell the app that, for one particular Field, *nothing* should be read as a
+specific answer after all.
 
 ### An Entry can be spread across several Buckets
 
@@ -93,6 +95,23 @@ tick left unticked. An unticked box is stored as a real *no*, not as a blank —
 app, unchecked is an answer, not an absence. That turns the same Series into a clean run
 of zeros and ones with something to compare.
 
+**If a daily check-in isn't how you work, tell the app what silence means instead.** On a
+checkbox or number Field you can set a **baseline**: the value to read for a Bucket where
+you logged nothing at all. Set *fever*'s baseline to unticked and the days you never
+opened the app stop being blanks and become real *no*s — same clean run of zeros and
+ones, no change to how you log.
+
+Two things to be honest about. The app never guesses this for you: `false` is the calm
+answer for a box called *fever*, but the alarming one for a box called *no fever*, and
+`0` is a sensible baseline for grams while being an impossible worst score on a 1–5
+rating. And a baseline really is an assumption — a day you had a fever but forgot to log
+now counts as a day without one. Set it where you genuinely believe "if I didn't log it,
+it didn't happen"; leave it alone where you don't. A Field with no baseline behaves
+exactly as it always has.
+
+Baselines only fill Buckets inside the stretch where you were actually keeping that
+Tracker — never before your first Entry for it or after your last.
+
 Two useful exceptions:
 
 - **Counting Series behave better.** Every Tracker also produces a Series counting its
@@ -112,7 +131,7 @@ Two useful exceptions:
 
 | Field type | What the scan gets from it | Use it for |
 |---|---|---|
-| **Integer / Decimal** | One Series: the weighted average per Bucket | Anything measurable, and anything with an order |
+| **Integer / Decimal** | One Series: the weighted average per Bucket — plus a second, the Bucket's total, if you turn that on for the Field | Anything measurable, and anything with an order |
 | **Boolean** (checkbox) | One Series: the share that were ticked | A yes/no fact that can co-occur with others |
 | **Single-select** | One Series **per option** | Genuinely unordered categories |
 | **Multi-select** | One Series **per option** | Unordered categories where several apply at once |
@@ -124,20 +143,24 @@ first-class path — the app's own worked example, *Meal → Ingredient = Dairy*
 *Symptom = Bloating*, is built entirely out of select options. What follows is about
 picking the shape that gives a true effect the best chance of surfacing.
 
-### Numbers: beware "average", it is never a total
+### Numbers: an average by default, a total only if you ask
 
-A numeric Series is the **average per Bucket**, never the sum.
+A numeric Series is the **average per Bucket** unless you say otherwise.
 
 If you log protein per meal and scan at daily Buckets, you get *average grams per meal* —
 not grams per day. Three small meals and one large one can produce the same average on
 wildly different intake, so a real effect of total intake can hide completely.
 
-If daily total is what you actually care about, either:
+If daily total is what you care about, **turn on *Also total this* for that Field** when
+editing the Tracker. The Field then produces a second Series — the Bucket's total
+alongside its average — and both are labelled, so a result row always says which one it
+is. Nothing about how you log changes; the total is read from the Entries you already
+made.
 
-- log one Day-bucketed Entry per day carrying the total, so average and total are the
-  same thing; or
-- read the average alongside that Tracker's Entry-count Series (meals per day) and
-  interpret them together. The app will not multiply them for you.
+It is off by default on purpose. Every extra Series is another comparison in every scan,
+and the bar a finding has to clear rises with the number of comparisons (see section 7) —
+so a Field nobody wanted a total for shouldn't cost everyone else a result. Turn it on
+where "how much altogether?" is a question you actually have.
 
 ### Things with an order: use a number, not a single-select
 
@@ -269,7 +292,12 @@ a renamed Field's history back together is a known future feature, not something
   give or take an hour" is a Point with a one-hour Fadeout — it still counts as one full
   event, just smeared across the uncertainty. A fake 2–4pm Period, by contrast, is read as
   *coverage* and counts for less in each Bucket it touches.
-- Use a **Period** when something genuinely lasted — a sleep, a shift, a hike.
+- Use a **Period** when something genuinely lasted — a sleep, a shift, a hike. **You get
+  its length for free**: every Period Entry produces a *Length* Series from its own start
+  and end, with no Field to fill in and nothing extra to log. So "does more protein go
+  with shorter sleep?" is answerable without ever typing an hours figure. (Points have no
+  length, and a Day-bucketed Entry is always exactly one day long, so neither produces
+  one — a measurement that never varies can't line up with anything.)
 - Use **Day-bucketed** when you honestly do not know or do not care about the time. At
   daily Buckets this costs you nothing at all; it only matters if you scan by hour.
 
@@ -380,7 +408,7 @@ Say you want to connect energy, food, and a cluster of physical symptoms.
 
 | Field | Type | Why |
 |---|---|---|
-| Protein (g) | Decimal | Averaged per Bucket — add a daily total Entry if intake matters |
+| Protein (g) | Decimal | Averaged per Bucket — turn on *Also total this* if daily intake is the question |
 | Meal type | Single-select: breakfast / lunch / dinner / snack | Truly unordered |
 | Ingredients | Multi-select: dairy / gluten / … | Fine here: you want these against *symptoms*, not against each other |
 
@@ -397,6 +425,10 @@ Leave the other Trackers out until you have a question about them.
 
 - [ ] One Entry a day for slow-moving measures, including days when nothing happened
 - [ ] Unticked boxes left unticked, not left blank — that is your zero
+- [ ] Or, where a daily rhythm isn't realistic, a **baseline** set on the Field so an
+      unlogged Bucket reads as the answer you'd have given
+- [ ] *Also total this* turned on for the numeric Fields where "how much altogether?" is
+      the real question — and left off everywhere else
 - [ ] Ordered things (energy, pain, mood, sleep) stored as integers, not select options
 - [ ] Checkboxes that can co-occur kept as separate Fields, not one multi-select
 - [ ] Option lists short, each option used regularly
@@ -422,6 +454,12 @@ contract is [`SPEC.md`](../src/app/features/correlation/SPEC.md).
 | Checkbox/select denominators are Entries of that path | `series-extraction.ts` → `contributeField` |
 | Unticked checkbox is a recorded `false`, never absent | [`data/model/field-values.ts`](../src/app/data/model/field-values.ts) → `emptyValueFor`, `isEmptyValue` |
 | Numeric Series are weighted means | `series-extraction.ts` → `contributeField`, integer/decimal branch |
+| A declared Field also yields a total; the same numerator, undivided | `series-extraction.ts` → `contributeField` (`sum` branch), `valuesOf` ([ADR 0017](adr/0017-field-declarations-are-tracker-metadata.md)) |
+| A declared baseline fills Entry-less Buckets, inside the active window only | `series-extraction.ts` → `valuesOf`, `baselineValueOf` |
+| Declarations are Tracker metadata, so setting one mints no Tracker Version | [`data/model/field-declaration.ts`](../src/app/data/model/field-declaration.ts); `TrackerRepository.setFieldDeclaration` ([ADR 0017](adr/0017-field-declarations-are-tracker-metadata.md)) |
+| A Period Entry's own length, with no Field to fill in | `series-extraction.ts` → `contributeDuration` |
+| Average / Sum / Length said in words beside a Series | `series-label.ts`; `ui/components/badge/badge.ts` |
+| Excluding a parent Tracker from scope collapses its children to a standalone reading | `data/adapters/indexeddb/correlation-data-source.ts` → `scopeEntries`; `series-extraction.ts` → `pathOf` ([ADR 0015](adr/0015-scope-dependent-child-series-identity.md)) |
 | Text, long text and reference Fields yield no Series | `series-extraction.ts` → `contributeField`, final branch |
 | Tag Series share one denominator: every Entry in the Bucket | `series-extraction.ts` → `SeriesBuilder.addDenominator` |
 | Series identity from the pinned Tracker Version's names; renames split history | `series-extraction.ts` → `extractSeries`, `pathOf` ([ADR 0005](adr/0005-tracker-versioning.md)) |
