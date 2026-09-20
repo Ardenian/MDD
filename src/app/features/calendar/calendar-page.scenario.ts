@@ -6,7 +6,6 @@ import { TRACKER_REPOSITORY } from '../../data/ports/tracker-repository';
 import { provideInMemoryPorts } from '../../data/testing/scenario-ports';
 import { localeFeature } from '../../core/state/locale/locale.feature';
 import { UiLocaleService } from '../../ui/services/ui-locale.service';
-import { CalendarDataAccess } from './calendar-data-access';
 import { CalendarPage } from './calendar-page';
 import { provideCalendarTranslations } from './i18n/calendar-translations';
 
@@ -20,10 +19,15 @@ const providers = [
   provideRouter([]),
   provideStore(),
   provideState(localeFeature),
-  // Built in the scenario's injector rather than the root one, so they see the fakes.
-  CalendarDataAccess,
+  // `CalendarDataAccess` needs no entry here: it is `@Injectable()` with no
+  // `providedIn` and `CalendarPage` provides it itself (ADR 0016), so the page builds it
+  // per mount in its node injector, which falls back to the fakes below.
+  //
+  // These two are `@Service()` singletons, so left alone they would be built in the root
+  // injector — where the fakes do not exist. Naming them here builds them in the
+  // scenario's own injector instead, which is the whole point of having one.
   TrackerLookup,
-  // Also `providedIn: 'root'`, and it injects the Store provided just above.
+  // Injects the Store provided just above.
   UiLocaleService,
   provideInMemoryPorts(),
 ];

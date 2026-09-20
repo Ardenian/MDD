@@ -4,6 +4,8 @@ import type { TrackerSummary } from '../../data/facades/tracker-lookup';
 import type { BucketSize, Guardrails, LagRange } from '../../data/model/settings';
 import { Select } from '../../ui/components/select/select';
 import type { SelectOption } from '../../ui/components/select/select-option';
+import type { Series } from './series-extraction';
+import { seriesLabel, type SeriesWords } from './series-naming';
 
 export interface ScanSettings {
   readonly start: string;
@@ -78,6 +80,56 @@ export interface ScanSettings {
             </li>
           }
         </ul>
+
+        <!--
+          The second tier: Tracker scope decides what a scan loads and therefore what
+          each Series is, and this narrows what is then compared. Never the other way
+          round — see ADR 0015 and the Series-scope ADR.
+        -->
+        <fieldset class="controls__group" data-testid="series-scope">
+          <legend>{{ 'correlation.controls.seriesScope' | translate }}</legend>
+          <p class="controls__hint" data-testid="series-scope-hint">
+            {{
+              (scopeSeriesIds().length === 0
+                ? 'correlation.controls.seriesScopeAll'
+                : 'correlation.controls.seriesScopeSome'
+              ) | translate: { count: scopeSeriesIds().length }
+            }}
+          </p>
+          <!--
+            Always in the DOM, so a screen reader is already watching it when a
+            selection is dropped rather than meeting the region and its message at once.
+          -->
+          <p class="controls__notice" role="status" data-testid="series-scope-notice">
+            @if (droppedSeriesCount() > 0) {
+              {{
+                'correlation.controls.seriesScopeDropped'
+                  | translate: { count: droppedSeriesCount() }
+              }}
+            }
+          </p>
+          @if (seriesCandidates().length === 0) {
+            <p class="controls__hint" data-testid="series-scope-empty">
+              {{ 'correlation.controls.seriesScopeEmpty' | translate }}
+            </p>
+          } @else {
+            <ul class="controls__trackers">
+              @for (series of seriesCandidates(); track series.id) {
+                <li>
+                  <label class="controls__toggle" [attr.data-testid]="series.id">
+                    <input
+                      type="checkbox"
+                      data-testid="series-scope-toggle"
+                      [checked]="isChosen(series.id)"
+                      (change)="seriesScopeToggled.emit(series.id)"
+                    />
+                    <span>{{ labelOf(series) }}</span>
+                  </label>
+                </li>
+              }
+            </ul>
+          }
+        </fieldset>
       </fieldset>
 
       <fieldset class="controls__group" data-testid="guardrails">
@@ -219,17 +271,37 @@ export interface ScanSettings {
       color: var(--color-ink-muted);
       font-size: var(--text-sm);
     }
+
+    .controls__notice {
+      margin: 0;
+      font-size: var(--text-sm);
+    }
+
+    /* Nothing to say, nothing to show — but the live region stays in the DOM. */
+    .controls__notice:not(:empty) {
+      border-left: var(--space-1) solid var(--color-warning);
+      padding-left: var(--space-3);
+    }
   `,
 })
 export class CorrelationControls {
   readonly settings = model.required<ScanSettings>();
   readonly trackers = input.required<readonly TrackerSummary[]>();
   readonly scopeTrackerIds = input.required<readonly string[]>();
+  /** The Series of the in-scope Trackers, as the last scan extracted them. */
+  readonly seriesCandidates = input.required<readonly Series[]>();
+  /** Empty means every candidate is in scope, as `SeriesScope.seriesIds` reads it. */
+  readonly scopeSeriesIds = input.required<readonly string[]>();
+  /** Selections the last scan's extraction no longer produced, and so dropped. */
+  readonly droppedSeriesCount = input(0);
+  /** Series labels are composed from translated words: this component injects nothing. */
+  readonly seriesWords = input.required<SeriesWords>();
   readonly scanning = input(false);
   /** Bucket-size labels arrive translated: this component injects nothing. */
   readonly bucketLabels = input.required<Readonly<Record<BucketSize, string>>>();
 
   readonly scopeToggled = output<string>();
+  readonly seriesScopeToggled = output<string>();
   readonly scanRequested = output<void>();
   readonly cancelled = output<void>();
 
@@ -244,6 +316,16 @@ export class CorrelationControls {
       label: this.bucketLabels()[size],
     })),
   );
+
+  /** An empty selection means every candidate, so every box starts ticked. */
+  protected isChosen(seriesId: string): boolean {
+    const chosen = this.scopeSeriesIds();
+    return chosen.length === 0 || chosen.includes(seriesId);
+  }
+
+  protected labelOf(series: Series): string {
+    return seriesLabel(series, this.seriesWords());
+  }
 
   protected patch(change: Partial<ScanSettings>): void {
     this.settings.update((settings) => ({ ...settings, ...change }));

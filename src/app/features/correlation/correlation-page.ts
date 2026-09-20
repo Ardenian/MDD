@@ -43,9 +43,14 @@ const BUCKET_SIZES: readonly BucketSize[] = ['hour', 'day', 'week', 'month'];
           [(settings)]="settings"
           [trackers]="lookup.list()"
           [scopeTrackerIds]="store.scopeTrackerIds()"
+          [seriesCandidates]="store.scopeSeriesCandidates()"
+          [scopeSeriesIds]="store.preferences().scopeSeriesIds"
+          [droppedSeriesCount]="store.droppedScopeSeriesCount()"
+          [seriesWords]="seriesWords()"
           [scanning]="store.isScanning()"
           [bucketLabels]="bucketLabels()"
           (scopeToggled)="store.toggleScopeTracker($event)"
+          (seriesScopeToggled)="store.toggleScopeSeries($event)"
           (scanRequested)="scan()"
           (cancelled)="store.cancel()"
         />
@@ -64,6 +69,18 @@ const BUCKET_SIZES: readonly BucketSize[] = ['hour', 'day', 'week', 'month'];
         @if (store.cancelled()) {
           <p data-testid="scan-cancelled">{{ 'correlation.cancelled' | translate }}</p>
         }
+
+        <!--
+          Both counts, because the correction's bar is set by the Test count: a pair is
+          correlated once per lag, so the work is several times the pair count and a
+          reader who only saw the pairs would under-read how high the bar was set.
+        -->
+        <p class="correlation__summary" data-testid="results-summary">
+          {{
+            'correlation.summary'
+              | translate: { pairs: store.pairCount(), tests: store.testCount() }
+          }}
+        </p>
 
         @if (store.results().length === 0) {
           <p data-testid="results-empty">{{ 'correlation.empty' | translate }}</p>
@@ -119,6 +136,11 @@ const BUCKET_SIZES: readonly BucketSize[] = ['hour', 'day', 'week', 'month'];
     .correlation__progress {
       margin: 0;
       font-weight: var(--weight-medium);
+    }
+
+    .correlation__summary {
+      margin: 0;
+      color: var(--color-ink-muted);
     }
   `,
 })

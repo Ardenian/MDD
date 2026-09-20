@@ -132,7 +132,7 @@ nothing for a service to own.
   (stable CDK ships no sort primitive — that's Material-only). Generic and reusable the
   moment a second feature needs tabular data; **not built yet** — Correlation is v1's
   only consumer, so the concrete sortable results table (with Correlation's own column
-  definitions: Signal A, Signal B, lag, coefficient, n, significance) lives in
+  definitions: Series A, Series B, lag, coefficient, n, significance) lives in
   `features/correlation/` for now, following the promotion rule below.
 
 ## Design tokens

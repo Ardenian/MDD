@@ -161,6 +161,13 @@ reading** and **Nested reading**.
 _Avoid_: signal (reserved in this codebase for Angular's `signal()`/`Signal<T>` — a
 Series is never called a Signal), metric, variable, feature
 
+**Series key**:
+What identifies a Series for selection and comparison: `(Tracker, Field name, data
+type)`, plus the ancestor path for a Child Entry's Nested reading. Not stable across
+scope changes — a Series key is only meaningful relative to the Tracker scope that
+produced it (ADR 0015).
+_Avoid_: series id, series name
+
 **Standalone reading**:
 A Child Entry's Series keyed to its own Tracker alone, with no ancestor path — produced
 when a scan's scope excludes every one of its parent Trackers. See
@@ -184,6 +191,13 @@ An offset, measured in Buckets, applied to one Series before correlating, so tha
 cause preceding an effect can be detected. The user sets the Lag range to scan; the app
 reports the strongest Lag alongside the zero-Lag result.
 _Avoid_: delay, offset, shift
+
+**Test**:
+One correlation of one Series pair at one Lag. The unit the Benjamini–Hochberg
+correction ranges over — a Discovery scan of 1,700 pairs across a seven-Bucket Lag
+range runs roughly 12,000 Tests, not 1,700. Only the strongest-Lag Test of each pair
+is shown, but every Test that ran counts toward the correction.
+_Avoid_: comparison, trial, run
 
 **Discovery scan**:
 An explicitly triggered, client-side pass over every pair of in-scope Series across the

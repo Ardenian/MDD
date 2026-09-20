@@ -25,20 +25,24 @@ export interface DayBucketedPlacement {
 
 export type Placement = PointPlacement | PeriodPlacement | DayBucketedPlacement;
 
-export interface Interval {
+/** A span between two instants, in epoch milliseconds. Boundary-inclusive. */
+export interface TimeSpan {
   readonly start: number;
   readonly end: number;
 }
+
+/** A `TimeSpan` that is specifically a placement's Fadeout-resolved coverage. */
+export type CoveredSpan = TimeSpan;
 
 const MINUTE_MS = 60_000;
 
 /**
  * The absolute span a placement covers once its Fadeout is applied — the single
- * definition of "covered interval" for the whole app. The entries feature's `fadeout`
+ * definition of "covered span" for the whole app. The entries feature's `fadeout`
  * module and the IndexedDB range query both resolve through here rather than each
  * re-deriving the arithmetic.
  */
-export function resolveCoveredInterval(placement: Placement): Interval {
+export function resolveCoveredSpan(placement: Placement): CoveredSpan {
   switch (placement.kind) {
     case 'point': {
       const at = Date.parse(placement.at);
@@ -58,7 +62,7 @@ export function resolveCoveredInterval(placement: Placement): Interval {
     case 'dayBucketed': {
       // The user's own calendar day, not UTC's — and via the Date constructor rather than
       // a fixed 24h, so a daylight-saving day is 23 or 25 hours long, as it really is.
-      // Intervals are boundary-inclusive, so the day ends on its last millisecond rather
+      // Spans are boundary-inclusive, so the day ends on its last millisecond rather
       // than at the next midnight, which would make it touch the following day too.
       const [year, month, day] = placement.day.split('-').map(Number);
       return {
@@ -69,7 +73,7 @@ export function resolveCoveredInterval(placement: Placement): Interval {
   }
 }
 
-export function intervalsOverlap(a: Interval, b: Interval): boolean {
+export function spansOverlap(a: TimeSpan, b: TimeSpan): boolean {
   return a.start <= b.end && b.start <= a.end;
 }
 

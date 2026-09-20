@@ -7,21 +7,27 @@ import {
   type Guardrails,
   type LagRange,
 } from '../../data/model/settings';
-import { CORRELATION_DATA_SOURCE, type DateRange } from '../../data/ports/correlation-data-source';
+import {
+  CORRELATION_DATA_SOURCE,
+  type DateRange,
+  type SeriesScope,
+} from '../../data/ports/correlation-data-source';
 import { SETTINGS_REPOSITORY } from '../../data/ports/settings-repository';
 import { type BucketAxis, createBucketAxis } from './bucketing';
 import {
   CORRELATION_PREFERENCES_KEY,
   type CorrelationPreferences,
   DEFAULT_CORRELATION_PREFERENCES,
+  forKnownSeries,
   forKnownTrackers,
   parseCorrelationPreferences,
   serializeCorrelationPreferences,
   togglePinned,
+  toggleSeriesInScope,
   toggleSeriesVisible,
 } from './correlation-preferences';
 import { type PairResult, runDiscoveryAsync } from './discovery';
-import { extractSeries, type Series } from './series-extraction';
+import { extractSeries, type Series, seriesInScope } from './series-extraction';
 
 export type ScanStatus = 'idle' | 'loading' | 'scanning' | 'ready' | 'failed';
 
@@ -42,8 +48,28 @@ interface CorrelationState {
   readonly progress: ScanProgress;
   readonly cancelled: boolean;
   readonly series: readonly Series[];
+  /**
+   * What the last Discovery scan's extraction produced, before the user's Series
+   * selection narrowed it. The scope picker chooses from these — never from `series`,
+   * which an overlay load also writes and which would then offer Series from a Tracker
+   * scope nobody scanned.
+   */
+  readonly scanSeries: readonly Series[];
+  /**
+   * How many selected Series the last scan's extraction no longer produced. Reported
+   * rather than applied in silence: a narrowed scan that says nothing looks like a
+   * diary with nothing in it.
+   */
+  readonly droppedScopeSeriesCount: number;
   readonly axisBoundaries: readonly number[];
   readonly results: readonly PairResult[];
+  /**
+   * What the last scan actually did: one Test per (pair × lag) correlation computed, and
+   * the pairs those Tests belonged to. Reported together because the correction's bar is
+   * set by the Test count, not the pair count (correlation/SPEC.md → Guardrails).
+   */
+  readonly testCount: number;
+  readonly pairCount: number;
   readonly selectedPairId: string | null;
   /** The lag the Directed view is showing, which the user can move off the best one. */
   readonly selectedLag: number | null;
@@ -78,8 +104,12 @@ const initialState: CorrelationState = {
   progress: { completed: 0, total: 0 },
   cancelled: false,
   series: [],
+  scanSeries: [],
+  droppedScopeSeriesCount: 0,
   axisBoundaries: [],
   results: [],
+  testCount: 0,
+  pairCount: 0,
   selectedPairId: null,
   selectedLag: null,
   preferences: DEFAULT_CORRELATION_PREFERENCES,
@@ -124,6 +154,18 @@ export const CorrelationStore = signalStore(
           (series) =>
             overlayTrackerIds.includes(series.trackerId) && !hiddenSeriesIds.includes(series.id),
         );
+    }),
+    /**
+     * The Series the scope picker offers: the last scan's, narrowed to the Trackers
+     * currently in scope. Tracker scope always comes first — a Series whose Tracker has
+     * just left scope cannot survive the next extraction (ADR 0015), so it is not
+     * offered as something to keep.
+     */
+    scopeSeriesCandidates: computed(() => {
+      const trackerIds = store.scopeTrackerIds();
+      return trackerIds.length === 0
+        ? store.scanSeries()
+        : store.scanSeries().filter((series) => trackerIds.includes(series.trackerId));
     }),
     overlayCandidates: computed(() =>
       store
@@ -203,6 +245,21 @@ export const CorrelationStore = signalStore(
         patchState(store, { scopeTrackerIds: [] });
       },
 
+      /**
+       * Narrows the scan to particular Series, or widens it again. Subordinate to
+       * Tracker scope by construction: the candidates it chooses between are the ones
+       * Tracker scope already allowed through (ADR 0018).
+       */
+      toggleScopeSeries(seriesId: string): void {
+        persist(
+          toggleSeriesInScope(
+            store.preferences(),
+            seriesId,
+            store.scopeSeriesCandidates().map((series) => series.id),
+          ),
+        );
+      },
+
       async scan(): Promise<void> {
         cancelRequested = false;
         patchState(store, {
@@ -210,31 +267,48 @@ export const CorrelationStore = signalStore(
           cancelled: false,
           progress: { completed: 0, total: 0 },
           results: [],
+          testCount: 0,
+          pairCount: 0,
           selectedPairId: null,
         });
 
         try {
           const range = store.range();
-          const dataset = await source.loadEntriesForScope(range, {
+          const chosenSeriesIds = store.preferences().scopeSeriesIds;
+          const scope: SeriesScope = {
             trackerIds: store.scopeTrackerIds(),
-          });
+            seriesIds: chosenSeriesIds,
+          };
+          // Only the Tracker scope reaches the load: Series selection is a
+          // post-extraction filter, because a Series' key is a function of the Tracker
+          // scope that produced it (ADR 0015, ADR 0018).
+          const dataset = await source.loadEntriesForScope(range, scope);
           const axis = createBucketAxis(
             { start: Date.parse(range.start), end: Date.parse(range.end) },
             store.bucketSize(),
           );
           const series = extractSeries(dataset, axis);
-          patchState(store, {
-            status: 'scanning',
-            series,
-            axisBoundaries: axis.boundaries,
-            preferences: forKnownTrackers(
+          // The one moment a Series list is honestly re-derived, so the one place a
+          // selection is pruned — whether its keys came from a previous Tracker scope
+          // or from this device's saved preferences.
+          const pruned = forKnownSeries(
+            forKnownTrackers(
               store.preferences(),
               new Set(dataset.trackers.map((tracker) => tracker.id)),
             ),
+            new Set(series.map((extracted) => extracted.id)),
+          );
+          persist(pruned);
+          patchState(store, {
+            status: 'scanning',
+            series,
+            scanSeries: series,
+            droppedScopeSeriesCount: chosenSeriesIds.length - pruned.scopeSeriesIds.length,
+            axisBoundaries: axis.boundaries,
           });
 
           const outcome = await runDiscoveryAsync(
-            series,
+            seriesInScope(series, pruned.scopeSeriesIds),
             {
               lagRange: store.lagRange(),
               guardrails: store.guardrails(),
@@ -249,6 +323,8 @@ export const CorrelationStore = signalStore(
           patchState(store, {
             status: 'ready',
             results: outcome.results,
+            testCount: outcome.tested,
+            pairCount: outcome.pairs,
             cancelled: outcome.cancelled,
             scanCount: store.scanCount() + 1,
           });

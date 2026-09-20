@@ -12,12 +12,23 @@ export interface CorrelationPreferences {
    * a new Field, a new Tag — is then visible by default, as the SPEC asks.
    */
   readonly hiddenSeriesIds: readonly string[];
+  /**
+   * The Series a Discovery scan is narrowed to, by Series key. Empty means every
+   * extracted Series is in scope, mirroring `SeriesScope.trackerIds`.
+   *
+   * Kept as an inclusion list rather than the overlay's exclusion list because a key
+   * here is only meaningful relative to the Tracker scope that produced it (ADR 0015):
+   * a key that the next extraction does not produce is dropped, and an exclusion list
+   * would instead quietly keep excluding a Series nobody can see any more.
+   */
+  readonly scopeSeriesIds: readonly string[];
 }
 
 export const DEFAULT_CORRELATION_PREFERENCES: CorrelationPreferences = {
   pinnedPairIds: [],
   overlayTrackerIds: [],
   hiddenSeriesIds: [],
+  scopeSeriesIds: [],
 };
 
 export const CORRELATION_PREFERENCES_KEY = 'diary-calendar.correlation-preferences';
@@ -38,6 +49,7 @@ export function parseCorrelationPreferences(raw: string | null): CorrelationPref
     pinnedPairIds: stringsOf(record['pinnedPairIds']),
     overlayTrackerIds: stringsOf(record['overlayTrackerIds']),
     hiddenSeriesIds: stringsOf(record['hiddenSeriesIds']),
+    scopeSeriesIds: stringsOf(record['scopeSeriesIds']),
   };
 }
 
@@ -67,6 +79,59 @@ export function toggleSeriesVisible(
 
 export function isSeriesVisible(preferences: CorrelationPreferences, seriesId: string): boolean {
   return !preferences.hiddenSeriesIds.includes(seriesId);
+}
+
+/**
+ * Switches one Series in or out of the scan's scope.
+ *
+ * An empty selection means "every Series", so the first Series switched off has to be
+ * written out as every other candidate: an inclusion list has no way to say "all but
+ * this one". Selecting every candidate again collapses back to empty, which is how a
+ * Series that only appears in a later scan is in scope by default.
+ *
+ * `candidateIds` is what the user is choosing between — the Series of the Trackers in
+ * scope, in the order they are shown.
+ */
+export function toggleSeriesInScope(
+  preferences: CorrelationPreferences,
+  seriesId: string,
+  candidateIds: readonly string[],
+): CorrelationPreferences {
+  const chosen = new Set(
+    preferences.scopeSeriesIds.length === 0 ? candidateIds : preferences.scopeSeriesIds,
+  );
+  if (chosen.has(seriesId)) {
+    chosen.delete(seriesId);
+  } else {
+    chosen.add(seriesId);
+  }
+  const coversEveryCandidate =
+    candidateIds.length > 0 &&
+    candidateIds.every((id) => chosen.has(id)) &&
+    chosen.size === candidateIds.length;
+  return {
+    ...preferences,
+    scopeSeriesIds: coversEveryCandidate ? [] : [...chosen],
+  };
+}
+
+/**
+ * Drops every selected Series key the latest extraction did not produce.
+ *
+ * The one place a Series selection is narrowed, whether the keys came from a previous
+ * Tracker scope or from this device's saved preferences — one policy, exercised twice.
+ * A vanished key is never re-matched on Tracker + Field + type: that would silently
+ * re-bind a Standalone reading to a Nested one, the conflation ADR 0015 exists to
+ * prevent.
+ */
+export function forKnownSeries(
+  preferences: CorrelationPreferences,
+  knownIds: ReadonlySet<string>,
+): CorrelationPreferences {
+  return {
+    ...preferences,
+    scopeSeriesIds: preferences.scopeSeriesIds.filter((id) => knownIds.has(id)),
+  };
 }
 
 /** A stored id for a Tracker that no longer exists is simply ignored. */

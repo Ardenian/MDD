@@ -1,5 +1,5 @@
-import type { Interval, Placement } from '../../data/model/placement';
-import { resolveCoveredInterval } from '../../data/model/placement';
+import type { Placement, TimeSpan } from '../../data/model/placement';
+import { resolveCoveredSpan } from '../../data/model/placement';
 import type { BucketSize } from '../../data/model/settings';
 
 /** An ordered run of Buckets over a range. Boundaries are local, never UTC. */
@@ -23,7 +23,7 @@ const MINUTE_MS = 60_000;
  * durations — so a month is as long as that month is, and a daylight-saving day is 23 or
  * 25 hours, exactly as the user lived it.
  */
-export function createBucketAxis(range: Interval, size: BucketSize): BucketAxis {
+export function createBucketAxis(range: TimeSpan, size: BucketSize): BucketAxis {
   const boundaries = [startOfBucket(range.start, size)];
   while (boundaries[boundaries.length - 1] <= range.end) {
     boundaries.push(nextBoundary(boundaries[boundaries.length - 1], size));
@@ -64,11 +64,11 @@ export function bucketWeights(axis: BucketAxis, placement: Placement): readonly 
   const segments = presenceSegments(placement);
   if (segments.length === 0) {
     // An instantaneous Point: all of its weight sits wherever it happened.
-    const index = bucketIndexOf(axis, resolveCoveredInterval(placement).start);
+    const index = bucketIndexOf(axis, resolveCoveredSpan(placement).start);
     return index === -1 ? [] : [{ index, weight: 1 }];
   }
 
-  const covered = resolveCoveredInterval(placement);
+  const covered = resolveCoveredSpan(placement);
   const first = Math.max(bucketIndexOf(axis, covered.start), 0);
   const last =
     covered.end >= axis.boundaries[axis.count] ? axis.count - 1 : bucketIndexOf(axis, covered.end);
@@ -102,7 +102,7 @@ interface PresenceSegment {
 }
 
 function presenceSegments(placement: Placement): readonly PresenceSegment[] {
-  const core = coreInterval(placement);
+  const core = coreSpan(placement);
   const before =
     (placement.kind === 'dayBucketed' ? 0 : (placement.fadeout?.beforeMinutes ?? 0)) * MINUTE_MS;
   const after =
@@ -122,7 +122,7 @@ function presenceSegments(placement: Placement): readonly PresenceSegment[] {
 }
 
 /** The placement's own span, before any Fadeout widens it. */
-function coreInterval(placement: Placement): Interval {
+function coreSpan(placement: Placement): TimeSpan {
   switch (placement.kind) {
     case 'point': {
       const at = Date.parse(placement.at);
@@ -131,8 +131,8 @@ function coreInterval(placement: Placement): Interval {
     case 'period':
       return { start: Date.parse(placement.start), end: Date.parse(placement.end) };
     case 'dayBucketed': {
-      const covered = resolveCoveredInterval(placement);
-      // The stored interval ends on the day's last millisecond; as coverage it runs to
+      const covered = resolveCoveredSpan(placement);
+      // The stored span ends on the day's last millisecond; as coverage it runs to
       // the next midnight.
       return { start: covered.start, end: covered.end + 1 };
     }

@@ -64,7 +64,7 @@ Calendar, Entry, Tracker, Point, Period, Day-bucketed, Fadeout, Child Entry. See
 - No writes here beyond starting an Entry, delegated to the entries feature by
   **navigating** into the shell's `modal` outlet — `(modal:entry/new)?trackerId=…&at=…`
   to start one, `(modal:entry/<entryId>)` to open one — never by importing it.
-- Pure module `calendar-layout` — given resolved covered intervals, compute overlap
+- Pure module `calendar-layout` — given resolved covered spans, compute overlap
   columns and pixel geometry for a viewport; independent of Angular.
 - Local (non-synced) UI state: selected view, Tracker toggle set, child-entry filter —
   persisted in `localStorage`, read defensively (ADR-independent convenience state, never
@@ -103,7 +103,7 @@ Calendar, Entry, Tracker, Point, Period, Day-bucketed, Fadeout, Child Entry. See
 
 - `calendar-layout`: two overlapping Periods → two columns; three-way overlap → three;
   non-overlapping → one column each.
-- Fadeout band geometry derives from the resolved interval (`resolveCoveredInterval` in
+- Fadeout band geometry derives from the resolved span (`resolveCoveredSpan` in
   `data/model/placement.ts`, the same definition the entries feature's `fadeout` module
   uses — a feature cannot import another's module), not recomputed here.
 - `calendar-dates`: Monday week start; day/week stepping; range from first local midnight

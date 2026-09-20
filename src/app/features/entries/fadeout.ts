@@ -1,8 +1,8 @@
 import {
-  type Interval,
+  type CoveredSpan,
   localDayOf,
   type Placement,
-  resolveCoveredInterval,
+  resolveCoveredSpan,
 } from '../../data/model/placement';
 import type { TimeMode } from '../../data/model/tracker';
 
@@ -15,8 +15,8 @@ const HOUR_MS = 3_600_000;
  * so the Calendar and the range query can never disagree with the form about what an
  * Entry covers.
  */
-export function coveredInterval(placement: Placement): Interval {
-  return resolveCoveredInterval(placement);
+export function coveredSpan(placement: Placement): CoveredSpan {
+  return resolveCoveredSpan(placement);
 }
 
 export function validatePlacement(placement: Placement): PlacementProblem | null {

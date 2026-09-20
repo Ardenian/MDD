@@ -35,9 +35,21 @@ export interface PairResult {
 
 export interface DiscoveryResult {
   readonly results: readonly PairResult[];
-  /** Pairs actually correlated, before the guardrails filtered the list. */
+  /**
+   * Tests actually run — one per (pair × lag) correlation computed. Lags skipped for
+   * want of overlapping Buckets were never run, so they are not counted here.
+   */
   readonly tested: number;
+  /** Pairs actually correlated, before the guardrails filtered the list. */
+  readonly pairs: number;
   readonly cancelled: boolean;
+}
+
+/** One pair's reported row, plus where its own Test sits in the scan's flat Test list. */
+interface ScannedPair {
+  readonly row: Omit<PairResult, 'adjustedP' | 'significant'>;
+  /** Index of this pair's strongest-lag Test. The row's adjusted p is read from it. */
+  readonly bestTest: number;
 }
 
 /**
@@ -96,7 +108,14 @@ function* discoverySteps(
 ): Generator<void, DiscoveryResult> {
   const ordered = [...series].sort((left, right) => left.id.localeCompare(right.id));
   const pairs = candidatePairs(ordered);
-  const found: Omit<PairResult, 'adjustedP' | 'significant'>[] = [];
+  const found: ScannedPair[] = [];
+  /**
+   * Every Test the scan ran, as raw p-values: one per pair per lag, appended in pair
+   * order and then in ascending lag, so the correction sees the same set in the same
+   * order for the same diary. Only the strongest lag of each pair is ever displayed, but
+   * all of them were run and all of them count towards the correction.
+   */
+  const tests: number[] = [];
   let cancelled = false;
 
   for (let index = 0; index < pairs.length; index++) {
@@ -114,23 +133,40 @@ function* discoverySteps(
       continue;
     }
 
+    // `scan.tested` holds one Test per lag that was actually correlated, so the strongest
+    // lag names its own Test unambiguously. Its position is read against where this pair's
+    // Tests begin, before any of them are appended.
+    const firstTest = tests.length;
+    const bestTest = firstTest + scan.tested.findIndex((test) => test.lag === scan.best.lag);
+    for (const test of scan.tested) {
+      tests.push(test.result.p);
+    }
+
     found.push({
-      id: `${a.id}::${b.id}`,
-      a,
-      b,
-      method: scan.best.result.method,
-      coefficient: scan.best.result.coefficient,
-      lag: scan.best.lag,
-      n: scan.best.result.n,
-      p: scan.best.result.p,
-      atZero:
-        scan.atZero === null
-          ? null
-          : { coefficient: scan.atZero.result.coefficient, p: scan.atZero.result.p },
+      bestTest,
+      row: {
+        id: `${a.id}::${b.id}`,
+        a,
+        b,
+        method: scan.best.result.method,
+        coefficient: scan.best.result.coefficient,
+        lag: scan.best.lag,
+        n: scan.best.result.n,
+        p: scan.best.result.p,
+        atZero:
+          scan.atZero === null
+            ? null
+            : { coefficient: scan.atZero.result.coefficient, p: scan.atZero.result.p },
+      },
     });
   }
 
-  return { results: rank(found, options), tested: found.length, cancelled };
+  return {
+    results: rank(found, tests, options),
+    tested: tests.length,
+    pairs: found.length,
+    cancelled,
+  };
 }
 
 /**
@@ -161,22 +197,31 @@ export function methodFor(a: Series, b: Series): CorrelationMethod {
   return continuous(a) && continuous(b) ? 'spearman' : 'point-biserial';
 }
 
+/**
+ * Correction ranges over every Test the scan ran, not one per pair: picking the strongest
+ * of seven lags is itself seven chances to be impressed, and a denominator of pairs alone
+ * would never absorb that. Each pair still reports one row, reading its adjusted p and
+ * its flag back out at the index of its own strongest-lag Test.
+ *
+ * A cancelled scan corrects over the Tests it actually ran, which is the only set it can
+ * honestly speak for — the pairs it never reached were never lottery tickets.
+ */
 function rank(
-  found: readonly Omit<PairResult, 'adjustedP' | 'significant'>[],
+  found: readonly ScannedPair[],
+  tests: readonly number[],
   options: DiscoveryOptions,
 ): readonly PairResult[] {
   const useCorrection = options.guardrails.benjaminiHochberg;
-  const pValues = found.map((result) => result.p);
-  const adjusted = useCorrection ? adjustedPValues(pValues) : pValues;
+  const adjusted = useCorrection ? adjustedPValues(tests) : tests;
   const flags = useCorrection
-    ? benjaminiHochberg(pValues, options.guardrails.pThreshold)
-    : pValues.map((p) => p <= options.guardrails.pThreshold);
+    ? benjaminiHochberg(tests, options.guardrails.pThreshold)
+    : tests.map((p) => p <= options.guardrails.pThreshold);
 
   return found
-    .map((result, index) => ({
-      ...result,
-      adjustedP: adjusted[index],
-      significant: flags[index],
+    .map(({ row, bestTest }) => ({
+      ...row,
+      adjustedP: adjusted[bestTest],
+      significant: flags[bestTest],
     }))
     .filter((result) => result.n >= options.guardrails.minSampleSize)
     .filter((result) => options.showAll === true || result.significant)

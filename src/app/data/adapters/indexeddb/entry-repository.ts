@@ -1,6 +1,6 @@
 import { DataError } from '../../model/data-error';
 import type { Entry, EntryInput, EntryRangeOptions } from '../../model/entry';
-import { intervalsOverlap, resolveCoveredInterval } from '../../model/placement';
+import { resolveCoveredSpan, spansOverlap } from '../../model/placement';
 import type { Tag } from '../../model/tag';
 import type { Tracker } from '../../model/tracker';
 import type { EntryRepository } from '../../ports/entry-repository';
@@ -29,7 +29,7 @@ export class IndexedDbEntryRepository implements EntryRepository {
     const entries = await this.live();
     return entries
       .filter((entry) => options?.includeChildren === true || entry.parentEntryId === null)
-      .filter((entry) => intervalsOverlap(resolveCoveredInterval(entry.placement), range))
+      .filter((entry) => spansOverlap(resolveCoveredSpan(entry.placement), range))
       .sort(byCreation);
   }
 

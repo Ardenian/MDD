@@ -840,6 +840,28 @@ export function describeDataPortContract(name: string, createLayer: () => DataLa
         expect(dataset.entries[0]?.trackerId).toBe(workout.id);
       });
 
+      it('ignores a Series selection: that narrowing happens after extraction', async () => {
+        // A Series' key is a function of the Tracker scope that produced it (ADR 0015),
+        // so a selection made of keys can never decide what loads (ADR 0018).
+        const sleep = await createSleepTracker();
+        await layer.entries.create({
+          trackerId: sleep.id,
+          parentEntryId: null,
+          placement: { kind: 'point', at: '2026-03-01T10:01:00.000Z' },
+          snapshot: [],
+          tags: [],
+        });
+        const range = { start: '2026-03-01T00:00:00.000Z', end: '2026-03-02T00:00:00.000Z' };
+
+        const unfiltered = await layer.correlation.loadEntriesForScope(range, {});
+        const filtered = await layer.correlation.loadEntriesForScope(range, {
+          seriesIds: ['nothing-this-diary-has-ever-produced'],
+        });
+
+        expect(filtered.entries).toEqual(unfiltered.entries);
+        expect(filtered.trackers).toEqual(unfiltered.trackers);
+      });
+
       it("excludes a child Entry's parent when only the child Tracker is scoped", async () => {
         // Scope grows only downward — a scoped parent brings its children, but a scoped
         // child never brings its parent along (ADR 0015). This is what lets a scan read

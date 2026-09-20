@@ -54,7 +54,7 @@ From in-scope data, derive these Series kinds:
 | Nested child Field | same as numeric/boolean but drawn from child Entries reached through reference Fields, to arbitrary depth (path shown in the Series name) |
 | Tag presence | fraction of the Bucket's Entries (including child Entries, which carry independent Tags) carrying a given Tag |
 
-An Entry contributes to every Bucket its resolved interval (placement + Fadeout) touches;
+An Entry contributes to every Bucket its resolved span (placement + Fadeout) touches;
 Fadeout contributes weighted membership, weight falling off linearly to 0 across the
 Fadeout span. Day-bucketed Entries contribute weight 1 to their day's Bucket(s).
 
@@ -121,18 +121,43 @@ child) are likewise a follow-up — filling those needs iteration over parent En
 
 - minimum `n` overlapping Buckets to display a pair: **10**
 - p-value threshold: **0.05**
-- Benjamini–Hochberg correction across all scanned (pair × lag) tests: **on**; corrected-
-  out results hidden unless "show all" is ticked
+- Benjamini–Hochberg correction across every **Test** the scan ran — one Test is one pair
+  at one Lag, so a pair scanned across seven Lags contributes seven Tests to the
+  correction, not one: **on**; corrected-out results hidden unless "show all" is ticked
+  - A Lag skipped for want of overlapping Buckets was never correlated, so it is not a
+    Test and does not count. A cancelled scan corrects over the Tests it actually ran.
+  - Each pair still reports one row, the strongest-Lag one; that row's adjusted p and
+    significance flag are the ones its own Test was given by the full-set correction.
 - A persistent caveat line: results show Correlation, not causation.
 
 ## UI
 
 - The Correlation page is this feature's top-level (route) component — the only place
   here allowed to inject a facade or a `ui/` service.
-- **Controls bar**: date range, Bucket size (hour/day/week/month), Series-scope picker
-  (Trackers / specific Series, via `TrackerLookup`, `data/`'s shared facade), guardrail
-  panel, **Find correlations** button.
-- **Results list**: built on `ui/`'s **Table** (`cdk/table`, headless) — this feature
+- **Controls bar**: date range, Bucket size (hour/day/week/month), scope picker,
+  guardrail panel, **Find correlations** button.
+- **Scope picker**, a two-tier narrowing read top down (ADR 0018):
+  1. **Trackers**, via `TrackerLookup` (`data/`'s shared facade). This tier alone decides
+     what a scan loads, and therefore what each Series *is*: whether a Child Entry reads
+     as a Standalone or a Nested reading follows from it (ADR 0015).
+  2. **Specific Series** of those Trackers, each toggleable, all on by default. A
+     **post-extraction filter, strictly subordinate to the first tier** — it narrows what
+     is compared, never what is loaded, and never feeds back into a Series' identity.
+     This boundary is the point of the tier, not an implementation detail of it.
+  - The Series tier offers what the last scan extracted, so before the first scan it says
+    there is nothing to choose between yet.
+  - A chosen Series the latest extraction no longer produces is **dropped, with a notice**
+    in the controls bar. A vanished key is never re-matched onto another Series on
+    Tracker + Field + type — that would silently re-bind a Standalone reading to a Nested
+    one. The selection is kept on this device (ADR 0009) and pruned the same way when it
+    is loaded.
+  - A narrowed scan runs fewer Tests, so the correction's bar falls with the scope.
+- **Results header**: what the finished scan actually did, as two counts — pairs
+  correlated and Tests run (e.g. "1,712 pairs · 11,984 Tests"). Both, because the
+  correction's bar is set by the Test count while the progress line counts pairs; a
+  reader shown only the pairs would under-read how high the bar was set. Shown for every
+  finished scan, including a cancelled or empty one, where it says how far the scan got.
+- **Results list**: built directly on `cdk/table` (headless) — this feature
   owns the concrete column definitions (Series A, Series B, best lag, effect size, n,
   significance flag) and a hand-built clickable-header sort comparator (stable CDK ships
   no sort primitive — see ADR 0006). This is v1's only Table consumer; it stays here
@@ -180,7 +205,7 @@ child) are likewise a follow-up — filling those needs iteration over parent En
 - Pure modules (all framework-free, heavily tested):
   - `series-extraction` — Entries + schemas → named Series per Bucket, with
     Fadeout weighting; includes child Entries for Tag-presence and nested-Field Series
-  - `bucketing` — interval → weighted Bucket memberships for hour/day/week/month
+  - `bucketing` — span → weighted Bucket memberships for hour/day/week/month
   - `correlation-stats` — Spearman, point-biserial, p-values
   - `lag-scan` — pair × lag-range → best lag + lag-0
   - `significance` — Benjamini–Hochberg over a test set
@@ -222,12 +247,31 @@ plain data — but it is not what v1 ships.
   default state is every Series of a newly-added Tracker active; no coefficient, lag, or
   significance is ever computed for this view.
 - `lag-scan`: a Series that is another shifted by +2 Buckets → best lag +2, |ρ|≈1;
-  symmetric handling of negative lags; lag-0 always reported.
+  symmetric handling of negative lags; lag-0 always reported; the reported Tests are
+  exactly the in-range Lags that met the minimum-`n` floor, no more and no fewer.
 - `significance`: BH on a known p-vector matches reference; threshold 1.0 keeps all;
   empty input → empty output.
 - `discovery`: pairs below min-n excluded; ranking by |effect size| after correction;
   scope filter limits the Series set; deterministic output for a fixed dataset;
   cancellation stops further work.
+- `series-extraction` → `seriesInScope`: an empty selection reads as every extracted
+  Series; a selection keeps only what it names, so the rest never reach the pairing; a
+  key this extraction did not produce matches nothing.
+- `discovery` under a Series selection: only the Series left in scope are paired, and the
+  scan corrects over only the Tests that narrowed set ran.
+- `correlation-preferences` → Series scope: an empty selection is every Series, so the
+  first Series switched off is stored as the rest; choosing every candidate again
+  collapses back to empty; `forKnownSeries` drops a key the extraction did not produce,
+  never re-matches it onto the same Field's other reading, prunes a stored selection by
+  the same path, and leaves the pins and the overlay alone.
+- e2e (`tests/stories/correlation/`): narrowing a scan to particular Series and scanning;
+  the selection survives a reload; changing the Tracker scope drops the Series keys it
+  can no longer produce and says so.
+- `discovery` correction: the BH denominator is the Test count, not the pair count, for a
+  fixture of known pairs × Lags; each row's adjusted p and flag are read at its own Test's
+  index, so shifting that index by one changes the answer; a pair whose best-Lag raw p
+  clears the threshold is still not significant once the full Test set is corrected over;
+  a cancelled scan reports only the pairs and Tests it actually ran.
 - `chart-geometry`: a flat Series still gets a band to be drawn in; gaps break the line;
   the extremes land in opposite corners of a scatter.
 - `results-sort`: effect size ranks by magnitude, since −0.8 and +0.8 are equally strong

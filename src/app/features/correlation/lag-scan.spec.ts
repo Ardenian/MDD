@@ -86,6 +86,17 @@ describe('scanLags', () => {
     expect(scan?.best.lag).toBe(2);
   });
 
+  it('reports every in-range lag that met the sample floor, and only those', () => {
+    const scan = scanLags(varied, delayed, 'spearman', range, { minSampleSize: 5 });
+
+    // `delayed` starts two Buckets in, so the overlap is not symmetric about lag 0: −3
+    // leaves three Buckets and −2 leaves four, both under the floor, while +3 leaves
+    // five and survives. Everything left here was actually correlated, which is what
+    // makes this list the scan's honest unit count (correlation/SPEC.md → Guardrails).
+    expect(scan?.tested.map((entry) => entry.lag)).toEqual([-1, 0, 1, 2, 3]);
+    expect(scan?.tested.map((entry) => entry.result.n)).toEqual([5, 6, 6, 6, 5]);
+  });
+
   it('prefers the lag resting on more Buckets when two fit equally well', () => {
     const scan = scanLags(varied, delayed, 'spearman', range);
     const spurious = scan?.tested.find((entry) => entry.lag === -3);

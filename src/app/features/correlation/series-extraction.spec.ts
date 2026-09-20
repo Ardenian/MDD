@@ -5,7 +5,7 @@ import type { Tracker } from '../../data/model/tracker';
 import type { TrackerVersion } from '../../data/model/tracker-version';
 import type { CorrelationDataset } from '../../data/ports/correlation-data-source';
 import { createBucketAxis } from './bucketing';
-import { extractSeries, type Series } from './series-extraction';
+import { extractSeries, type Series, seriesInScope } from './series-extraction';
 
 const meta = {
   createdAt: '2026-03-10T00:00:00.000Z',
@@ -590,5 +590,45 @@ describe('extractSeries', () => {
 
     expect(first).toEqual(second);
     expect(first).toEqual([...first].sort());
+  });
+});
+
+describe('seriesInScope', () => {
+  const dataset: CorrelationDataset = {
+    tags: [],
+    trackers: [tracker('sleep', 'Sleep'), tracker('coffee', 'Coffee')],
+    trackerVersions: [
+      version('sleep', [{ name: 'Hours', dataType: 'decimal', required: false }]),
+      version('coffee', [{ name: 'Cups', dataType: 'integer', required: false }]),
+    ],
+    entries: [
+      entry('a', 'sleep', '2026-03-10', [{ fieldName: 'Hours', value: 7 }]),
+      entry('b', 'coffee', '2026-03-10', [{ fieldName: 'Cups', value: 2 }]),
+    ],
+  };
+
+  it('reads an empty selection as every extracted Series', () => {
+    const extracted = extractSeries(dataset, axis);
+
+    expect(seriesInScope(extracted, [])).toEqual(extracted);
+    expect(seriesInScope(extracted, undefined)).toEqual(extracted);
+  });
+
+  it('keeps only the chosen Series, leaving the rest out of the pairing', () => {
+    const extracted = extractSeries(dataset, axis);
+    const hours = find(extracted, 'Hours');
+    const cups = find(extracted, 'Cups');
+
+    const scoped = seriesInScope(extracted, [hours?.id ?? '', cups?.id ?? '']);
+
+    expect(scoped.map((series) => series.id)).toEqual([cups?.id, hours?.id].sort());
+    // The occurrence Series of both Trackers were extracted, and are not in scope.
+    expect(extracted.length).toBeGreaterThan(scoped.length);
+  });
+
+  it('ignores a chosen key this extraction did not produce', () => {
+    const extracted = extractSeries(dataset, axis);
+
+    expect(seriesInScope(extracted, ['meal>ingredients>protein|field|grams'])).toEqual([]);
   });
 });

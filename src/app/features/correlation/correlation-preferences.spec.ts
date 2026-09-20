@@ -1,10 +1,12 @@
 import {
   DEFAULT_CORRELATION_PREFERENCES,
+  forKnownSeries,
   forKnownTrackers,
   isSeriesVisible,
   parseCorrelationPreferences,
   serializeCorrelationPreferences,
   togglePinned,
+  toggleSeriesInScope,
   toggleSeriesVisible,
 } from './correlation-preferences';
 
@@ -23,12 +25,14 @@ describe('parseCorrelationPreferences', () => {
       pinnedPairIds: ['a::b', 7, null],
       overlayTrackerIds: ['sleep'],
       hiddenSeriesIds: 'not an array',
+      scopeSeriesIds: ['sleep|field|Hours', 3],
     });
 
     expect(parseCorrelationPreferences(stored)).toEqual({
       pinnedPairIds: ['a::b'],
       overlayTrackerIds: ['sleep'],
       hiddenSeriesIds: [],
+      scopeSeriesIds: ['sleep|field|Hours'],
     });
   });
 
@@ -37,6 +41,7 @@ describe('parseCorrelationPreferences', () => {
       pinnedPairIds: ['a::b'],
       overlayTrackerIds: ['sleep', 'workout'],
       hiddenSeriesIds: ['sleep|field|Hours'],
+      scopeSeriesIds: ['sleep|field|Hours', 'coffee|field|Cups'],
     };
 
     expect(parseCorrelationPreferences(serializeCorrelationPreferences(preferences))).toEqual(
@@ -95,5 +100,98 @@ describe('forKnownTrackers', () => {
     const preferences = { ...DEFAULT_CORRELATION_PREFERENCES, pinnedPairIds: ['a::b'] };
 
     expect(forKnownTrackers(preferences, new Set()).pinnedPairIds).toEqual(['a::b']);
+  });
+});
+
+describe('toggleSeriesInScope', () => {
+  const candidates = ['coffee|occurrence', 'coffee|field|Cups', 'sleep|field|Hours'];
+
+  it('reads an empty selection as every Series, so the first switch-off names the rest', () => {
+    const narrowed = toggleSeriesInScope(
+      DEFAULT_CORRELATION_PREFERENCES,
+      'coffee|occurrence',
+      candidates,
+    );
+
+    expect(narrowed.scopeSeriesIds).toEqual(['coffee|field|Cups', 'sleep|field|Hours']);
+  });
+
+  it('collapses back to empty once every candidate is chosen again', () => {
+    const narrowed = toggleSeriesInScope(
+      DEFAULT_CORRELATION_PREFERENCES,
+      'coffee|occurrence',
+      candidates,
+    );
+
+    expect(toggleSeriesInScope(narrowed, 'coffee|occurrence', candidates).scopeSeriesIds).toEqual(
+      [],
+    );
+  });
+
+  it('narrows further without disturbing the other preferences', () => {
+    const once = toggleSeriesInScope(
+      DEFAULT_CORRELATION_PREFERENCES,
+      'coffee|occurrence',
+      candidates,
+    );
+    const twice = toggleSeriesInScope(once, 'coffee|field|Cups', candidates);
+
+    expect(twice.scopeSeriesIds).toEqual(['sleep|field|Hours']);
+    expect(twice.pinnedPairIds).toEqual([]);
+    expect(twice.hiddenSeriesIds).toEqual([]);
+  });
+});
+
+describe('forKnownSeries', () => {
+  it('drops a Series key the latest extraction no longer produced', () => {
+    // `Meal → Ingredients: Protein` read as a Nested reading; the Meal Tracker has since
+    // left scope, so that key cannot come back (ADR 0015).
+    const preferences = {
+      ...DEFAULT_CORRELATION_PREFERENCES,
+      scopeSeriesIds: ['meal>ingredients>protein|field|grams', 'sleep|field|Hours'],
+    };
+
+    expect(
+      forKnownSeries(preferences, new Set(['protein|field|grams', 'sleep|field|Hours']))
+        .scopeSeriesIds,
+    ).toEqual(['sleep|field|Hours']);
+  });
+
+  it('never re-matches a vanished key onto the Standalone reading of the same Field', () => {
+    const preferences = {
+      ...DEFAULT_CORRELATION_PREFERENCES,
+      scopeSeriesIds: ['meal>ingredients>protein|field|grams'],
+    };
+
+    expect(forKnownSeries(preferences, new Set(['protein|field|grams'])).scopeSeriesIds).toEqual(
+      [],
+    );
+  });
+
+  it('prunes a selection loaded from storage exactly as it prunes a scope change', () => {
+    const stored = parseCorrelationPreferences(
+      serializeCorrelationPreferences({
+        ...DEFAULT_CORRELATION_PREFERENCES,
+        scopeSeriesIds: ['sleep|field|Hours', 'deleted-tracker|occurrence'],
+      }),
+    );
+
+    expect(forKnownSeries(stored, new Set(['sleep|field|Hours'])).scopeSeriesIds).toEqual([
+      'sleep|field|Hours',
+    ]);
+  });
+
+  it('leaves the overlay and the pins alone', () => {
+    const preferences = {
+      ...DEFAULT_CORRELATION_PREFERENCES,
+      pinnedPairIds: ['a::b'],
+      hiddenSeriesIds: ['sleep|field|Hours'],
+      scopeSeriesIds: ['sleep|field|Hours'],
+    };
+    const pruned = forKnownSeries(preferences, new Set());
+
+    expect(pruned.pinnedPairIds).toEqual(['a::b']);
+    expect(pruned.hiddenSeriesIds).toEqual(['sleep|field|Hours']);
+    expect(pruned.scopeSeriesIds).toEqual([]);
   });
 });

@@ -16,7 +16,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { filter } from 'rxjs';
 import { TrackerLookup } from '../../data/facades/tracker-lookup';
 import type { Entry } from '../../data/model/entry';
-import { localDayOf, type Placement, resolveCoveredInterval } from '../../data/model/placement';
+import { localDayOf, type Placement, resolveCoveredSpan } from '../../data/model/placement';
 import type { TimeMode } from '../../data/model/tracker';
 import { OverlayService } from '../../ui/services/overlay.service';
 import { UiLocaleService } from '../../ui/services/ui-locale.service';
@@ -433,7 +433,7 @@ export class CalendarPage {
     if (beforeMinutes === 0 && afterMinutes === 0) {
       return null;
     }
-    const covered = resolveCoveredInterval(placement);
+    const covered = resolveCoveredSpan(placement);
     return {
       from: this.timeFormat().format(covered.start),
       to: this.timeFormat().format(covered.end),

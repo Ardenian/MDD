@@ -94,6 +94,38 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/EntryInput'
+  /entries/by-tracker:
+    get:
+      operationId: Entries_listByTracker
+      description: Every live Entry pinned to one Tracker, across all of its Versions.
+      parameters:
+        - name: trackerId
+          in: query
+          required: true
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entry'
+  /entries/counts:
+    get:
+      operationId: Entries_countsByTracker
+      description: Backs the Entry count on each row of the Tracker list (trackers/SPEC.md).
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackerCounts'
   /entries/{id}:
     get:
       operationId: Entries_read
@@ -154,6 +186,31 @@ paths:
       responses:
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+  /entries/{id}/children:
+    get:
+      operationId: Entries_listChildren
+      description: The Child Entries of one parent. A child's placement always mirrors its parent's.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entry'
         default:
           description: An unexpected error response.
           content:
@@ -258,7 +315,40 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Preset'
+  /presets/counts:
+    get:
+      operationId: Presets_countsByTracker
+      description: Backs the Preset count on each row of the Tracker list (trackers/SPEC.md).
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrackerCounts'
   /presets/{id}:
+    get:
+      operationId: Presets_read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preset'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
     patch:
       operationId: Presets_update
       parameters:
@@ -1448,6 +1538,15 @@ components:
       description: |-
         A Tracker's header: identity, metadata, and its current place in its own version
         history. The Field schema itself lives on `TrackerVersion`, not here. See ADR 0005.
+    TrackerCounts:
+      type: object
+      additionalProperties:
+        type: integer
+        format: int32
+      description: |-
+        Live record counts keyed by Tracker id, returned in one read rather than a query per
+        row. Soft-deleted rows are excluded, and a Tracker with no live records is omitted
+        rather than reported as zero.
     TrackerCreateInput:
       type: object
       required:

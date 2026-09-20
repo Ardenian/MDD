@@ -117,6 +117,27 @@ export function extractSeries(dataset: CorrelationDataset, axis: BucketAxis): re
   return builder.build();
 }
 
+/**
+ * The user's Series selection, applied to what `extractSeries` produced.
+ *
+ * Deliberately a post-extraction filter and nothing more. Tracker scope decides what is
+ * loaded and therefore what each Series *is* — a Child Entry's reading is Standalone or
+ * Nested depending on whether its parent came along (ADR 0015) — so a selection made of
+ * Series keys can only ever narrow that result, never feed back into it.
+ *
+ * An empty selection means every Series is in scope, mirroring `SeriesScope.trackerIds`.
+ */
+export function seriesInScope(
+  series: readonly Series[],
+  seriesIds: readonly string[] | undefined,
+): readonly Series[] {
+  if (seriesIds === undefined || seriesIds.length === 0) {
+    return series;
+  }
+  const chosen = new Set(seriesIds);
+  return series.filter((candidate) => chosen.has(candidate.id));
+}
+
 interface SeriesPath {
   readonly id: string;
   readonly label: string;

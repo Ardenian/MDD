@@ -11,8 +11,9 @@ the Tracker's current **Tracker Version** at creation and renders from it foreve
 
 Built: the `fadeout` and `entry-form` pure modules, `EntriesDataAccess`,
 the Entry form dialog with its placement editor and embedded-child editing, and the route
-that opens it. Creating an Entry *from the Calendar* arrives with the Calendar; until then
-the form is reached by URL, which is also how the Calendar will open it (see **UI**).
+that opens it. Creating an Entry *from the Calendar* is shipped: the Calendar's
+quick-create opens the form by navigating into the `modal:entry/new` outlet (see **UI**),
+and the form is reachable by that same URL directly.
 
 ## User stories / flows
 
@@ -106,7 +107,7 @@ Entry, Preset, Point, Period, Day-bucketed, Fadeout, Time mode, Tag. See
   not once per app session, so lowering it in Settings applies the next time the user
   nests.
 - Pure modules:
-  - `fadeout` — resolve a placement + Fadeout to an absolute covered interval.
+  - `fadeout` — resolve a placement + Fadeout to an absolute covered span.
   - `entry-form` — what makes a value-tree node an *Entry* (its saved id and its own
     Tags), requiring every required Field, and the Snapshot mapping.
   - The tree itself — building values against a `TrackerVersion` independent of which

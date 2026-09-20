@@ -55,6 +55,13 @@ model ApiError {
   message: string;
 }
 
+/**
+ * Live record counts keyed by Tracker id, returned in one read rather than a query per
+ * row. Soft-deleted rows are excluded, and a Tracker with no live records is omitted
+ * rather than reported as zero.
+ */
+model TrackerCounts is Record<int32>;
+
 // ---------------------------------------------------------------------------
 // Trackers
 // ---------------------------------------------------------------------------
@@ -441,6 +448,18 @@ namespace Entries {
     @query includeChildren?: boolean,
   ): Entry[];
   @get op read(@path id: Uuid): Entry | ApiError;
+  /** Every live Entry pinned to one Tracker, across all of its Versions. */
+  @get
+  @route("/by-tracker")
+  op listByTracker(@query trackerId: Uuid): Entry[];
+  /** The Child Entries of one parent. A child's placement always mirrors its parent's. */
+  @get
+  @route("/{id}/children")
+  op listChildren(@path id: Uuid): Entry[] | ApiError;
+  /** Backs the Entry count on each row of the Tracker list (trackers/SPEC.md). */
+  @get
+  @route("/counts")
+  op countsByTracker(): TrackerCounts;
   @post op create(@body input: EntryInput): Entry;
   @patch op update(@path id: Uuid, @body input: EntryInput): Entry | ApiError;
   @delete op remove(@path id: Uuid): void | ApiError;
@@ -449,6 +468,11 @@ namespace Entries {
 @route("/presets")
 namespace Presets {
   @get op list(@query trackerId: Uuid): Preset[];
+  @get op read(@path id: Uuid): Preset | ApiError;
+  /** Backs the Preset count on each row of the Tracker list (trackers/SPEC.md). */
+  @get
+  @route("/counts")
+  op countsByTracker(): TrackerCounts;
   @post op create(@body preset: Preset): Preset;
   @patch op update(@path id: Uuid, @body preset: Preset): Preset | ApiError;
   @delete op remove(@path id: Uuid): void | ApiError;

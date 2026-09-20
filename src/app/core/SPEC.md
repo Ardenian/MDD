@@ -65,9 +65,11 @@ entry points and are filled in by each feature's own phase.
   with zero runtime network dependency is the safer default.
 - Supported locales: `en` (fallback), `de`. A feature that needs its own translated
   strings adds `features/<feature>/i18n/translations/{locale}/<feature>.json` and
-  provides a child `TranslateService` (`provideChildTranslateService`) scoped to its
-  lazy route, which falls back to the root (`common`) service for any key it doesn't
-  define — no feature has needed this yet.
+  provides a child `TranslateService` (`provideChildTranslateService`, wrapped by
+  `core/i18n/feature-translations.ts`) scoped to its lazy route, which falls back to the
+  root (`common`) service for any key it doesn't define — all six features (`calendar`,
+  `trackers`, `entries`, `correlation`, `settings`, `data-transfer`) do this, each with
+  committed `en`/`de` JSON.
 
 ### Offline shell
 - Register a **service worker** that caches the app shell (HTML, JS, CSS, fonts, icons)

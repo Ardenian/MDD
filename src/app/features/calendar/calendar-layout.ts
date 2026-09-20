@@ -1,4 +1,9 @@
-import { type Interval, type Placement, resolveCoveredInterval } from '../../data/model/placement';
+import {
+  type CoveredSpan,
+  type Placement,
+  resolveCoveredSpan,
+  type TimeSpan,
+} from '../../data/model/placement';
 import type { DayBounds } from './calendar-dates';
 
 export interface CalendarItem {
@@ -43,15 +48,15 @@ const DEFAULT_OPTIONS: LayoutOptions = { minVisualMs: 20 * 60_000 };
 
 interface Positioned {
   readonly item: CalendarItem;
-  readonly covered: Interval;
-  readonly core: Interval;
+  readonly covered: CoveredSpan;
+  readonly core: CoveredSpan;
   /** What occupies space on the grid: the covered span, stretched to the minimum length. */
-  readonly visual: Interval;
+  readonly visual: TimeSpan;
 }
 
 /**
  * Pure geometry for one day column. Overlap is decided on each Entry's resolved covered
- * interval — Fadeout included, since the bands take up room too — and Entries that merely
+ * span — Fadeout included, since the bands take up room too — and Entries that merely
  * touch (one ends at 10:00, the next starts at 10:00) do not share columns.
  */
 export function layoutDay(
@@ -63,7 +68,7 @@ export function layoutDay(
   const positioned: Positioned[] = [];
 
   for (const item of items) {
-    const covered = resolveCoveredInterval(item.placement);
+    const covered = resolveCoveredSpan(item.placement);
     if (!(covered.start < day.end && covered.end >= day.start)) {
       continue;
     }
@@ -71,7 +76,7 @@ export function layoutDay(
       strip.push(item.id);
       continue;
     }
-    const core = resolveCoveredInterval({ ...item.placement, fadeout: undefined });
+    const core = resolveCoveredSpan({ ...item.placement, fadeout: undefined });
     const visualEnd = Math.max(covered.end, core.start + options.minVisualMs);
     positioned.push({ item, covered, core, visual: { start: covered.start, end: visualEnd } });
   }

@@ -51,7 +51,7 @@ describe('data adapter wiring', () => {
     await expect(TestBed.inject(ActivePortSet).bootstrap()).resolves.toBe(OFFLINE_PROFILE);
   });
 
-  it('bootstraps to Offline when the stored profile id is unknown', async () => {
+  it('bootstraps to Offline when the Storage Profile id is unknown', async () => {
     const active = TestBed.inject(ActivePortSet);
     await active.get().settings.save({ activeProfileId: 'some-future-cloud-profile' });
 

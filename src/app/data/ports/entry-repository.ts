@@ -3,7 +3,7 @@ import type { Entry, EntryInput, EntryRangeOptions } from '../model/entry';
 
 export interface EntryRepository {
   get(id: string): Promise<Entry | undefined>;
-  /** Range-inclusive on the resolved covered interval (placement + Fadeout). */
+  /** Range-inclusive on the resolved covered span (placement + Fadeout). */
   listByRange(start: string, end: string, options?: EntryRangeOptions): Promise<readonly Entry[]>;
   listByTracker(trackerId: string): Promise<readonly Entry[]>;
   /** Live Entry count per Tracker id, in one read — the Tracker list shows one per row. */

@@ -48,6 +48,11 @@ export class CorrelationControlsObject {
     return this.root.getByTestId('scope').getByTestId(trackerId).getByTestId('scope-toggle');
   }
 
+  /** The second tier: the Series of the in-scope Trackers, as the last scan found them. */
+  get seriesScope(): SeriesScopeObject {
+    return new SeriesScopeObject(this.root.getByTestId('series-scope'));
+  }
+
   async setRange(start: string, end: string): Promise<void> {
     await this.rangeStart.fill(start);
     await this.rangeEnd.fill(end);
@@ -59,6 +64,41 @@ export class CorrelationControlsObject {
 
   async cancel(): Promise<void> {
     await this.root.getByTestId('cancel-scan').click();
+  }
+}
+
+/**
+ * The Series tier of the scope picker. Its toggles are keyed by Series key, so they are
+ * reached by nesting inside this fieldset rather than by namespacing the id (ADR 0012).
+ */
+export class SeriesScopeObject {
+  constructor(private readonly root: Locator) {}
+
+  get self(): Locator {
+    return this.root;
+  }
+
+  get toggles(): Locator {
+    return this.root.getByTestId('series-scope-toggle');
+  }
+
+  toggle(seriesId: string): Locator {
+    return this.root.getByTestId(seriesId).getByTestId('series-scope-toggle');
+  }
+
+  /** What the picker says is in scope — "every Series", or how many were chosen. */
+  get hint(): Locator {
+    return this.root.getByTestId('series-scope-hint');
+  }
+
+  /** The live region that says selections were dropped; empty when none were. */
+  get notice(): Locator {
+    return this.root.getByTestId('series-scope-notice');
+  }
+
+  /** Shown in place of the toggles until a scan has found some Series to offer. */
+  get emptyHint(): Locator {
+    return this.root.getByTestId('series-scope-empty');
   }
 }
 
@@ -169,6 +209,11 @@ export class CorrelationPageObject {
 
   get emptyMessage(): Locator {
     return this.root.getByTestId('results-empty');
+  }
+
+  /** The pair and Test counts a finished scan reports, whether or not it found anything. */
+  get resultsSummary(): Locator {
+    return this.root.getByTestId('results-summary');
   }
 
   get rows(): Locator {

@@ -17,16 +17,27 @@ Built: `model/`, `ports/` (all seven), `adapters/indexeddb/` (every port), `test
 (engine double, data-layer factory, shared contract suite), and `facades/tracker-lookup.ts`.
 `adapters/http/` is still the later milestone it always was.
 
-`generated/` now mirrors the whole port surface: `api-spec/main.tsp` grew Tags, Settings
-and the maintenance operations (counts, clear, export, import) to match the ports the
-features actually use, and the committed client was regenerated from it (ADR 0004). The
-export bundle is versioned separately from the API on purpose — it is an internal file
-format, not part of the HTTP contract.
+`generated/` now mirrors the whole port surface — every operation on all seven ports has
+a generated client method. `api-spec/main.tsp` first grew Tags, Settings and the
+maintenance operations (counts, clear, export, import), then `Entries.listByTracker`,
+`Entries.listChildren`, `Entries.countsByTracker`, `Presets.read` and
+`Presets.countsByTracker`; the committed client was regenerated from it (ADR 0004).
+
+One payload still does not mirror its port: `Presets.create` / `Presets.update` take the
+whole `Preset` aggregate as their body, where `PresetRepository` takes a `PresetInput`.
+The contract therefore asks the caller for the read-only `AggregateMeta` fields and for
+`trackerVersion`, which the adapter resolves from the Tracker's `currentVersion` itself
+(ADR 0005). `Entries` and `Trackers` already model this correctly with `EntryInput` and
+`TrackerCreateInput`; Presets needs a `PresetInput` model to match. Nothing consumes the
+generated client yet, so this is a contract defect rather than a live bug.
+
+The export bundle is versioned separately from the API on purpose — it is an internal
+file format, not part of the HTTP contract.
 
 ## Shared domain logic in `model/`
 
 Pure, framework-free rules more than one feature applies live beside the types they are
-about, rather than in either feature: `placement.ts` (`resolveCoveredInterval`, the one
+about, rather than in either feature: `placement.ts` (`resolveCoveredSpan`, the one
 definition of what an Entry covers), `field-def.ts` (`fieldsEqual`, what makes a Draft
 differ from its Version), `field-values.ts` (what a Field's value may hold and when it
 is valid), `value-tree.ts` (values against a schema whose reference Fields hold further
@@ -69,7 +80,7 @@ src/app/data/
   its Fields. `hasVersion` (a committed Version exists) was added for the Calendar's
   quick-create picker: a Tracker with no Version has no schema to log against, so a
   picker that starts an Entry must not offer it. Consumed directly by Trackers' own list view, Calendar's
-  per-Tracker toggle panel, and Correlation's Signal-scope picker; none of those three
+  per-Tracker toggle panel, and Correlation's Series-scope picker; none of those three
   own it, so it lives here rather than in any one `features/` folder.
 
 ## Raw ports (v1 surface)
@@ -80,16 +91,22 @@ src/app/data/
   `setFieldDeclaration(id, fieldName, declaration | null)`, `archive(id)`,
   `unarchive(id)`, `getVersion(trackerId, version)`. No `delete` — see ADR 0005.
 - **EntryRepository**: `get`, `listByRange(start, end, opts)`, `listByTracker`,
-  `listChildren(parentId)`, `create`, `update`, `softDelete`. `create` resolves
-  `trackerVersion` from the target Tracker's `currentVersion` itself.
-- **PresetRepository**: `listByTracker`, `get`, `create`, `update`, `delete`.
+  `listChildren(parentId)`, `countsByTracker()` (live Entry count per Tracker, in one
+  read — the Tracker list's counts source), `create`, `update`, `softDelete`. `create`
+  resolves `trackerVersion` from the target Tracker's `currentVersion` itself.
+- **PresetRepository**: `listByTracker`, `countsByTracker()` (live Preset count per
+  Tracker, in one read — the Tracker list's counts source), `get`, `create`, `update`,
+  `delete`.
 - **TagRepository**: `listAll`, `suggest(prefix)`.
 - **SettingsRepository**: `get()`, `save(patch)`. The settings model includes
   `activeProfileId`, naming the active **Storage Profile**; read by `core/` at
   bootstrap to decide adapter wiring (ADR 0009), and excluded from Data Transfer's
   export bundle as device-local, non-portable state.
 - **CorrelationDataSource**: `loadEntriesForScope(range, seriesScope)` — one batched read
-  of Entries + children + the specific Tracker Versions they reference + Tags.
+  of Entries + children + the specific Tracker Versions they reference + Tags. Only the
+  scope's `trackerIds` reach the read: its `seriesIds` are the Correlation page's
+  post-extraction narrowing, which an adapter deliberately ignores because a Series' key
+  is a function of the Tracker scope that produced it (ADR 0015, ADR 0018).
 - **MaintenancePort**: `clearAll()`; `exportAll()` — a format-versioned JSON bundle of
   every live row of every aggregate plus Settings, excluding `activeProfileId`;
   `importAll(data)` — rejects a format-version mismatch outright, otherwise replaces all
@@ -148,7 +165,7 @@ facades do (ADR 0002).
   would wait on itself. This covers one tab; concurrent tabs remain an open question for
   the sync milestone.
 - A Day-bucketed placement covers the user's **local** calendar day, midnight to the
-  day's last millisecond (intervals are boundary-inclusive, so ending at the next
+  day's last millisecond (spans are boundary-inclusive, so ending at the next
   midnight would make it touch the following day too).
 - No schema-version migration story needed yet (single app version); the store version
   is bumped only when indices change. (Not to be confused with **Tracker Version** —
@@ -174,7 +191,7 @@ facades do (ADR 0002).
   `archive`/`unarchive` never touch `TrackerVersion` rows or existing Entries.
 - `TagRepository.suggest`: prefix match, case-insensitive, ranked by frequency.
 - `TrackerLookup.list()`: returns every Tracker (including archived) as `{id, name,
-  archived}` only — no Fields, no Versions; reflects a rename immediately (it's
+  archived, hasVersion}` — no Fields, no Versions; reflects a rename immediately (it's
   metadata, not versioned, per ADR 0005).
 - **How the adapter is tested.** `testing/port-contract.suite.ts` is one shared contract
   suite, parameterised by a factory, stating the behaviour any implementation of these
@@ -185,7 +202,6 @@ facades do (ADR 0002).
   suite cannot reach is the thin `BrowserIdbEngine` wrapper, which e2e covers by driving
   the real database. The suite takes a factory precisely so the later HTTP adapter runs
   through it unchanged.
-- `generated/` is import-clean and not referenced anywhere outside `adapters/http/`.
 - `MaintenancePort.exportAll()` / `importAll()`: see `data-transfer/SPEC.md` for the
   full contract and test cases (excluded `activeProfileId`, format-version rejection,
   full-replace semantics).

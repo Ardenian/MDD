@@ -93,7 +93,10 @@ later without touching features. See [ADR 0009](adr/0009-storage-profile-and-dat
   inspect Series outside a Discovery-scan row
 - User-configurable guardrails: minimum n, p-value threshold, Benjamini–Hochberg
   correction on/off; standing "association, not causation" caveat
-- Page-level date-range scope and Series-scope selection
+- Page-level date-range scope, and a two-tier scope picker: Trackers decide what a scan
+  loads (and so whether a Child Entry reads Standalone or Nested), then specific Series
+  narrow what is compared — a post-extraction filter subordinate to the Tracker tier
+  (ADR 0018)
 
 ### Settings — [`src/app/features/settings/SPEC.md`](../src/app/features/settings/SPEC.md)
 - Default Bucket size, default Lag range, default guardrail thresholds

@@ -1,11 +1,11 @@
-import { coveredInterval, movedTo, validatePlacement, withTimeMode } from './fadeout';
+import { coveredSpan, movedTo, validatePlacement, withTimeMode } from './fadeout';
 
 const at = (iso: string) => Date.parse(iso);
 
-describe('coveredInterval', () => {
+describe('coveredSpan', () => {
   it('extends a Point at 10:01 with a 1h trailing Fadeout to 11:01', () => {
     expect(
-      coveredInterval({
+      coveredSpan({
         kind: 'point',
         at: '2026-03-01T10:01:00.000Z',
         fadeout: { beforeMinutes: 0, afterMinutes: 60 },
@@ -15,7 +15,7 @@ describe('coveredInterval', () => {
 
   it('extends a Period 09:02–10:03 with 30m/60m to 08:32–11:03', () => {
     expect(
-      coveredInterval({
+      coveredSpan({
         kind: 'period',
         start: '2026-03-01T09:02:00.000Z',
         end: '2026-03-01T10:03:00.000Z',
@@ -25,7 +25,7 @@ describe('coveredInterval', () => {
   });
 
   it('covers the whole day for a Day-bucketed Entry', () => {
-    expect(coveredInterval({ kind: 'dayBucketed', day: '2026-03-01' })).toEqual({
+    expect(coveredSpan({ kind: 'dayBucketed', day: '2026-03-01' })).toEqual({
       start: new Date(2026, 2, 1).getTime(),
       end: new Date(2026, 2, 2).getTime() - 1,
     });

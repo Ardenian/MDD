@@ -452,6 +452,13 @@ export interface Tracker {
   fieldDeclarations?: Record<string, FieldDeclaration>;
 }
 
+/**
+ * Live record counts keyed by Tracker id, returned in one read rather than a query per
+ * row. Soft-deleted rows are excluded, and a Tracker with no live records is omitted
+ * rather than reported as zero.
+ */
+export type TrackerCounts = Record<string, number>;
+
 export interface TrackerCreateInput {
   name: string;
   defaultTimeMode: TimeMode;
@@ -833,6 +840,40 @@ export class Api<
       }),
 
     /**
+     * @description Every live Entry pinned to one Tracker, across all of its Versions.
+     *
+     * @name EntriesListByTracker
+     * @request GET:/entries/by-tracker
+     */
+    entriesListByTracker: (
+      query: {
+        trackerId: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<Entry[], any>({
+        path: `/entries/by-tracker`,
+        method: "GET",
+        query: query,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Backs the Entry count on each row of the Tracker list (trackers/SPEC.md).
+     *
+     * @name EntriesCountsByTracker
+     * @request GET:/entries/counts
+     */
+    entriesCountsByTracker: (params: RequestParams = {}) =>
+      this.request<TrackerCounts, any>({
+        path: `/entries/counts`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * No description
      *
      * @name EntriesRead
@@ -872,6 +913,20 @@ export class Api<
       this.request<void, ApiError>({
         path: `/entries/${id}`,
         method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * @description The Child Entries of one parent. A child's placement always mirrors its parent's.
+     *
+     * @name EntriesListChildren
+     * @request GET:/entries/{id}/children
+     */
+    entriesListChildren: (id: string, params: RequestParams = {}) =>
+      this.request<Entry[], ApiError>({
+        path: `/entries/${id}/children`,
+        method: "GET",
+        format: "json",
         ...params,
       }),
   };
@@ -979,6 +1034,34 @@ export class Api<
         method: "POST",
         body: data,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Backs the Preset count on each row of the Tracker list (trackers/SPEC.md).
+     *
+     * @name PresetsCountsByTracker
+     * @request GET:/presets/counts
+     */
+    presetsCountsByTracker: (params: RequestParams = {}) =>
+      this.request<TrackerCounts, any>({
+        path: `/presets/counts`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name PresetsRead
+     * @request GET:/presets/{id}
+     */
+    presetsRead: (id: string, params: RequestParams = {}) =>
+      this.request<Preset, ApiError>({
+        path: `/presets/${id}`,
+        method: "GET",
         format: "json",
         ...params,
       }),
