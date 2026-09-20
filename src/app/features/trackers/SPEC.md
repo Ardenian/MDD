@@ -60,6 +60,9 @@ selected Tracker arrives as a route-bound `input()`, which is what keeps
   collapsed section, excluded from every picker elsewhere in the app. The Entry and
   Preset counts come from `EntryRepository.countsByTracker()` /
   `PresetRepository.countsByTracker()` — one read each, rather than a per-row query.
+  Both are re-read every time the list is entered: Entries are written by other
+  features, which cannot reach `TrackersDataAccess` to invalidate it (ADR 0002), so a
+  count cached from an earlier visit would otherwise be stale.
 - **Tracker editor**: the feature's other top-level (route) component — with the list,
   the only place in this feature allowed to inject a facade or a `ui/` service.
   - name; default Time mode (point / period / day-bucketed) — both apply immediately,
