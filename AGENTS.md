@@ -1,5 +1,16 @@
 You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
+## Model selection
+
+- Use **Sonnet** for text-based tasks: writing or editing `SPEC.md`, ADRs, `CONTEXT.md`,
+  `docs/`, commit messages and PR descriptions, summaries, and answering questions about
+  the codebase.
+- Use **Opus** for code-based tasks: writing, refactoring, or debugging TypeScript,
+  Angular components, SCSS, and tests — anything that changes files under `src/`,
+  `api-spec/`, or `tests/`.
+- When a task mixes both, use Opus. A task that ends in a code change is a code-based
+  task, even when it starts with a spec update.
+
 ## TypeScript Best Practices
 
 - Use strict type checking
